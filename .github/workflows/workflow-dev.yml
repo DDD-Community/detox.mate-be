@@ -45,7 +45,7 @@ jobs:
   deploy:
     name: Deploy on EC2
     needs: build
-    runs-on: [self-hosted, linux, x64]
+    runs-on: [self-hosted, linux, ARM64]
 
     steps:
       - name: Download jar artifact
