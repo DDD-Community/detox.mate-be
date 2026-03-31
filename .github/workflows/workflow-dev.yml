@@ -66,6 +66,15 @@ jobs:
           fi
           cp "$JAR_FILE" deploy/app.jar
 
+      - name: Create .env file
+        run: |
+          cat <<EOF > deploy/.env
+          SPRING_PROFILES_ACTIVE=dev
+          DEV_DB_URL=${{ secrets.DEV_DB_URL }}
+          DEV_DB_USERNAME=${{ secrets.DEV_DB_USERNAME }}
+          DEV_DB_PASSWORD=${{ secrets.DEV_DB_PASSWORD }}
+          EOF
+
       - name: Create Dockerfile
         run: |
           cat <<'EOF' > deploy/Dockerfile
@@ -94,7 +103,12 @@ jobs:
             --name ${{ env.CONTAINER_NAME }} \
             --restart unless-stopped \
             -p ${{ env.APP_PORT }}:${{ env.APP_PORT }} \
+            --env-file deploy/.env \
+            -e SPRING_PROFILES_ACTIVE=dev \
             ${{ env.APP_NAME }}:latest
+
+      - name: Remove .env file
+        run: rm -f deploy/.env
 
       - name: Cleanup unused images
         run: |
