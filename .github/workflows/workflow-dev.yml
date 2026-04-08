@@ -104,6 +104,7 @@ jobs:
             --restart unless-stopped \
             -p ${{ env.APP_PORT }}:${{ env.APP_PORT }} \
             --env-file deploy/.env \
+            -v /home/ec2-user/logs:/logs \
             -e SPRING_PROFILES_ACTIVE=dev \
             ${{ env.APP_NAME }}:latest
 
