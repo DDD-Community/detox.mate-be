@@ -9,6 +9,8 @@ import com.detoxmate.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -19,15 +21,12 @@ public class AuthService {
 
     public KakaoSocialLoginResponse loginWithKakao(String providerAccessToken) {
         KakaoUserInfo kakaoUserInfo = kakaoRestApiClient.getUserInfo(providerAccessToken);
-        SocialLoginUser socialLoginUser = socialLoginUserRepository.findByProviderAndProviderUserId(
-                        SocialProvider.KAKAO,
-                        kakaoUserInfo.providerUserId()
-                )
-                .orElseGet(() -> createNewSocialLoginUser(kakaoUserInfo));
-        boolean isNewUser = socialLoginUserRepository.findByProviderAndProviderUserId(
+        Optional<SocialLoginUser> existingSocialLoginUser = socialLoginUserRepository.findByProviderAndProviderUserId(
                 SocialProvider.KAKAO,
                 kakaoUserInfo.providerUserId()
-        ).isEmpty();
+        );
+        boolean isNewUser = existingSocialLoginUser.isEmpty();
+        SocialLoginUser socialLoginUser = existingSocialLoginUser.orElseGet(() -> createNewSocialLoginUser(kakaoUserInfo));
         User user = socialLoginUser.getUser();
 
         return new KakaoSocialLoginResponse(
