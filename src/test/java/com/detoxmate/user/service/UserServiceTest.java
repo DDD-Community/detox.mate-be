@@ -30,7 +30,7 @@ class UserServiceTest {
         JwtTokenProvider jwtTokenProvider = new JwtTokenProvider(JWT_SECRET, ACCESS_TOKEN_EXPIRES_IN);
         UserService userService = new UserService(userRepository, socialLoginUserRepository, jwtTokenProvider);
 
-        User user = User.createNew("카카오닉네임");
+        User user = User.createNew("카카오닉네임", "https://example.com/profile.png");
         ReflectionTestUtils.setField(user, "id", 1L);
         String accessToken = jwtTokenProvider.createAccessToken(1L);
 
@@ -42,6 +42,7 @@ class UserServiceTest {
         // then
         assertThat(response.id()).isEqualTo(1L);
         assertThat(response.displayName()).isEqualTo("카카오닉네임");
+        assertThat(response.profileImageUrl()).isEqualTo("https://example.com/profile.png");
     }
 
     @Test
@@ -68,7 +69,7 @@ class UserServiceTest {
         JwtTokenProvider jwtTokenProvider = new JwtTokenProvider(JWT_SECRET, ACCESS_TOKEN_EXPIRES_IN);
         UserService userService = new UserService(userRepository, socialLoginUserRepository, jwtTokenProvider);
 
-        User user = User.createNew("카카오닉네임");
+        User user = User.createNew("카카오닉네임", "https://example.com/profile.png");
         ReflectionTestUtils.setField(user, "id", 1L);
         String accessToken = jwtTokenProvider.createAccessToken(1L);
 
@@ -81,5 +82,21 @@ class UserServiceTest {
         InOrder inOrder = inOrder(socialLoginUserRepository, userRepository);
         inOrder.verify(socialLoginUserRepository).deleteByUserId(1L);
         inOrder.verify(userRepository).delete(user);
+    }
+
+    @Test
+    void 탈퇴할_accessToken에_해당하는_유저가_없으면_예외를_던진다() {
+        // given
+        UserRepository userRepository = mock(UserRepository.class);
+        SocialLoginUserRepository socialLoginUserRepository = mock(SocialLoginUserRepository.class);
+        JwtTokenProvider jwtTokenProvider = new JwtTokenProvider(JWT_SECRET, ACCESS_TOKEN_EXPIRES_IN);
+        UserService userService = new UserService(userRepository, socialLoginUserRepository, jwtTokenProvider);
+        String accessToken = jwtTokenProvider.createAccessToken(999L);
+
+        when(userRepository.findById(999L)).thenReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> userService.withdraw(accessToken))
+                .isInstanceOf(java.util.NoSuchElementException.class);
     }
 }

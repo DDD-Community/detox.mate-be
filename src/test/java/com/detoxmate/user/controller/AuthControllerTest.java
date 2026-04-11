@@ -99,6 +99,7 @@ class AuthControllerTest {
             return new KakaoSocialLoginResponse(
                     1L,
                     "카카오닉네임",
+                    null,
                     "service-access-token",
                     3600L,
                     false

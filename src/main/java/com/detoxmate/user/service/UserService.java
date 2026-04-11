@@ -21,7 +21,8 @@ public class UserService {
 
         return new MyProfileResponse(
                 user.getId(),
-                user.getDisplayName()
+                user.getDisplayName(),
+                user.getProfileImageUrl()
         );
     }
 

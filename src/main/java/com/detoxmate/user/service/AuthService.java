@@ -37,6 +37,7 @@ public class AuthService {
         return new KakaoSocialLoginResponse(
                 user.getId(),
                 user.getDisplayName(),
+                user.getProfileImageUrl(),
                 accessToken,
                 jwtTokenProvider.getAccessTokenExpiresIn(),
                 isNewUser

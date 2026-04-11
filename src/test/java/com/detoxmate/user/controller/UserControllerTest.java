@@ -43,14 +43,15 @@ class UserControllerTest {
                 .setControllerAdvice(new com.detoxmate.common.error.GlobalExceptionHandler())
                 .build();
         when(userService.getMe("access-token"))
-                .thenReturn(new MyProfileResponse(1L, "카카오닉네임"));
+                .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png"));
 
         // when & then
         mockMvc.perform(get("/users/me").header("Authorization", "Bearer access-token"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.displayName").value("카카오닉네임"));
+                .andExpect(jsonPath("$.displayName").value("카카오닉네임"))
+                .andExpect(jsonPath("$.profileImageUrl").value("https://example.com/profile.png"));
     }
 
     @Test

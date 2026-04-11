@@ -36,11 +36,19 @@ public class User {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    private User(String displayName) {
+    @Column(name = "profile_image_url", nullable = true)
+    private String profileImageUrl;
+
+    private User(String displayName, String profileImageUrl) {
         this.displayName = displayName;
+        this.profileImageUrl = profileImageUrl;
     }
 
     public static User createNew(String displayName) {
-        return new User(displayName);
+        return createNew(displayName, null);
+    }
+
+    public static User createNew(String displayName, String profileImageUrl) {
+        return new User(displayName, profileImageUrl);
     }
 }

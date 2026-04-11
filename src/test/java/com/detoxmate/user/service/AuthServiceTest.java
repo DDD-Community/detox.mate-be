@@ -27,13 +27,15 @@ class AuthServiceTest {
     @Test
     void 기존_카카오_계정이면_기존_유저로_로그인한다() {
         // given
-        FakeKakaoRestApiClient kakaoRestApiClient = new FakeKakaoRestApiClient(new KakaoUserInfo("123456789", "카카오닉네임"));
+        FakeKakaoRestApiClient kakaoRestApiClient = new FakeKakaoRestApiClient(
+                new KakaoUserInfo("123456789", "카카오닉네임")
+        );
         UserRepository userRepository = mock(UserRepository.class);
         SocialLoginUserRepository socialLoginUserRepository = mock(SocialLoginUserRepository.class);
         JwtTokenProvider jwtTokenProvider = new JwtTokenProvider(JWT_SECRET, ACCESS_TOKEN_EXPIRES_IN);
         AuthService authService = new AuthService(kakaoRestApiClient, userRepository, socialLoginUserRepository, jwtTokenProvider);
 
-        User existingUser = User.createNew("기존유저");
+        User existingUser = User.createNew("기존유저", "https://example.com/existing.png");
         ReflectionTestUtils.setField(existingUser, "id", 7L);
         SocialLoginUser existingSocialLoginUser = SocialLoginUser.link(existingUser, SocialProvider.KAKAO, "123456789");
         when(socialLoginUserRepository.findByProviderAndProviderUserId(SocialProvider.KAKAO, "123456789"))
@@ -46,6 +48,7 @@ class AuthServiceTest {
         assertThat(kakaoRestApiClient.lastProviderAccessToken()).isEqualTo("kakao-access-token");
         assertThat(response.id()).isEqualTo(7L);
         assertThat(response.displayName()).isEqualTo("기존유저");
+        assertThat(response.profileImageUrl()).isEqualTo("https://example.com/existing.png");
         assertThat(jwtTokenProvider.getUserId(response.accessToken())).isEqualTo(7L);
         assertThat(response.accessTokenExpiresIn()).isEqualTo(ACCESS_TOKEN_EXPIRES_IN);
         assertThat(response.isNewUser()).isFalse();
@@ -56,7 +59,9 @@ class AuthServiceTest {
     @Test
     void 처음_로그인한_카카오_계정이면_신규_유저를_생성한다() {
         // given
-        FakeKakaoRestApiClient kakaoRestApiClient = new FakeKakaoRestApiClient(new KakaoUserInfo("123456789", "카카오닉네임"));
+        FakeKakaoRestApiClient kakaoRestApiClient = new FakeKakaoRestApiClient(
+                new KakaoUserInfo("123456789", "카카오닉네임")
+        );
         UserRepository userRepository = mock(UserRepository.class);
         SocialLoginUserRepository socialLoginUserRepository = mock(SocialLoginUserRepository.class);
         JwtTokenProvider jwtTokenProvider = new JwtTokenProvider(JWT_SECRET, ACCESS_TOKEN_EXPIRES_IN);
@@ -77,6 +82,7 @@ class AuthServiceTest {
         // then
         assertThat(response.id()).isEqualTo(1L);
         assertThat(response.displayName()).isEqualTo("카카오닉네임");
+        assertThat(response.profileImageUrl()).isNull();
         assertThat(jwtTokenProvider.getUserId(response.accessToken())).isEqualTo(1L);
         assertThat(response.accessTokenExpiresIn()).isEqualTo(ACCESS_TOKEN_EXPIRES_IN);
         assertThat(response.isNewUser()).isTrue();
