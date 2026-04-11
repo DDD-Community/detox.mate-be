@@ -9,6 +9,7 @@ import com.detoxmate.user.repository.SocialLoginUserRepository;
 import com.detoxmate.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -21,6 +22,7 @@ public class AuthService {
     private final SocialLoginUserRepository socialLoginUserRepository;
     private final JwtTokenProvider jwtTokenProvider;
 
+    @Transactional
     public KakaoSocialLoginResponse loginWithKakao(String providerAccessToken) {
         KakaoUserInfo kakaoUserInfo = kakaoRestApiClient.getUserInfo(providerAccessToken);
         Optional<SocialLoginUser> existingSocialLoginUser = socialLoginUserRepository.findByProviderAndProviderUserId(
