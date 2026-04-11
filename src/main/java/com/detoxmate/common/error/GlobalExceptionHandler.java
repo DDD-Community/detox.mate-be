@@ -19,7 +19,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).body(toErrorResponse(status));
     }
 
-    @ExceptionHandler({JwtException.class, IllegalArgumentException.class, NoSuchElementException.class})
+    @ExceptionHandler({JwtException.class, NumberFormatException.class, NoSuchElementException.class})
     public ResponseEntity<ErrorResponse> handleUnauthorizedException(Exception exception) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(toErrorResponse(HttpStatus.UNAUTHORIZED));
@@ -29,7 +29,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleServletException(ServletException exception) {
         Throwable cause = exception.getCause();
 
-        if (cause instanceof JwtException || cause instanceof NoSuchElementException) {
+        if (cause instanceof JwtException || cause instanceof NumberFormatException || cause instanceof NoSuchElementException) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(toErrorResponse(HttpStatus.UNAUTHORIZED));
         }

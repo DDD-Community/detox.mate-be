@@ -20,7 +20,7 @@ public class AuthController {
 
     @PostMapping("/social/kakao")
     public KakaoSocialLoginResponse kakaoAuth(@RequestBody KakaoSocialLoginRequest request) {
-        if (request.providerAccessToken() == null) {
+        if (request.providerAccessToken() == null || request.providerAccessToken().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "providerAccessToken is required");
         }
 

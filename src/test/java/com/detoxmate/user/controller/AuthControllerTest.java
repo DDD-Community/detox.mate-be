@@ -61,6 +61,28 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.isNewUser").value(false));
     }
 
+    @Test
+    void providerAccessToken이_공백이면_400_에러를_반환한다() throws Exception {
+        // given
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new AuthController(new FakeAuthService()))
+                .setControllerAdvice(new com.detoxmate.common.error.GlobalExceptionHandler())
+                .build();
+
+        // when & then
+        mockMvc.perform(post("/auth/social/kakao")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "providerAccessToken": "   "
+                        }
+                        """))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.message").value("Invalid request"))
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
     private static class FakeAuthService extends AuthService {
 
         FakeAuthService() {
