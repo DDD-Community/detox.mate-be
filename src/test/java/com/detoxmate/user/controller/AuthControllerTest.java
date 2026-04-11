@@ -1,5 +1,6 @@
 package com.detoxmate.user.controller;
 
+import com.detoxmate.auth.JwtTokenProvider;
 import com.detoxmate.auth.dto.KakaoSocialLoginResponse;
 import com.detoxmate.user.service.AuthService;
 import com.detoxmate.user.service.KakaoRestApiClient;
@@ -55,7 +56,12 @@ class AuthControllerTest {
     private static class FakeAuthService extends AuthService {
 
         FakeAuthService() {
-            super(new KakaoRestApiClient(), mock(UserRepository.class), mock(SocialLoginUserRepository.class));
+            super(
+                    new KakaoRestApiClient(),
+                    mock(UserRepository.class),
+                    mock(SocialLoginUserRepository.class),
+                    new JwtTokenProvider("this-is-a-very-long-secret-key-for-temp-auth", 3600L)
+            );
         }
 
         @Override

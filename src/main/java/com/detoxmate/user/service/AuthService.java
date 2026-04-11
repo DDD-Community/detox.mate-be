@@ -1,5 +1,6 @@
 package com.detoxmate.user.service;
 
+import com.detoxmate.auth.JwtTokenProvider;
 import com.detoxmate.auth.dto.KakaoSocialLoginResponse;
 import com.detoxmate.user.domain.SocialLoginUser;
 import com.detoxmate.user.domain.SocialProvider;
@@ -18,6 +19,7 @@ public class AuthService {
     private final KakaoRestApiClient kakaoRestApiClient;
     private final UserRepository userRepository;
     private final SocialLoginUserRepository socialLoginUserRepository;
+    private final JwtTokenProvider jwtTokenProvider;
 
     public KakaoSocialLoginResponse loginWithKakao(String providerAccessToken) {
         KakaoUserInfo kakaoUserInfo = kakaoRestApiClient.getUserInfo(providerAccessToken);
@@ -28,12 +30,13 @@ public class AuthService {
         boolean isNewUser = existingSocialLoginUser.isEmpty();
         SocialLoginUser socialLoginUser = existingSocialLoginUser.orElseGet(() -> createNewSocialLoginUser(kakaoUserInfo));
         User user = socialLoginUser.getUser();
+        String accessToken = jwtTokenProvider.createAccessToken(user.getId());
 
         return new KakaoSocialLoginResponse(
                 user.getId(),
                 user.getDisplayName(),
-                "service-access-token",
-                3600L,
+                accessToken,
+                jwtTokenProvider.getAccessTokenExpiresIn(),
                 isNewUser
         );
     }
