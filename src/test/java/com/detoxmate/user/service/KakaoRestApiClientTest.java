@@ -16,7 +16,8 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 class KakaoRestApiClientTest {
 
     @Test
-    void getUserInfoCallsKakaoUserMeApiAndMapsResponse() {
+    void 카카오_유저정보_API를_호출하고_응답을_파싱한다() {
+        // given
         RestClient.Builder restClientBuilder = RestClient.builder().baseUrl("https://kapi.kakao.com");
         MockRestServiceServer server = MockRestServiceServer.bindTo(restClientBuilder).build();
         KakaoRestApiClient kakaoRestApiClient = new KakaoRestApiClient(restClientBuilder.build());
@@ -35,8 +36,10 @@ class KakaoRestApiClientTest {
                         }
                         """, MediaType.APPLICATION_JSON));
 
+        // when
         KakaoUserInfo userInfo = kakaoRestApiClient.getUserInfo("kakao-access-token");
 
+        // then
         assertThat(userInfo.providerUserId()).isEqualTo("123456789");
         assertThat(userInfo.nickname()).isEqualTo("카카오닉네임");
         server.verify();

@@ -21,7 +21,8 @@ import static org.mockito.Mockito.when;
 class AuthServiceTest {
 
     @Test
-    void loginWithKakaoReturnsExistingUserWhenSocialLoginUserExists() {
+    void 기존_카카오_계정이면_기존_유저로_로그인한다() {
+        // given
         FakeKakaoRestApiClient kakaoRestApiClient = new FakeKakaoRestApiClient(new KakaoUserInfo("123456789", "카카오닉네임"));
         UserRepository userRepository = mock(UserRepository.class);
         SocialLoginUserRepository socialLoginUserRepository = mock(SocialLoginUserRepository.class);
@@ -33,8 +34,10 @@ class AuthServiceTest {
         when(socialLoginUserRepository.findByProviderAndProviderUserId(SocialProvider.KAKAO, "123456789"))
                 .thenReturn(Optional.of(existingSocialLoginUser));
 
+        // when
         KakaoSocialLoginResponse response = authService.loginWithKakao("kakao-access-token");
 
+        // then
         assertThat(kakaoRestApiClient.lastProviderAccessToken()).isEqualTo("kakao-access-token");
         assertThat(response.id()).isEqualTo(7L);
         assertThat(response.displayName()).isEqualTo("기존유저");
@@ -46,7 +49,8 @@ class AuthServiceTest {
     }
 
     @Test
-    void loginWithKakaoCreatesNewUserWhenSocialLoginUserDoesNotExist() {
+    void 처음_로그인한_카카오_계정이면_신규_유저를_생성한다() {
+        // given
         FakeKakaoRestApiClient kakaoRestApiClient = new FakeKakaoRestApiClient(new KakaoUserInfo("123456789", "카카오닉네임"));
         UserRepository userRepository = mock(UserRepository.class);
         SocialLoginUserRepository socialLoginUserRepository = mock(SocialLoginUserRepository.class);
@@ -61,8 +65,10 @@ class AuthServiceTest {
         });
         when(socialLoginUserRepository.save(any(SocialLoginUser.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
+        // when
         KakaoSocialLoginResponse response = authService.loginWithKakao("kakao-access-token");
 
+        // then
         assertThat(response.id()).isEqualTo(1L);
         assertThat(response.displayName()).isEqualTo("카카오닉네임");
         assertThat(response.isNewUser()).isTrue();

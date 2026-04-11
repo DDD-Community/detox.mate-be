@@ -3,6 +3,8 @@ package com.detoxmate.user.controller;
 import com.detoxmate.auth.dto.KakaoSocialLoginResponse;
 import com.detoxmate.user.service.AuthService;
 import com.detoxmate.user.service.KakaoRestApiClient;
+import com.detoxmate.user.repository.SocialLoginUserRepository;
+import com.detoxmate.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -12,13 +14,16 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.Mockito.mock;
 
 class AuthControllerTest {
 
     @Test
-    void postSocialKakaoWithoutProviderAccessTokenReturnsBadRequest() throws Exception {
+    void providerAccessToken이_없으면_400_에러를_반환한다() throws Exception {
+        // given
         MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new AuthController(new FakeAuthService())).build();
 
+        // when & then
         mockMvc.perform(post("/auth/social/kakao")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
@@ -26,9 +31,11 @@ class AuthControllerTest {
     }
 
     @Test
-    void postSocialKakaoWithProviderAccessTokenReturnsLoginResponse() throws Exception {
+    void providerAccessToken이_있으면_로그인_응답을_반환한다() throws Exception {
+        // given
         MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new AuthController(new FakeAuthService())).build();
 
+        // when & then
         mockMvc.perform(post("/auth/social/kakao")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -48,7 +55,7 @@ class AuthControllerTest {
     private static class FakeAuthService extends AuthService {
 
         FakeAuthService() {
-            super(new KakaoRestApiClient());
+            super(new KakaoRestApiClient(), mock(UserRepository.class), mock(SocialLoginUserRepository.class));
         }
 
         @Override
