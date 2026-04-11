@@ -22,19 +22,27 @@ class AuthControllerTest {
     @Test
     void providerAccessToken이_없으면_400_에러를_반환한다() throws Exception {
         // given
-        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new AuthController(new FakeAuthService())).build();
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new AuthController(new FakeAuthService()))
+                .setControllerAdvice(new com.detoxmate.common.error.GlobalExceptionHandler())
+                .build();
 
         // when & then
         mockMvc.perform(post("/auth/social/kakao")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.message").value("Invalid request"))
+                .andExpect(jsonPath("$.status").value(400));
     }
 
     @Test
     void providerAccessToken이_있으면_로그인_응답을_반환한다() throws Exception {
         // given
-        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new AuthController(new FakeAuthService())).build();
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new AuthController(new FakeAuthService()))
+                .setControllerAdvice(new com.detoxmate.common.error.GlobalExceptionHandler())
+                .build();
 
         // when & then
         mockMvc.perform(post("/auth/social/kakao")
