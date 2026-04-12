@@ -40,3 +40,10 @@ out/
 .env
 .env.local
 .env.*.local
+
+
+/second-brain
+
+/logs
+
+/docs
