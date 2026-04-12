@@ -43,3 +43,9 @@ out/
 
 .claude/skills/shared/config/discord-webhook-url.txt
 .omc/
+
+/second-brain
+
+/logs
+
+/docs

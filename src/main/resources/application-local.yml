@@ -18,6 +18,7 @@ spring:
   config:
     activate:
       on-profile: local
+    import: optional:file:.env.local[.properties]
 
   datasource:
     url: ${LOCAL_DB_URL}
@@ -44,3 +45,8 @@ management:
     health:
       probes:
         enabled: true
+
+auth:
+  jwt:
+    secret: ${JWT_SECRET}
+    access-token-expires-in: ${JWT_ACCESS_TOKEN_EXPIRES_IN:3600}

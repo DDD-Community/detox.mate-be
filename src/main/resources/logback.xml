@@ -1,6 +1,6 @@
 <configuration>
-    <!-- EC2 호스트에서 마운트할 경로 -->
-    <property name="LOG_PATH" value="/logs"/>
+    <!-- 기본은 로컬 상대경로, 운영에서는 LOG_PATH 환경변수로 덮어쓴다 -->
+    <property name="LOG_PATH" value="${LOG_PATH:-./logs}"/>
     <property name="LOG_FILE" value="${LOG_PATH}/detoxmate.log"/>
 
     <!-- 콘솔 출력 -->
