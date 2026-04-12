@@ -8,7 +8,7 @@ services:
       MYSQL_DATABASE: detoxmate-local
       TZ: Asia/Seoul
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - detoxmate_mysql_data:/var/lib/mysql
     command:
