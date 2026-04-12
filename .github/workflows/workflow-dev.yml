@@ -73,6 +73,8 @@ jobs:
           DEV_DB_URL=${{ secrets.DEV_DB_URL }}
           DEV_DB_USERNAME=${{ secrets.DEV_DB_USERNAME }}
           DEV_DB_PASSWORD=${{ secrets.DEV_DB_PASSWORD }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          JWT_ACCESS_TOKEN_EXPIRES_IN=${{ secrets.JWT_ACCESS_TOKEN_EXPIRES_IN }}
           EOF
 
       - name: Create Dockerfile
