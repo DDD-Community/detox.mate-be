@@ -16,6 +16,7 @@ public class UserService {
     private final SocialLoginUserRepository socialLoginUserRepository;
     private final JwtTokenProvider jwtTokenProvider;
 
+    @Transactional(readOnly = true)
     public MyProfileResponse getMe(String accessToken) {
         User user = getUser(accessToken);
 
