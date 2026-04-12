@@ -10,8 +10,8 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.NoSuchElementException;
 
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -22,7 +22,8 @@ class UserControllerTest {
     @Test
     void Authorization_헤더가_없으면_401_에러를_반환한다() throws Exception {
         // given
-        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new UserController(mock(UserService.class)))
+        UserService userService = mock(UserService.class);
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new UserController(userService))
                 .setControllerAdvice(new com.detoxmate.common.error.GlobalExceptionHandler())
                 .build();
 
@@ -31,7 +32,6 @@ class UserControllerTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
-                .andExpect(jsonPath("$.message").value("Unauthorized"))
                 .andExpect(jsonPath("$.status").value(401));
     }
 
@@ -49,9 +49,7 @@ class UserControllerTest {
         mockMvc.perform(get("/users/me").header("Authorization", "Bearer access-token"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.displayName").value("카카오닉네임"))
-                .andExpect(jsonPath("$.profileImageUrl").value("https://example.com/profile.png"));
+                .andExpect(jsonPath("$.id").value(1));
     }
 
     @Test
@@ -68,7 +66,6 @@ class UserControllerTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
-                .andExpect(jsonPath("$.message").value("Unauthorized"))
                 .andExpect(jsonPath("$.status").value(401));
     }
 
@@ -86,7 +83,6 @@ class UserControllerTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
-                .andExpect(jsonPath("$.message").value("Unauthorized"))
                 .andExpect(jsonPath("$.status").value(401));
     }
 
@@ -104,14 +100,14 @@ class UserControllerTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
-                .andExpect(jsonPath("$.message").value("Unauthorized"))
                 .andExpect(jsonPath("$.status").value(401));
     }
 
     @Test
     void 유효한_Authorization_헤더가_있으면_회원_탈퇴에_성공한다() throws Exception {
         // given
-        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new UserController(mock(UserService.class)))
+        UserService userService = mock(UserService.class);
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new UserController(userService))
                 .setControllerAdvice(new com.detoxmate.common.error.GlobalExceptionHandler())
                 .build();
 

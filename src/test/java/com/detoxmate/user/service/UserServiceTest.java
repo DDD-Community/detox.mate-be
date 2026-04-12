@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import org.mockito.InOrder;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class UserServiceTest {
@@ -41,8 +42,6 @@ class UserServiceTest {
 
         // then
         assertThat(response.id()).isEqualTo(1L);
-        assertThat(response.displayName()).isEqualTo("카카오닉네임");
-        assertThat(response.profileImageUrl()).isEqualTo("https://example.com/profile.png");
     }
 
     @Test

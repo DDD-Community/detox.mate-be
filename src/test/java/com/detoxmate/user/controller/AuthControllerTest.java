@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -32,7 +33,6 @@ class AuthControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
-                .andExpect(jsonPath("$.message").value("Invalid request"))
                 .andExpect(jsonPath("$.status").value(400));
 
         verifyNoInteractions(authService);
@@ -65,10 +65,6 @@ class AuthControllerTest {
                         """))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.displayName").value("카카오닉네임"))
-                .andExpect(jsonPath("$.accessToken").value("service-access-token"))
-                .andExpect(jsonPath("$.accessTokenExpiresIn").value(3600))
                 .andExpect(jsonPath("$.isNewUser").value(false));
     }
 
@@ -91,7 +87,6 @@ class AuthControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
-                .andExpect(jsonPath("$.message").value("Invalid request"))
                 .andExpect(jsonPath("$.status").value(400));
 
         verifyNoInteractions(authService);

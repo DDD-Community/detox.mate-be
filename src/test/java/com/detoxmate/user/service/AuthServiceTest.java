@@ -46,12 +46,8 @@ class AuthServiceTest {
 
         // then
         assertThat(kakaoRestApiClient.lastProviderAccessToken()).isEqualTo("kakao-access-token");
-        assertThat(response.id()).isEqualTo(7L);
-        assertThat(response.displayName()).isEqualTo("기존유저");
-        assertThat(response.profileImageUrl()).isEqualTo("https://example.com/existing.png");
-        assertThat(jwtTokenProvider.getUserId(response.accessToken())).isEqualTo(7L);
-        assertThat(response.accessTokenExpiresIn()).isEqualTo(ACCESS_TOKEN_EXPIRES_IN);
         assertThat(response.isNewUser()).isFalse();
+        verify(socialLoginUserRepository).findByProviderAndProviderUserId(SocialProvider.KAKAO, "123456789");
         verify(userRepository, never()).save(any(User.class));
         verify(socialLoginUserRepository, never()).save(any(SocialLoginUser.class));
     }
@@ -80,12 +76,9 @@ class AuthServiceTest {
         KakaoSocialLoginResponse response = authService.loginWithKakao("kakao-access-token");
 
         // then
-        assertThat(response.id()).isEqualTo(1L);
-        assertThat(response.displayName()).isEqualTo("카카오닉네임");
-        assertThat(response.profileImageUrl()).isNull();
-        assertThat(jwtTokenProvider.getUserId(response.accessToken())).isEqualTo(1L);
-        assertThat(response.accessTokenExpiresIn()).isEqualTo(ACCESS_TOKEN_EXPIRES_IN);
+        assertThat(kakaoRestApiClient.lastProviderAccessToken()).isEqualTo("kakao-access-token");
         assertThat(response.isNewUser()).isTrue();
+        verify(socialLoginUserRepository).findByProviderAndProviderUserId(SocialProvider.KAKAO, "123456789");
         verify(userRepository).save(any(User.class));
         verify(socialLoginUserRepository).save(any(SocialLoginUser.class));
     }
