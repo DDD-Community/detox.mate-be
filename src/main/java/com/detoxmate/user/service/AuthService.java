@@ -1,7 +1,10 @@
 package com.detoxmate.user.service;
 
 import com.detoxmate.auth.JwtTokenProvider;
+import com.detoxmate.auth.domain.RefreshTokenSession;
 import com.detoxmate.auth.dto.KakaoSocialLoginResponse;
+import com.detoxmate.auth.dto.RefreshTokenResponse;
+import com.detoxmate.auth.service.RefreshTokenSessionService;
 import com.detoxmate.user.domain.SocialLoginUser;
 import com.detoxmate.user.domain.SocialProvider;
 import com.detoxmate.user.domain.User;
@@ -21,6 +24,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final SocialLoginUserRepository socialLoginUserRepository;
     private final JwtTokenProvider jwtTokenProvider;
+    private final RefreshTokenSessionService refreshTokenSessionService;
 
     @Transactional
     public KakaoSocialLoginResponse loginWithKakao(String providerAccessToken) {
@@ -33,13 +37,14 @@ public class AuthService {
         SocialLoginUser socialLoginUser = existingSocialLoginUser.orElseGet(() -> createNewSocialLoginUser(kakaoUserInfo));
         User user = socialLoginUser.getUser();
         String accessToken = jwtTokenProvider.createAccessToken(user.getId());
+        String refreshToken = refreshTokenSessionService.issueRefreshToken(user);
 
         return new KakaoSocialLoginResponse(
                 user.getId(),
                 user.getDisplayName(),
                 user.getProfileImageUrl(),
                 accessToken,
-                jwtTokenProvider.getAccessTokenExpiresIn(),
+                refreshToken,
                 isNewUser
         );
     }
@@ -48,5 +53,21 @@ public class AuthService {
         User newUser = userRepository.save(User.createNew(kakaoUserInfo.nickname()));
         SocialLoginUser socialLoginUser = SocialLoginUser.link(newUser, SocialProvider.KAKAO, kakaoUserInfo.providerUserId());
         return socialLoginUserRepository.save(socialLoginUser);
+    }
+
+    @Transactional
+    public RefreshTokenResponse refresh(String refreshToken) {
+        RefreshTokenSession refreshTokenSession = refreshTokenSessionService.getValidSession(refreshToken);
+        refreshTokenSession.markUsed();
+
+        String accessToken = jwtTokenProvider.createAccessToken(refreshTokenSession.getUser().getId());
+
+        return new RefreshTokenResponse(accessToken, refreshToken);
+    }
+
+    @Transactional
+    public void logout(String refreshToken) {
+        RefreshTokenSession refreshTokenSession = refreshTokenSessionService.getValidSession(refreshToken);
+        refreshTokenSession.revoke();
     }
 }

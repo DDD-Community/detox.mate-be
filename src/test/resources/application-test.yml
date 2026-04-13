@@ -16,3 +16,5 @@ auth:
   jwt:
     secret: this-is-a-very-long-secret-key-for-test-only
     access-token-expires-in: 3600
+  refresh-token:
+    expires-in: 15552000

@@ -5,7 +5,7 @@ public record KakaoSocialLoginResponse(
         String displayName,
         String profileImageUrl,
         String accessToken,
-        long accessTokenExpiresIn,
+        String refreshToken,
         boolean isNewUser
 ) {
 }
