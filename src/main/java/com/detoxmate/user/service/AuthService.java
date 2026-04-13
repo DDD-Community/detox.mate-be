@@ -45,7 +45,6 @@ public class AuthService {
                 user.getProfileImageUrl(),
                 accessToken,
                 refreshToken,
-                jwtTokenProvider.getAccessTokenExpiresIn(),
                 isNewUser
         );
     }

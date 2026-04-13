@@ -49,7 +49,6 @@ class AuthControllerTest {
                 null,
                 "service-access-token",
                 "service-refresh-token",
-                3600L,
                 false
         ));
 
