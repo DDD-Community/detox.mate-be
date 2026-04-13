@@ -42,7 +42,7 @@ out/
 .env.*.local
 
 .claude/skills/shared/config/discord-webhook-url.txt
-.codex/skills/shared/config/discord-webhook-url.txt
+.agents/skills/shared/config/discord-webhook-url.txt
 .omc/
 
 /second-brain
