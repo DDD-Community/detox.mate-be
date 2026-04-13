@@ -57,6 +57,10 @@ public class RefreshTokenSession {
         return revokedAt != null;
     }
 
+    public void revoke() {
+        this.revokedAt = LocalDateTime.now();
+    }
+
     @PrePersist
     private void initializeTimestamps() {
         LocalDateTime now = LocalDateTime.now();

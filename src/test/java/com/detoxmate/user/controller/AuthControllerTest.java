@@ -120,4 +120,26 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.accessToken").value("service-access-token"))
                 .andExpect(jsonPath("$.refreshToken").value("service-refresh-token"));
     }
+
+    @Test
+    void refresh_token이_있으면_로그아웃을_수행한다() throws Exception {
+        // given
+        AuthService authService = mock(AuthService.class);
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new AuthController(authService))
+                .setControllerAdvice(new com.detoxmate.common.error.GlobalExceptionHandler())
+                .build();
+
+        // when & then
+        mockMvc.perform(post("/auth/logout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "refreshToken": "logout-refresh-token"
+                        }
+                        """))
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""));
+
+        verify(authService).logout("logout-refresh-token");
+    }
 }

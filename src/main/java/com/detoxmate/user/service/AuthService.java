@@ -65,4 +65,10 @@ public class AuthService {
 
         return new RefreshTokenResponse(accessToken, refreshToken);
     }
+
+    @Transactional
+    public void logout(String refreshToken) {
+        RefreshTokenSession refreshTokenSession = refreshTokenSessionService.getValidSession(refreshToken);
+        refreshTokenSession.revoke();
+    }
 }

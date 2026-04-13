@@ -138,6 +138,38 @@ class AuthServiceTest {
         verify(refreshTokenSessionService).getValidSession("valid-refresh-token");
     }
 
+    @Test
+    void 유효한_refresh_token이면_로그아웃시_세션을_revoke한다() {
+        // given
+        UserRepository userRepository = mock(UserRepository.class);
+        SocialLoginUserRepository socialLoginUserRepository = mock(SocialLoginUserRepository.class);
+        JwtTokenProvider jwtTokenProvider = new JwtTokenProvider(JWT_SECRET, ACCESS_TOKEN_EXPIRES_IN);
+        RefreshTokenSessionService refreshTokenSessionService = mock(RefreshTokenSessionService.class);
+        AuthService authService = new AuthService(
+                mock(KakaoRestApiClient.class),
+                userRepository,
+                socialLoginUserRepository,
+                jwtTokenProvider,
+                refreshTokenSessionService
+        );
+        User user = User.createNew("카카오닉네임");
+        RefreshTokenSession refreshTokenSession = RefreshTokenSession.issue(
+                user,
+                "hashed-refresh-token",
+                java.time.LocalDateTime.now().plusDays(180)
+        );
+
+        when(refreshTokenSessionService.getValidSession("valid-refresh-token"))
+                .thenReturn(refreshTokenSession);
+
+        // when
+        authService.logout("valid-refresh-token");
+
+        // then
+        assertThat(refreshTokenSession.isRevoked()).isTrue();
+        verify(refreshTokenSessionService).getValidSession("valid-refresh-token");
+    }
+
     private static class FakeKakaoRestApiClient extends KakaoRestApiClient {
 
         private final KakaoUserInfo kakaoUserInfo;
