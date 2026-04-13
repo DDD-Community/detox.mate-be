@@ -1,7 +1,10 @@
 package com.detoxmate.user.service;
 
 import com.detoxmate.auth.JwtTokenProvider;
+import com.detoxmate.auth.domain.RefreshTokenSession;
 import com.detoxmate.auth.dto.KakaoSocialLoginResponse;
+import com.detoxmate.auth.dto.RefreshTokenResponse;
+import com.detoxmate.auth.service.RefreshTokenSessionService;
 import com.detoxmate.user.domain.SocialLoginUser;
 import com.detoxmate.user.domain.SocialProvider;
 import com.detoxmate.user.domain.User;
@@ -33,13 +36,21 @@ class AuthServiceTest {
         UserRepository userRepository = mock(UserRepository.class);
         SocialLoginUserRepository socialLoginUserRepository = mock(SocialLoginUserRepository.class);
         JwtTokenProvider jwtTokenProvider = new JwtTokenProvider(JWT_SECRET, ACCESS_TOKEN_EXPIRES_IN);
-        AuthService authService = new AuthService(kakaoRestApiClient, userRepository, socialLoginUserRepository, jwtTokenProvider);
+        RefreshTokenSessionService refreshTokenSessionService = mock(RefreshTokenSessionService.class);
+        AuthService authService = new AuthService(
+                kakaoRestApiClient,
+                userRepository,
+                socialLoginUserRepository,
+                jwtTokenProvider,
+                refreshTokenSessionService
+        );
 
         User existingUser = User.createNew("기존유저", "https://example.com/existing.png");
         ReflectionTestUtils.setField(existingUser, "id", 7L);
         SocialLoginUser existingSocialLoginUser = SocialLoginUser.link(existingUser, SocialProvider.KAKAO, "123456789");
         when(socialLoginUserRepository.findByProviderAndProviderUserId(SocialProvider.KAKAO, "123456789"))
                 .thenReturn(Optional.of(existingSocialLoginUser));
+        when(refreshTokenSessionService.issueRefreshToken(existingUser)).thenReturn("service-refresh-token");
 
         // when
         KakaoSocialLoginResponse response = authService.loginWithKakao("kakao-access-token");
@@ -47,6 +58,7 @@ class AuthServiceTest {
         // then
         assertThat(kakaoRestApiClient.lastProviderAccessToken()).isEqualTo("kakao-access-token");
         assertThat(response.isNewUser()).isFalse();
+        assertThat(response.refreshToken()).isEqualTo("service-refresh-token");
         verify(socialLoginUserRepository).findByProviderAndProviderUserId(SocialProvider.KAKAO, "123456789");
         verify(userRepository, never()).save(any(User.class));
         verify(socialLoginUserRepository, never()).save(any(SocialLoginUser.class));
@@ -61,7 +73,14 @@ class AuthServiceTest {
         UserRepository userRepository = mock(UserRepository.class);
         SocialLoginUserRepository socialLoginUserRepository = mock(SocialLoginUserRepository.class);
         JwtTokenProvider jwtTokenProvider = new JwtTokenProvider(JWT_SECRET, ACCESS_TOKEN_EXPIRES_IN);
-        AuthService authService = new AuthService(kakaoRestApiClient, userRepository, socialLoginUserRepository, jwtTokenProvider);
+        RefreshTokenSessionService refreshTokenSessionService = mock(RefreshTokenSessionService.class);
+        AuthService authService = new AuthService(
+                kakaoRestApiClient,
+                userRepository,
+                socialLoginUserRepository,
+                jwtTokenProvider,
+                refreshTokenSessionService
+        );
 
         when(socialLoginUserRepository.findByProviderAndProviderUserId(SocialProvider.KAKAO, "123456789"))
                 .thenReturn(Optional.empty());
@@ -71,6 +90,7 @@ class AuthServiceTest {
             return savedUser;
         });
         when(socialLoginUserRepository.save(any(SocialLoginUser.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(refreshTokenSessionService.issueRefreshToken(any(User.class))).thenReturn("service-refresh-token");
 
         // when
         KakaoSocialLoginResponse response = authService.loginWithKakao("kakao-access-token");
@@ -78,9 +98,44 @@ class AuthServiceTest {
         // then
         assertThat(kakaoRestApiClient.lastProviderAccessToken()).isEqualTo("kakao-access-token");
         assertThat(response.isNewUser()).isTrue();
+        assertThat(response.refreshToken()).isEqualTo("service-refresh-token");
         verify(socialLoginUserRepository).findByProviderAndProviderUserId(SocialProvider.KAKAO, "123456789");
         verify(userRepository).save(any(User.class));
         verify(socialLoginUserRepository).save(any(SocialLoginUser.class));
+    }
+
+    @Test
+    void 유효한_refresh_token이면_새_access_token을_발급한다() {
+        // given
+        UserRepository userRepository = mock(UserRepository.class);
+        SocialLoginUserRepository socialLoginUserRepository = mock(SocialLoginUserRepository.class);
+        JwtTokenProvider jwtTokenProvider = new JwtTokenProvider(JWT_SECRET, ACCESS_TOKEN_EXPIRES_IN);
+        RefreshTokenSessionService refreshTokenSessionService = mock(RefreshTokenSessionService.class);
+        AuthService authService = new AuthService(
+                mock(KakaoRestApiClient.class),
+                userRepository,
+                socialLoginUserRepository,
+                jwtTokenProvider,
+                refreshTokenSessionService
+        );
+        User user = User.createNew("카카오닉네임");
+        ReflectionTestUtils.setField(user, "id", 1L);
+        RefreshTokenSession refreshTokenSession = RefreshTokenSession.issue(
+                user,
+                "hashed-refresh-token",
+                java.time.LocalDateTime.now().plusDays(180)
+        );
+
+        when(refreshTokenSessionService.getValidSession("valid-refresh-token"))
+                .thenReturn(refreshTokenSession);
+
+        // when
+        RefreshTokenResponse response = authService.refresh("valid-refresh-token");
+
+        // then
+        assertThat(response.refreshToken()).isEqualTo("valid-refresh-token");
+        assertThat(jwtTokenProvider.getUserId(response.accessToken())).isEqualTo(1L);
+        verify(refreshTokenSessionService).getValidSession("valid-refresh-token");
     }
 
     private static class FakeKakaoRestApiClient extends KakaoRestApiClient {

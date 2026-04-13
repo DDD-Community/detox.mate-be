@@ -47,6 +47,7 @@ class AuthControllerTest {
                 "카카오닉네임",
                 null,
                 "service-access-token",
+                "service-refresh-token",
                 3600L,
                 false
         ));
