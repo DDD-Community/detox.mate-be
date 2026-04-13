@@ -1,6 +1,7 @@
 package com.detoxmate.user.controller;
 
 import com.detoxmate.auth.dto.KakaoSocialLoginResponse;
+import com.detoxmate.auth.dto.RefreshTokenResponse;
 import com.detoxmate.user.service.AuthService;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -91,5 +92,32 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.status").value(400));
 
         verifyNoInteractions(authService);
+    }
+
+    @Test
+    void fresh한_refresh_token이_있으면_새로운_access_token을_반환한다() throws Exception {
+        // given
+        AuthService authService = mock(AuthService.class);
+        when(authService.refresh("fresh-refresh-token")).thenReturn(new RefreshTokenResponse(
+                "service-access-token",
+                "service-refresh-token"
+        ));
+
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new AuthController(authService))
+                .setControllerAdvice(new com.detoxmate.common.error.GlobalExceptionHandler())
+                .build();
+
+        // when & then
+        mockMvc.perform(post("/auth/refresh")
+                .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "refreshToken": "fresh-refresh-token"
+                        }
+                        """))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.accessToken").value("service-access-token"))
+                .andExpect(jsonPath("$.refreshToken").value("service-refresh-token"));
     }
 }
