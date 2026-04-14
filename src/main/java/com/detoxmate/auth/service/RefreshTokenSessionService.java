@@ -49,6 +49,10 @@ public class RefreshTokenSessionService {
         return refreshTokenSession;
     }
 
+    public void deleteByUserId(Long userId) {
+        refreshTokenSessionRepository.deleteByUserId(userId);
+    }
+
     boolean hasExpired(LocalDateTime expiresAt) {
         LocalDateTime now = LocalDateTime.now();
 
