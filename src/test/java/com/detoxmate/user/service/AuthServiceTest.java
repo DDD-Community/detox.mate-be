@@ -105,7 +105,7 @@ class AuthServiceTest {
     }
 
     @Test
-    void 유효한_refresh_token이면_새_access_token을_발급한다() {
+    void 유효한_refresh_token이면_새_access_token과_새_refresh_token을_발급한다() {
         // given
         UserRepository userRepository = mock(UserRepository.class);
         SocialLoginUserRepository socialLoginUserRepository = mock(SocialLoginUserRepository.class);
@@ -128,14 +128,18 @@ class AuthServiceTest {
 
         when(refreshTokenSessionService.getValidSession("valid-refresh-token"))
                 .thenReturn(refreshTokenSession);
+        when(refreshTokenSessionService.issueRefreshToken(user))
+                .thenReturn("rotated-refresh-token");
 
         // when
         RefreshTokenResponse response = authService.refresh("valid-refresh-token");
 
         // then
-        assertThat(response.refreshToken()).isEqualTo("valid-refresh-token");
+        assertThat(response.refreshToken()).isEqualTo("rotated-refresh-token");
         assertThat(jwtTokenProvider.getUserId(response.accessToken())).isEqualTo(1L);
         verify(refreshTokenSessionService).getValidSession("valid-refresh-token");
+        verify(refreshTokenSessionService).issueRefreshToken(user);
+        verify(refreshTokenSessionService).revoke("valid-refresh-token");
     }
 
     @Test
