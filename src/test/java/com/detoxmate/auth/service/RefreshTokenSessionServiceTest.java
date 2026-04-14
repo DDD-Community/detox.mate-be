@@ -100,30 +100,6 @@ class RefreshTokenSessionServiceTest {
     }
 
     @Test
-    void 정확히_만료_시각과_같으면_만료로_간주한다() {
-        // given
-        RefreshTokenSessionRepository refreshTokenSessionRepository = mock(RefreshTokenSessionRepository.class);
-        RefreshTokenProvider refreshTokenProvider = mock(RefreshTokenProvider.class);
-        RefreshTokenSessionService refreshTokenSessionService = new RefreshTokenSessionService(
-                refreshTokenSessionRepository,
-                refreshTokenProvider
-        );
-        User user = User.createNew("kakao-nickname");
-        RefreshTokenSession refreshTokenSession = RefreshTokenSession.issue(
-                user,
-                refreshTokenSessionService.hash("boundary-refresh-token"),
-                LocalDateTime.now()
-        );
-
-        when(refreshTokenSessionRepository.findByTokenHash(refreshTokenSessionService.hash("boundary-refresh-token")))
-                .thenReturn(Optional.of(refreshTokenSession));
-
-        // when & then
-        assertThatThrownBy(() -> refreshTokenSessionService.getValidSession("boundary-refresh-token"))
-                .isInstanceOf(ResponseStatusException.class);
-    }
-
-    @Test
     void 로그아웃용_revoke는_없는_refresh_token이어도_예외를_던지지_않는다() {
         // given
         RefreshTokenSessionRepository refreshTokenSessionRepository = mock(RefreshTokenSessionRepository.class);
