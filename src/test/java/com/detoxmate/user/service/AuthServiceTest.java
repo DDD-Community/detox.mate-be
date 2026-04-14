@@ -152,22 +152,12 @@ class AuthServiceTest {
                 jwtTokenProvider,
                 refreshTokenSessionService
         );
-        User user = User.createNew("카카오닉네임");
-        RefreshTokenSession refreshTokenSession = RefreshTokenSession.issue(
-                user,
-                "hashed-refresh-token",
-                java.time.LocalDateTime.now().plusDays(180)
-        );
-
-        when(refreshTokenSessionService.getValidSession("valid-refresh-token"))
-                .thenReturn(refreshTokenSession);
 
         // when
         authService.logout("valid-refresh-token");
 
         // then
-        assertThat(refreshTokenSession.isRevoked()).isTrue();
-        verify(refreshTokenSessionService).getValidSession("valid-refresh-token");
+        verify(refreshTokenSessionService).revoke("valid-refresh-token");
     }
 
     private static class FakeKakaoRestApiClient extends KakaoRestApiClient {

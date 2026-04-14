@@ -49,6 +49,13 @@ public class RefreshTokenSessionService {
         return refreshTokenSession;
     }
 
+    public void revoke(String rawRefreshToken) {
+        String hashedRefreshToken = hash(rawRefreshToken);
+
+        refreshTokenSessionRepository.findByTokenHash(hashedRefreshToken)
+                .ifPresent(RefreshTokenSession::revoke);
+    }
+
     public void deleteByUserId(Long userId) {
         refreshTokenSessionRepository.deleteByUserId(userId);
     }
@@ -56,7 +63,7 @@ public class RefreshTokenSessionService {
     boolean hasExpired(LocalDateTime expiresAt) {
         LocalDateTime now = LocalDateTime.now();
 
-        return expiresAt.isBefore(now);
+        return !expiresAt.isAfter(now);
     }
 
     String hash(String refreshToken) {

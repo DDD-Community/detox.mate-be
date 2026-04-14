@@ -58,6 +58,10 @@ public class RefreshTokenSession {
     }
 
     public void revoke() {
+        if (isRevoked()) {
+            return;
+        }
+
         this.revokedAt = LocalDateTime.now();
     }
 

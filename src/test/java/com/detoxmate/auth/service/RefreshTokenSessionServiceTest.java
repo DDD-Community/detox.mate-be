@@ -12,8 +12,10 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -95,5 +97,76 @@ class RefreshTokenSessionServiceTest {
         // when & then
         assertThatThrownBy(() -> refreshTokenSessionService.getValidSession("expired-refresh-token"))
                 .isInstanceOf(ResponseStatusException.class);
+    }
+
+    @Test
+    void 정확히_만료_시각과_같으면_만료로_간주한다() {
+        // given
+        RefreshTokenSessionRepository refreshTokenSessionRepository = mock(RefreshTokenSessionRepository.class);
+        RefreshTokenProvider refreshTokenProvider = mock(RefreshTokenProvider.class);
+        RefreshTokenSessionService refreshTokenSessionService = new RefreshTokenSessionService(
+                refreshTokenSessionRepository,
+                refreshTokenProvider
+        );
+        User user = User.createNew("kakao-nickname");
+        RefreshTokenSession refreshTokenSession = RefreshTokenSession.issue(
+                user,
+                refreshTokenSessionService.hash("boundary-refresh-token"),
+                LocalDateTime.now()
+        );
+
+        when(refreshTokenSessionRepository.findByTokenHash(refreshTokenSessionService.hash("boundary-refresh-token")))
+                .thenReturn(Optional.of(refreshTokenSession));
+
+        // when & then
+        assertThatThrownBy(() -> refreshTokenSessionService.getValidSession("boundary-refresh-token"))
+                .isInstanceOf(ResponseStatusException.class);
+    }
+
+    @Test
+    void 로그아웃용_revoke는_없는_refresh_token이어도_예외를_던지지_않는다() {
+        // given
+        RefreshTokenSessionRepository refreshTokenSessionRepository = mock(RefreshTokenSessionRepository.class);
+        RefreshTokenProvider refreshTokenProvider = mock(RefreshTokenProvider.class);
+        RefreshTokenSessionService refreshTokenSessionService = new RefreshTokenSessionService(
+                refreshTokenSessionRepository,
+                refreshTokenProvider
+        );
+
+        when(refreshTokenSessionRepository.findByTokenHash(refreshTokenSessionService.hash("unknown-refresh-token")))
+                .thenReturn(Optional.empty());
+
+        // when & then
+        assertThatCode(() -> refreshTokenSessionService.revoke("unknown-refresh-token"))
+                .doesNotThrowAnyException();
+
+        verify(refreshTokenSessionRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void 로그아웃용_revoke는_이미_revoke된_refresh_token이어도_예외를_던지지_않는다() {
+        // given
+        RefreshTokenSessionRepository refreshTokenSessionRepository = mock(RefreshTokenSessionRepository.class);
+        RefreshTokenProvider refreshTokenProvider = mock(RefreshTokenProvider.class);
+        RefreshTokenSessionService refreshTokenSessionService = new RefreshTokenSessionService(
+                refreshTokenSessionRepository,
+                refreshTokenProvider
+        );
+        User user = User.createNew("kakao-nickname");
+        RefreshTokenSession refreshTokenSession = RefreshTokenSession.issue(
+                user,
+                refreshTokenSessionService.hash("revoked-refresh-token"),
+                LocalDateTime.now().plusDays(1)
+        );
+        refreshTokenSession.revoke();
+        LocalDateTime revokedAt = refreshTokenSession.getRevokedAt();
+
+        when(refreshTokenSessionRepository.findByTokenHash(refreshTokenSessionService.hash("revoked-refresh-token")))
+                .thenReturn(Optional.of(refreshTokenSession));
+
+        // when & then
+        assertThatCode(() -> refreshTokenSessionService.revoke("revoked-refresh-token"))
+                .doesNotThrowAnyException();
+        assertThat(refreshTokenSession.getRevokedAt()).isEqualTo(revokedAt);
     }
 }
