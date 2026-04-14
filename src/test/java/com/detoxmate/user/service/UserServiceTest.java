@@ -1,6 +1,7 @@
 package com.detoxmate.user.service;
 
 import com.detoxmate.auth.JwtTokenProvider;
+import com.detoxmate.auth.service.RefreshTokenSessionService;
 import com.detoxmate.user.dto.MyProfileResponse;
 import com.detoxmate.user.domain.User;
 import com.detoxmate.user.repository.SocialLoginUserRepository;
@@ -28,8 +29,9 @@ class UserServiceTest {
         // given
         UserRepository userRepository = mock(UserRepository.class);
         SocialLoginUserRepository socialLoginUserRepository = mock(SocialLoginUserRepository.class);
+        RefreshTokenSessionService refreshTokenSessionService = mock(RefreshTokenSessionService.class);
         JwtTokenProvider jwtTokenProvider = new JwtTokenProvider(JWT_SECRET, ACCESS_TOKEN_EXPIRES_IN);
-        UserService userService = new UserService(userRepository, socialLoginUserRepository, jwtTokenProvider);
+        UserService userService = new UserService(userRepository, socialLoginUserRepository, refreshTokenSessionService, jwtTokenProvider);
 
         User user = User.createNew("카카오닉네임", "https://example.com/profile.png");
         ReflectionTestUtils.setField(user, "id", 1L);
@@ -49,8 +51,9 @@ class UserServiceTest {
         // given
         UserRepository userRepository = mock(UserRepository.class);
         SocialLoginUserRepository socialLoginUserRepository = mock(SocialLoginUserRepository.class);
+        RefreshTokenSessionService refreshTokenSessionService = mock(RefreshTokenSessionService.class);
         JwtTokenProvider jwtTokenProvider = new JwtTokenProvider(JWT_SECRET, ACCESS_TOKEN_EXPIRES_IN);
-        UserService userService = new UserService(userRepository, socialLoginUserRepository, jwtTokenProvider);
+        UserService userService = new UserService(userRepository, socialLoginUserRepository, refreshTokenSessionService, jwtTokenProvider);
         String accessToken = jwtTokenProvider.createAccessToken(999L);
 
         when(userRepository.findById(999L)).thenReturn(Optional.empty());
@@ -65,8 +68,9 @@ class UserServiceTest {
         // given
         UserRepository userRepository = mock(UserRepository.class);
         SocialLoginUserRepository socialLoginUserRepository = mock(SocialLoginUserRepository.class);
+        RefreshTokenSessionService refreshTokenSessionService = mock(RefreshTokenSessionService.class);
         JwtTokenProvider jwtTokenProvider = new JwtTokenProvider(JWT_SECRET, ACCESS_TOKEN_EXPIRES_IN);
-        UserService userService = new UserService(userRepository, socialLoginUserRepository, jwtTokenProvider);
+        UserService userService = new UserService(userRepository, socialLoginUserRepository, refreshTokenSessionService, jwtTokenProvider);
 
         User user = User.createNew("카카오닉네임", "https://example.com/profile.png");
         ReflectionTestUtils.setField(user, "id", 1L);
@@ -78,8 +82,9 @@ class UserServiceTest {
         userService.withdraw(accessToken);
 
         // then
-        InOrder inOrder = inOrder(socialLoginUserRepository, userRepository);
+        InOrder inOrder = inOrder(socialLoginUserRepository, refreshTokenSessionService, userRepository);
         inOrder.verify(socialLoginUserRepository).deleteByUserId(1L);
+        inOrder.verify(refreshTokenSessionService).deleteByUserId(1L);
         inOrder.verify(userRepository).delete(user);
     }
 
@@ -88,8 +93,9 @@ class UserServiceTest {
         // given
         UserRepository userRepository = mock(UserRepository.class);
         SocialLoginUserRepository socialLoginUserRepository = mock(SocialLoginUserRepository.class);
+        RefreshTokenSessionService refreshTokenSessionService = mock(RefreshTokenSessionService.class);
         JwtTokenProvider jwtTokenProvider = new JwtTokenProvider(JWT_SECRET, ACCESS_TOKEN_EXPIRES_IN);
-        UserService userService = new UserService(userRepository, socialLoginUserRepository, jwtTokenProvider);
+        UserService userService = new UserService(userRepository, socialLoginUserRepository, refreshTokenSessionService, jwtTokenProvider);
         String accessToken = jwtTokenProvider.createAccessToken(999L);
 
         when(userRepository.findById(999L)).thenReturn(Optional.empty());

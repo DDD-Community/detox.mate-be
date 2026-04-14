@@ -11,7 +11,11 @@ import java.time.LocalDateTime;
 @Getter
 @Entity
 @Table(
-        name = "refresh_token_session"
+        name = "refresh_token_session",
+        indexes = {
+                @Index(name = "uk_refresh_token_session_token_hash", columnList = "token_hash", unique = true),
+                @Index(name = "idx_refresh_token_session_user_id", columnList = "user_id")
+        }
 )
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class RefreshTokenSession {
@@ -24,7 +28,7 @@ public class RefreshTokenSession {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "token_hash", nullable = false, updatable = false)
+    @Column(name = "token_hash", nullable = false, updatable = false, length = 64)
     private String tokenHash;
 
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -58,6 +62,10 @@ public class RefreshTokenSession {
     }
 
     public void revoke() {
+        if (isRevoked()) {
+            return;
+        }
+
         this.revokedAt = LocalDateTime.now();
     }
 

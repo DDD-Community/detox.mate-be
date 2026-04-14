@@ -94,12 +94,12 @@ class AuthControllerTest {
     }
 
     @Test
-    void fresh한_refresh_token이_있으면_새로운_access_token을_반환한다() throws Exception {
+    void fresh한_refresh_token이_있으면_새로운_access_token과_refresh_token을_반환한다() throws Exception {
         // given
         AuthService authService = mock(AuthService.class);
         when(authService.refresh("fresh-refresh-token")).thenReturn(new RefreshTokenResponse(
                 "service-access-token",
-                "service-refresh-token"
+                "rotated-refresh-token"
         ));
 
         MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new AuthController(authService))
@@ -117,7 +117,7 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.accessToken").value("service-access-token"))
-                .andExpect(jsonPath("$.refreshToken").value("service-refresh-token"));
+                .andExpect(jsonPath("$.refreshToken").value("rotated-refresh-token"));
     }
 
     @Test

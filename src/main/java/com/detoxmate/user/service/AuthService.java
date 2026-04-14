@@ -59,15 +59,16 @@ public class AuthService {
     public RefreshTokenResponse refresh(String refreshToken) {
         RefreshTokenSession refreshTokenSession = refreshTokenSessionService.getValidSession(refreshToken);
         refreshTokenSession.markUsed();
+        String newRefreshToken = refreshTokenSessionService.issueRefreshToken(refreshTokenSession.getUser());
+        refreshTokenSessionService.revoke(refreshToken);
 
         String accessToken = jwtTokenProvider.createAccessToken(refreshTokenSession.getUser().getId());
 
-        return new RefreshTokenResponse(accessToken, refreshToken);
+        return new RefreshTokenResponse(accessToken, newRefreshToken);
     }
 
     @Transactional
     public void logout(String refreshToken) {
-        RefreshTokenSession refreshTokenSession = refreshTokenSessionService.getValidSession(refreshToken);
-        refreshTokenSession.revoke();
+        refreshTokenSessionService.revoke(refreshToken);
     }
 }

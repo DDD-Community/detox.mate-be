@@ -1,6 +1,7 @@
 package com.detoxmate.user.service;
 
 import com.detoxmate.auth.JwtTokenProvider;
+import com.detoxmate.auth.service.RefreshTokenSessionService;
 import com.detoxmate.user.dto.MyProfileResponse;
 import com.detoxmate.user.domain.User;
 import com.detoxmate.user.repository.SocialLoginUserRepository;
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
     private final UserRepository userRepository;
     private final SocialLoginUserRepository socialLoginUserRepository;
+    private final RefreshTokenSessionService refreshTokenSessionService;
     private final JwtTokenProvider jwtTokenProvider;
 
     @Transactional(readOnly = true)
@@ -32,6 +34,7 @@ public class UserService {
         User user = getUser(accessToken);
 
         socialLoginUserRepository.deleteByUserId(user.getId());
+        refreshTokenSessionService.deleteByUserId(user.getId());
         userRepository.delete(user);
     }
 

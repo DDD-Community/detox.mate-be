@@ -7,4 +7,6 @@ import java.util.Optional;
 
 public interface RefreshTokenSessionRepository extends JpaRepository<RefreshTokenSession, Long> {
     Optional<RefreshTokenSession> findByTokenHash(String tokenHash);
+
+    void deleteByUserId(Long userId);
 }
