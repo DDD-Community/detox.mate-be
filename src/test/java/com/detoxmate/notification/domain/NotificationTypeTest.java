@@ -1,11 +1,12 @@
 package com.detoxmate.notification.domain;
 
+import com.detoxmate.common.exception.CustomException;
+import com.detoxmate.common.exception.notification.NotificationErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
 
 class NotificationTypeTest {
 
@@ -27,9 +28,9 @@ class NotificationTypeTest {
     void notificationTypeCodeNotNull(){
         //when&then
         assertThatThrownBy(()->NotificationType.create(null))
-                .isInstanceOf(NotificationException.class)
-                .extracting(e->((NotificationException) e).getErrorCode())
-                .isEqualTo(NotificationErrorCode.INVALIDE_TYPE_CODE);
+                .isInstanceOf(CustomException.class)
+                .extracting(e->((CustomException) e).getErrorCode())
+                .isEqualTo(NotificationErrorCode.INVALID_TYPE_CODE);
     }
 
 }
