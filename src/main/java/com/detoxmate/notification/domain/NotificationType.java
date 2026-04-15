@@ -1,5 +1,7 @@
 package com.detoxmate.notification.domain;
 
+import com.detoxmate.common.exception.CustomException;
+import com.detoxmate.common.exception.notification.NotificationErrorCode;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -25,6 +27,9 @@ public class NotificationType {
     }
 
     public static NotificationType create(NotificationTypeCode typeCode) {
+        if(typeCode == null) {
+            throw new CustomException(NotificationErrorCode.INVALID_TYPE_CODE);
+        }
         return new NotificationType(typeCode);
     }
 }
