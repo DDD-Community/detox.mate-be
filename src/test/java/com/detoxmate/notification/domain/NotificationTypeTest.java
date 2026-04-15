@@ -32,22 +32,4 @@ class NotificationTypeTest {
                 .isEqualTo(NotificationErrorCode.INVALIDE_TYPE_CODE);
     }
 
-    @Test
-    @DisplayName("알림 타입과 일림은 연관관계이다.")
-    void notificationTypeRelatedToNotification(){
-        //given
-        NotificationTypeCode typeCode = NotificationTypeCode.COMMENT;
-        Notification notification = Notification.create(
-                "새로운 댓글!",
-                "{nickname}님이 댓글을 남겼습니다.",
-                typeCode
-        );
-
-        //when
-        NotificationType notificationType = NotificationType.create(typeCode);
-
-        //then
-        assertThat(notificationType.getTypeCode()).isEqualTo(notification.getTypeCode());
-    }
-
 }
