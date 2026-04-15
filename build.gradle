@@ -1,9 +1,25 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        maven {
+            url 'https://plugins.gradle.org/m2/'
+        }
+    }
+    dependencies {
+        classpath 'com.epages:restdocs-api-spec-gradle-plugin:0.20.0'
+        classpath 'org.springframework.boot:spring-boot-jackson2:4.0.1'
+        classpath 'com.fasterxml.jackson.module:jackson-module-kotlin:2.20.1'
+    }
+}
+
 plugins {
     id 'java'
     id 'org.springframework.boot' version '4.0.5'
     id 'io.spring.dependency-management' version '1.1.7'
     id 'org.asciidoctor.jvm.convert' version '4.0.5'
 }
+
+apply plugin: 'com.epages.restdocs-api-spec'
 
 group = 'com'
 version = '0.0.1-SNAPSHOT'
@@ -57,6 +73,7 @@ dependencies {
 
     // Test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'com.epages:restdocs-api-spec-mockmvc:0.20.0'
     testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc:4.0.0'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testCompileOnly 'org.projectlombok:lombok'
@@ -64,8 +81,19 @@ dependencies {
     testRuntimeOnly 'com.h2database:h2'
 }
 
+openapi3 {
+    server = '/'
+    title = 'Detoxmate API'
+    description = 'Test-driven OpenAPI specification generated from Spring REST Docs'
+    version = project.version.toString()
+    format = 'yaml'
+}
+
 tasks.named('test') {
     useJUnitPlatform()
+    doFirst {
+        delete snippetsDir
+    }
     outputs.dir snippetsDir
 }
 
@@ -73,4 +101,22 @@ tasks.named('asciidoctor') {
     configurations 'asciidoctorExt'
     inputs.dir snippetsDir
     dependsOn tasks.named('test')
+}
+
+tasks.register('copyOpenapi3Spec', Copy) {
+    dependsOn tasks.named('openapi3')
+    from(layout.buildDirectory.file('api-spec/openapi3.yaml'))
+    into(layout.buildDirectory.dir('resources/main/static'))
+}
+
+tasks.named('bootRun') {
+    dependsOn tasks.named('copyOpenapi3Spec')
+}
+
+tasks.named('bootJar') {
+    dependsOn tasks.named('copyOpenapi3Spec')
+}
+
+tasks.named('resolveMainClassName') {
+    dependsOn tasks.named('copyOpenapi3Spec')
 }
