@@ -1,32 +1,59 @@
 package com.detoxmate.user.controller;
 
+import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.detoxmate.user.dto.MyProfileResponse;
 import com.detoxmate.user.service.UserService;
 import io.jsonwebtoken.JwtException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.http.MediaType;
+import org.springframework.restdocs.RestDocumentationContextProvider;
+import org.springframework.restdocs.RestDocumentationExtension;
+import org.springframework.restdocs.headers.HeaderDescriptor;
+import org.springframework.restdocs.payload.FieldDescriptor;
+import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.NoSuchElementException;
 
+import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
+import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
+import static com.epages.restdocs.apispec.Schema.schema;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
+import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
+import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
+import static org.springframework.restdocs.operation.preprocess.Preprocessors.prettyPrint;
+import static org.springframework.restdocs.operation.preprocess.Preprocessors.preprocessRequest;
+import static org.springframework.restdocs.operation.preprocess.Preprocessors.preprocessResponse;
+import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@ExtendWith(RestDocumentationExtension.class)
 class UserControllerTest {
+
+    private UserService userService;
+    private MockMvc mockMvc;
+
+    @BeforeEach
+    void setUp(RestDocumentationContextProvider restDocumentation) {
+        userService = mock(UserService.class);
+        mockMvc = MockMvcBuilders.standaloneSetup(new UserController(userService))
+                .setControllerAdvice(new com.detoxmate.common.error.GlobalExceptionHandler())
+                .apply(documentationConfiguration(restDocumentation))
+                .build();
+    }
 
     @Test
     void Authorization_헤더가_없으면_401_에러를_반환한다() throws Exception {
-        // given
-        UserService userService = mock(UserService.class);
-        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new UserController(userService))
-                .setControllerAdvice(new com.detoxmate.common.error.GlobalExceptionHandler())
-                .build();
-
         // when & then
         mockMvc.perform(get("/users/me"))
                 .andExpect(status().isUnauthorized())
@@ -37,46 +64,64 @@ class UserControllerTest {
 
     @Test
     void Authorization_헤더가_있으면_유저_정보를_반환한다() throws Exception {
-        // given
-        UserService userService = mock(UserService.class);
-        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new UserController(userService))
-                .setControllerAdvice(new com.detoxmate.common.error.GlobalExceptionHandler())
-                .build();
         when(userService.getMe("access-token"))
                 .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png"));
+
+        HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
+        FieldDescriptor[] responseFieldDescriptors = myProfileResponseFields();
 
         // when & then
         mockMvc.perform(get("/users/me").header("Authorization", "Bearer access-token"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.id").value(1));
+                .andExpect(jsonPath("$.id").value(1))
+                .andDo(document("users/me-get",
+                        preprocessRequest(prettyPrint()),
+                        preprocessResponse(prettyPrint()),
+                        requestHeaders(requestHeaderDescriptors),
+                        responseFields(responseFieldDescriptors),
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("User")
+                                .summary("Get my profile")
+                                .description("Authorization 헤더의 access token으로 내 프로필 정보를 조회한다.")
+                                .requestHeaders(requestHeaderDescriptors)
+                                .responseSchema(schema("MyProfileResponse"))
+                                .responseFields(responseFieldDescriptors)
+                                .build()
+                        )));
     }
 
     @Test
     void 잘못된_JWT이면_401_에러를_반환한다() throws Exception {
-        // given
-        UserService userService = mock(UserService.class);
         when(userService.getMe("invalid-token")).thenThrow(new JwtException("invalid jwt"));
-        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new UserController(userService))
-                .setControllerAdvice(new com.detoxmate.common.error.GlobalExceptionHandler())
-                .build();
+
+        HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
+        FieldDescriptor[] errorResponseFieldDescriptors = errorResponseFields();
 
         // when & then
         mockMvc.perform(get("/users/me").header("Authorization", "Bearer invalid-token"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
-                .andExpect(jsonPath("$.status").value(401));
+                .andExpect(jsonPath("$.status").value(401))
+                .andDo(document("users/me-get-unauthorized",
+                        preprocessRequest(prettyPrint()),
+                        preprocessResponse(prettyPrint()),
+                        requestHeaders(requestHeaderDescriptors),
+                        responseFields(errorResponseFieldDescriptors),
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("User")
+                                .summary("Get my profile")
+                                .description("Authorization 헤더의 access token으로 내 프로필 정보를 조회한다.")
+                                .responseSchema(schema("ErrorResponse"))
+                                .responseFields(errorResponseFieldDescriptors)
+                                .build()
+                        )));
     }
 
     @Test
     void 만료된_JWT이면_401_에러를_반환한다() throws Exception {
-        // given
-        UserService userService = mock(UserService.class);
         when(userService.getMe("expired-token")).thenThrow(new JwtException("expired jwt"));
-        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new UserController(userService))
-                .setControllerAdvice(new com.detoxmate.common.error.GlobalExceptionHandler())
-                .build();
 
         // when & then
         mockMvc.perform(get("/users/me").header("Authorization", "Bearer expired-token"))
@@ -88,12 +133,7 @@ class UserControllerTest {
 
     @Test
     void 토큰은_유효하지만_유저가_없으면_401_에러를_반환한다() throws Exception {
-        // given
-        UserService userService = mock(UserService.class);
         when(userService.getMe("missing-user-token")).thenThrow(new NoSuchElementException());
-        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new UserController(userService))
-                .setControllerAdvice(new com.detoxmate.common.error.GlobalExceptionHandler())
-                .build();
 
         // when & then
         mockMvc.perform(get("/users/me").header("Authorization", "Bearer missing-user-token"))
@@ -105,15 +145,85 @@ class UserControllerTest {
 
     @Test
     void 유효한_Authorization_헤더가_있으면_회원_탈퇴에_성공한다() throws Exception {
-        // given
-        UserService userService = mock(UserService.class);
-        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new UserController(userService))
-                .setControllerAdvice(new com.detoxmate.common.error.GlobalExceptionHandler())
-                .build();
+        HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
 
         // when & then
         mockMvc.perform(delete("/users/me").header("Authorization", "Bearer access-token"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(""));
+                .andExpect(content().string(""))
+                .andDo(document("users/me-delete",
+                        preprocessRequest(prettyPrint()),
+                        preprocessResponse(prettyPrint()),
+                        requestHeaders(requestHeaderDescriptors),
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("User")
+                                .summary("Withdraw my account")
+                                .description("Authorization 헤더의 access token으로 회원 탈퇴를 수행한다.")
+                                .requestHeaders(requestHeaderDescriptors)
+                                .build()
+                        )));
+    }
+
+    @Test
+    void 잘못된_JWT로_회원_탈퇴를_요청하면_401_에러를_반환한다() throws Exception {
+        doThrow(new JwtException("invalid jwt")).when(userService).withdraw("invalid-token");
+
+        HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
+        FieldDescriptor[] errorResponseFieldDescriptors = errorResponseFields();
+
+        // when & then
+        mockMvc.perform(delete("/users/me").header("Authorization", "Bearer invalid-token"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+                .andExpect(jsonPath("$.status").value(401))
+                .andDo(document("users/me-delete-unauthorized",
+                        preprocessRequest(prettyPrint()),
+                        preprocessResponse(prettyPrint()),
+                        requestHeaders(requestHeaderDescriptors),
+                        responseFields(errorResponseFieldDescriptors),
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("User")
+                                .summary("Withdraw my account")
+                                .description("Authorization 헤더의 access token으로 회원 탈퇴를 수행한다.")
+                                .responseSchema(schema("ErrorResponse"))
+                                .responseFields(errorResponseFieldDescriptors)
+                                .build()
+                        )));
+    }
+
+    private HeaderDescriptor[] authorizationHeaderDescriptors() {
+        return new HeaderDescriptor[] {
+                headerWithName("Authorization").description("Bearer {accessToken} 형식의 서비스 access token")
+        };
+    }
+
+    private FieldDescriptor[] myProfileResponseFields() {
+        return new FieldDescriptor[] {
+                fieldWithPath("id")
+                        .type(JsonFieldType.NUMBER)
+                        .description("서비스 사용자 ID"),
+                fieldWithPath("displayName")
+                        .type(JsonFieldType.STRING)
+                        .description("사용자 닉네임"),
+                fieldWithPath("profileImageUrl")
+                        .type(JsonFieldType.STRING)
+                        .description("프로필 이미지 URL")
+                        .optional()
+        };
+    }
+
+    private FieldDescriptor[] errorResponseFields() {
+        return new FieldDescriptor[] {
+                fieldWithPath("code")
+                        .type(JsonFieldType.STRING)
+                        .description("에러 코드"),
+                fieldWithPath("message")
+                        .type(JsonFieldType.STRING)
+                        .description("에러 메시지"),
+                fieldWithPath("status")
+                        .type(JsonFieldType.NUMBER)
+                        .description("HTTP 상태 코드")
+        };
     }
 }
