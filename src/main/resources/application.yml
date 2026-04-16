@@ -9,3 +9,9 @@ spring:
       dev: dev
       local: local
       prod: prod
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    disable-swagger-default-url: true
+    url: /openapi3.yaml

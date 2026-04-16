@@ -173,7 +173,7 @@ Agent(
 
 ```bash
 # feature 브랜치 기준으로 worktree 생성 (프로젝트 내부 경로)
-WORKTREE_DIR=".Codex/local/worktree/prd{N}"
+WORKTREE_DIR=".agents/local/worktree/prd{N}"
 mkdir -p "$(dirname "$WORKTREE_DIR")"
 git worktree add "$WORKTREE_DIR" -b {branch-name} {feature-branch}
 cd "$WORKTREE_DIR"
@@ -181,7 +181,7 @@ cd "$WORKTREE_DIR"
 
 이후 모든 작업(파일 읽기/쓰기, git 명령 등)은 `$WORKTREE_DIR` 내에서 수행한다.
 
-> `.Codex/local/`은 `.gitignore`에 포함되어 있으므로 추적되지 않는다.
+> `.agents/local/`은 `.gitignore`에 포함되어 있으므로 추적되지 않는다.
 
 ### 2. Deep Interview (필수)
 
@@ -287,7 +287,7 @@ PR 목록:
 **머지 승인 시 worktree 정리**:
 ```bash
 # 유저가 머지를 승인한 PRD의 worktree만 제거
-git worktree remove .Codex/local/worktree/prd{N} --force
+git worktree remove .agents/local/worktree/prd{N} --force
 ````
 
 #### Step 2.5: 팀 정리

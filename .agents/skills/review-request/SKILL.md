@@ -17,7 +17,7 @@ version: 2.0.0
 
 ## Config Files
 
-- **Discord member mapping**: `.Codex/skills/shared/config/discord-members.json`
+- **Discord member mapping**: `.agents/skills/shared/config/discord-members.json`
   - Maps GitHub usernames to Discord info
   - Format:
     ```json
@@ -29,7 +29,7 @@ version: 2.0.0
     }
     ```
   - `discordId`는 @mention (알림)에 필수. Discord 설정 → 고급 → 개발자 모드 ON → 프로필 우클릭 → '사용자 ID 복사'
-- **Discord webhook URL**: `.Codex/skills/shared/config/discord-webhook-url.txt`
+- **Discord webhook URL**: `.agents/skills/shared/config/discord-webhook-url.txt`
   - Discord Incoming Webhook URL (한 줄)
 
 ## Prerequisites
@@ -51,9 +51,9 @@ gh pr view --json number,title,body,url
 
 ### Step 2: Discord Config 로드
 
-1. `.Codex/skills/shared/config/discord-webhook-url.txt` 읽기
+1. `.agents/skills/shared/config/discord-webhook-url.txt` 읽기
    - 없으면: 사용자에게 webhook URL 요청 (AskUserQuestion) → 파일에 저장
-2. `.Codex/skills/shared/config/discord-members.json` 읽기
+2. `.agents/skills/shared/config/discord-members.json` 읽기
    - 없으면: 빈 `{}` 생성
 
 ### Step 3: 요청자 Discord 정보 확인
