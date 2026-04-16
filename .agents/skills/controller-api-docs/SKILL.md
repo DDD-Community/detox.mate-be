@@ -88,7 +88,7 @@ version: 1.0.0
 
 ## Quality Rules
 
-- 성공 응답만 문서화하지 말고 대표 에러 응답도 함께 넣는다.
+- 성공 응답뿐 아니라 클라이언트가 구분해서 처리해야 하는 외부 노출 에러 응답은 모두 문서화한다.
 - field descriptor와 OpenAPI metadata가 서로 어긋나지 않게 같은 descriptor를 재사용한다.
 - nullable string 같은 필드는 `VARIES` 보다 더 구체적인 타입을 우선한다.
 - 같은 endpoint의 success/error 문서가 합쳐질 때 operationId가 깨지지 않도록 snippet naming을 일관되게 잡는다.
