@@ -8,7 +8,6 @@ buildscript {
     dependencies {
         classpath 'com.epages:restdocs-api-spec-gradle-plugin:0.20.0'
         classpath 'org.springframework.boot:spring-boot-jackson2:4.0.1'
-        classpath 'com.fasterxml.jackson.module:jackson-module-kotlin:2.20.1'
     }
 }
 
@@ -104,7 +103,7 @@ tasks.named('asciidoctor') {
 }
 
 tasks.register('copyOpenapi3Spec', Copy) {
-    dependsOn tasks.named('openapi3')
+    dependsOn 'openapi3'
     from(layout.buildDirectory.file('api-spec/openapi3.yaml'))
     into(layout.buildDirectory.dir('resources/main/static'))
 }

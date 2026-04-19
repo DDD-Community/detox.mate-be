@@ -30,3 +30,31 @@ operation::users/me-get-unauthorized[snippets='http-request,request-headers,http
 
 operation::users/me-delete[snippets='http-request,request-headers,http-response']
 operation::users/me-delete-unauthorized[snippets='http-request,request-headers,http-response,response-fields']
+
+== Group API
+
+=== Create Group
+
+operation::groups/create[snippets='http-request,request-fields,http-response,response-fields']
+
+=== Join Group
+
+operation::groups/join[snippets='http-request,request-fields,http-response,response-fields']
+
+=== Get My Groups
+
+operation::me/groups-get[snippets='http-request,http-response,response-fields']
+
+=== Get Group Detail
+
+operation::groups/get-by-id[snippets='http-request,path-parameters,http-response,response-fields']
+
+== Group Challenge API
+
+=== Get My Group Challenges
+
+operation::me/group-challenges-get[snippets='http-request,query-parameters,http-response,response-fields']
+
+=== Get Group Challenge Detail
+
+operation::group-challenges/get-by-id[snippets='http-request,path-parameters,http-response,response-fields']
