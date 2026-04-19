@@ -11,6 +11,18 @@ Use this reference when the pasted API spec is ambiguous or when you need to con
 
 The input can be free-form text as long as those facts are present.
 
+## Optional But Helpful Fields
+
+Add these when the spec already knows them:
+
+- enum candidate values for string fields
+- whether a field is nullable
+- whether an unset collection should return an empty array
+- whether numeric fields are integers or floating-point values
+- success status when it is not the default `200 OK`
+
+If they are not provided, infer them conservatively from the spec, PRD, and repository pattern.
+
 ## Accepted Input Shapes
 
 Example with body:
@@ -65,6 +77,14 @@ Do not ask broad design questions if the missing detail can be inferred from the
 - error case: omit by default and add only when the user asks or the endpoint contract clearly depends on it
 - request/response DTO style: Java `record`
 - mock structure: controller-only canned response
+
+## Inference Rules
+
+- Treat `id`, `count`, `minutes`, `size`, and similar whole-number fields as integers unless the spec explicitly says otherwise.
+- Treat ratios, averages, decimal amounts, and percentage values as floating-point only when the spec or examples require decimals.
+- If the PRD or pasted spec defines allowed string values, reflect them as enum-like contract values instead of leaving them as unrestricted strings.
+- If an optional collection represents a "not configured yet" state, it may be expressed as an empty array rather than `null` when that better matches the repository pattern.
+- If nullability is not stated, infer it from example JSON and the existing repository conventions.
 
 ## Error Case Selection
 

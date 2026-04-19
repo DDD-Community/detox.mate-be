@@ -56,12 +56,20 @@ Use the same `document(...)` plus `resource(...)` pattern as the repository base
 - Run `./gradlew test openapi3 copyOpenapi3Spec`.
 - Confirm the endpoint appears in `build/generated-snippets/**/resource.json`.
 - Confirm the endpoint appears in `build/api-spec/openapi3.yaml`.
+- If the repository normalizes or post-processes the generated spec, verify the final normalized `build/api-spec/openapi3.yaml` instead of relying on pre-normalization output.
 - Inspect each generated OpenAPI path, not just path existence.
 Check the HTTP method, status code, requestBody schema ref, response schema ref, path/query/header parameters, and operationId.
 - Inspect the generated component schema or inline schema fields for the endpoint.
-Check that required fields, nested object fields, array item fields, nullable fields, and field descriptions are all present and match the spec.
+Check that required fields, nested object fields, array item fields, nullable fields, scalar types, enum values, default values, and field descriptions are all present and match the spec.
+- For scalar values, confirm the OpenAPI type is as specific as the contract requires.
+Examples: `minutes` should be `integer` when the contract says minutes in whole numbers, and `id` fields should not silently degrade to free-form `string`.
+- For collection fields, confirm the empty-array contract when the endpoint allows an unset or not-yet-configured state.
+Examples: verify whether `goalTimes` is documented as `[]`-capable and whether a default empty array is encoded when the repository pattern expects it.
+- For enum-like strings, do not stop at `type: string`.
+If the spec or PRD defines allowed values, verify they are emitted as OpenAPI `enum` values.
 - If a list response is emitted as an anonymous schema instead of a named component, still inspect the item fields in the generated schema.
 - Confirm the generated spec is still consumed through `/openapi3.yaml`.
+- When visually checking Swagger, prefer `/swagger-ui/index.html` and cross-check the raw `/openapi3.yaml` content instead of trusting a cached browser view alone.
 - If subagents are available and explicitly allowed for the session, forward-test once with a simple POST spec after major changes to this skill.
 
 ## Output
