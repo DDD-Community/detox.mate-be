@@ -56,6 +56,11 @@ Use the same `document(...)` plus `resource(...)` pattern as the repository base
 - Run `./gradlew test openapi3 copyOpenapi3Spec`.
 - Confirm the endpoint appears in `build/generated-snippets/**/resource.json`.
 - Confirm the endpoint appears in `build/api-spec/openapi3.yaml`.
+- Inspect each generated OpenAPI path, not just path existence.
+Check the HTTP method, status code, requestBody schema ref, response schema ref, path/query/header parameters, and operationId.
+- Inspect the generated component schema or inline schema fields for the endpoint.
+Check that required fields, nested object fields, array item fields, nullable fields, and field descriptions are all present and match the spec.
+- If a list response is emitted as an anonymous schema instead of a named component, still inspect the item fields in the generated schema.
 - Confirm the generated spec is still consumed through `/openapi3.yaml`.
 - If subagents are available and explicitly allowed for the session, forward-test once with a simple POST spec after major changes to this skill.
 
@@ -63,4 +68,5 @@ Use the same `document(...)` plus `resource(...)` pattern as the repository base
 
 - State which controller, DTOs, test file, and Asciidoc entries were created or updated.
 - State which Gradle command verified the result.
+- State whether OpenAPI field-level verification was completed, and mention any mismatch such as missing schema refs, wrong parameter registration, or unexpectedly inlined schemas.
 - If validation could not be completed, say exactly what was not verified.
