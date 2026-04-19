@@ -8,8 +8,6 @@ buildscript {
     dependencies {
         classpath 'com.epages:restdocs-api-spec-gradle-plugin:0.20.0'
         classpath 'org.springframework.boot:spring-boot-jackson2:4.0.1'
-        classpath 'com.fasterxml.jackson.module:jackson-module-kotlin:2.20.1'
-        classpath 'org.yaml:snakeyaml:2.4'
     }
 }
 
@@ -104,97 +102,8 @@ tasks.named('asciidoctor') {
     dependsOn tasks.named('test')
 }
 
-tasks.register('normalizeOpenapi3Spec') {
-    dependsOn 'openapi3'
-    doLast {
-        def openapiFile = layout.buildDirectory.file('api-spec/openapi3.yaml').get().asFile
-        def yaml = new org.yaml.snakeyaml.Yaml()
-        def document = yaml.load(openapiFile.text)
-        def components = document.components.schemas
-        def paths = document.paths
-        def ref = { name -> ['$ref': "#/components/schemas/${name}".toString()] }
-        def deepCopy = { value -> yaml.load(yaml.dump(value)) }
-
-        def groupResponse = components.GroupResponse
-        if (groupResponse) {
-            def members = groupResponse.properties.members
-            if (members instanceof Map && members.items instanceof Map && !members.items.containsKey('$ref')) {
-                components.GroupMemberResponse = deepCopy(members.items)
-                members.items = ref('GroupMemberResponse')
-            }
-
-            def currentChallenge = groupResponse.properties.currentChallenge
-            if (currentChallenge instanceof Map && !currentChallenge.containsKey('$ref') && !currentChallenge.containsKey('allOf')) {
-                def description = currentChallenge.description
-                def schemaCopy = deepCopy(currentChallenge)
-                schemaCopy.remove('description')
-                components.GroupChallengeSummaryResponse = schemaCopy
-                currentChallenge.clear()
-                if (description != null) {
-                    currentChallenge.description = description
-                }
-                currentChallenge.allOf = [ref('GroupChallengeSummaryResponse')]
-            }
-        }
-
-        def groupChallengeResponse = components.GroupChallengeResponse
-        if (groupChallengeResponse) {
-            def participants = groupChallengeResponse.properties.participants
-            if (participants instanceof Map && participants.items instanceof Map && !participants.items.containsKey('$ref')) {
-                components.GroupChallengeParticipantResponse = deepCopy(participants.items)
-                participants.items = ref('GroupChallengeParticipantResponse')
-            }
-        }
-
-        components.MyGroupsResponse = [
-                title: 'MyGroupsResponse',
-                type : 'array',
-                items: ref('GroupResponse')
-        ]
-        components.MyGroupChallengesResponse = [
-                title: 'MyGroupChallengesResponse',
-                type : 'array',
-                items: ref('GroupChallengeResponse')
-        ]
-
-        def myGroupsSchema = paths['/me/groups']?.get?.responses?.'200'?.content?.'application/json'?.schema
-        if (myGroupsSchema instanceof Map) {
-            myGroupsSchema.clear()
-            myGroupsSchema.putAll(ref('MyGroupsResponse'))
-        }
-
-        def myGroupChallengesSchema = paths['/me/group-challenges']?.get?.responses?.'200'?.content?.'application/json'?.schema
-        if (myGroupChallengesSchema instanceof Map) {
-            myGroupChallengesSchema.clear()
-            myGroupChallengesSchema.putAll(ref('MyGroupChallengesResponse'))
-        }
-
-        ['/groups/{id}', '/group-challenges/{id}'].each { pathKey ->
-            def parameters = paths[pathKey]?.get?.parameters ?: []
-            parameters.findAll { it.name == 'id' && it.in == 'path' }.each {
-                it.schema = [type: 'integer', format: 'int64']
-            }
-        }
-
-        components.remove('me-groups-977151090')
-        components.remove('me-group-challenges-get200response')
-
-        def dumperOptions = new org.yaml.snakeyaml.DumperOptions()
-        dumperOptions.defaultFlowStyle = org.yaml.snakeyaml.DumperOptions.FlowStyle.BLOCK
-        dumperOptions.prettyFlow = true
-        dumperOptions.splitLines = false
-
-        def outputYaml = new org.yaml.snakeyaml.Yaml(dumperOptions)
-        openapiFile.text = outputYaml.dump(document)
-    }
-}
-
-tasks.matching { it.name == 'openapi3' }.configureEach {
-    finalizedBy 'normalizeOpenapi3Spec'
-}
-
 tasks.register('copyOpenapi3Spec', Copy) {
-    dependsOn 'normalizeOpenapi3Spec'
+    dependsOn 'openapi3'
     from(layout.buildDirectory.file('api-spec/openapi3.yaml'))
     into(layout.buildDirectory.dir('resources/main/static'))
 }

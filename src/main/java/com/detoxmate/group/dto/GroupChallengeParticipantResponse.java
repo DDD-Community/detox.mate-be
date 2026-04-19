@@ -1,6 +1,7 @@
 package com.detoxmate.group.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record GroupChallengeParticipantResponse(
         Long id,
@@ -11,6 +12,6 @@ public record GroupChallengeParticipantResponse(
         String status,
         LocalDateTime joinedAt,
         LocalDateTime withdrawnAt,
-        int targetScreenTimeMinutes
+        List<GoalTimeResponse> goalTimes
 ) {
 }

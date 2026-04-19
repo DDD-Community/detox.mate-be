@@ -55,7 +55,10 @@ class GroupChallengeControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$[0].status").value("ACTIVE"))
-                .andExpect(jsonPath("$[0].participants[0].targetScreenTimeMinutes").value(90))
+                .andExpect(jsonPath("$[0].participants[0].goalTimes[0].type").value("INSTAGRAM"))
+                .andExpect(jsonPath("$[0].participants[0].goalTimes[0].minutes").value(30))
+                .andExpect(jsonPath("$[0].participants[0].goalTimes[1].type").value("YOUTUBE"))
+                .andExpect(jsonPath("$[0].participants[0].goalTimes[1].minutes").value(60))
                 .andDo(document("me/group-challenges-get",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
@@ -146,7 +149,9 @@ class GroupChallengeControllerTest {
                 fieldWithPath("participants[].status").type(JsonFieldType.STRING).description("참가 상태"),
                 fieldWithPath("participants[].joinedAt").type(JsonFieldType.STRING).description("챌린지 참여 일시"),
                 fieldWithPath("participants[].withdrawnAt").type(JsonFieldType.STRING).description("챌린지 이탈 일시").optional(),
-                fieldWithPath("participants[].targetScreenTimeMinutes").type(JsonFieldType.NUMBER).description("목표 스크린 타임(분)"),
+                fieldWithPath("participants[].goalTimes").type(JsonFieldType.ARRAY).description("참가자별 앱 사용 목표 시간 목록. 아직 설정하지 않았으면 빈 배열을 반환한다."),
+                fieldWithPath("participants[].goalTimes[].type").type(JsonFieldType.STRING).description("앱 사용 목표 타입(INSTAGRAM, YOUTUBE, ALL_USE)"),
+                fieldWithPath("participants[].goalTimes[].minutes").type(JsonFieldType.NUMBER).description("앱 사용 목표 시간(분 단위 정수)"),
                 fieldWithPath("startAt").type(JsonFieldType.STRING).description("챌린지 시작 일시").optional(),
                 fieldWithPath("endAt").type(JsonFieldType.STRING).description("챌린지 종료 일시").optional(),
                 fieldWithPath("createdAt").type(JsonFieldType.STRING).description("챌린지 생성 일시"),
@@ -170,7 +175,9 @@ class GroupChallengeControllerTest {
                 fieldWithPath("[].participants[].status").type(JsonFieldType.STRING).description("참가 상태"),
                 fieldWithPath("[].participants[].joinedAt").type(JsonFieldType.STRING).description("챌린지 참여 일시"),
                 fieldWithPath("[].participants[].withdrawnAt").type(JsonFieldType.STRING).description("챌린지 이탈 일시").optional(),
-                fieldWithPath("[].participants[].targetScreenTimeMinutes").type(JsonFieldType.NUMBER).description("목표 스크린 타임(분)"),
+                fieldWithPath("[].participants[].goalTimes").type(JsonFieldType.ARRAY).description("참가자별 앱 사용 목표 시간 목록. 아직 설정하지 않았으면 빈 배열을 반환한다."),
+                fieldWithPath("[].participants[].goalTimes[].type").type(JsonFieldType.STRING).description("앱 사용 목표 타입(INSTAGRAM, YOUTUBE, ALL_USE)"),
+                fieldWithPath("[].participants[].goalTimes[].minutes").type(JsonFieldType.NUMBER).description("앱 사용 목표 시간(분 단위 정수)"),
                 fieldWithPath("[].startAt").type(JsonFieldType.STRING).description("챌린지 시작 일시").optional(),
                 fieldWithPath("[].endAt").type(JsonFieldType.STRING).description("챌린지 종료 일시").optional(),
                 fieldWithPath("[].createdAt").type(JsonFieldType.STRING).description("챌린지 생성 일시"),
