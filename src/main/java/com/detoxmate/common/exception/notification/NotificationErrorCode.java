@@ -10,7 +10,9 @@ public enum NotificationErrorCode implements ErrorCode {
     INVALID_TYPE_CODE(HttpStatus.BAD_REQUEST, "알림 타입 코드는 필수값입니다."),
     INVALID_TITLE(HttpStatus.BAD_REQUEST, "알림 제목은 필수값입니다."),
     TITLE_TOO_LONG(HttpStatus.BAD_REQUEST, "알림 제목은 50자를 초과할 수 없습니다."),
+    MESSAGE_TOO_LONG(HttpStatus.BAD_REQUEST, "알림 메시지는 255자를 초과할 수 없습니다."),
     ALREADY_READ(HttpStatus.BAD_REQUEST, "이미 읽은 알림입니다."),
+    NICKNAME_REQUIRED(HttpStatus.BAD_REQUEST, "이 알림은 닉네임이 필수입니다."),
     NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다.");
 
     private final HttpStatus httpStatus;
