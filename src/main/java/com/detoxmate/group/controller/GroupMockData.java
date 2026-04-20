@@ -10,7 +10,7 @@ import com.detoxmate.group.dto.GoalTimeResponse;
 import java.time.LocalDateTime;
 import java.util.List;
 
-final class GroupMockData {
+public final class GroupMockData {
 
     private static final LocalDateTime GROUP_CREATED_AT = LocalDateTime.parse("2026-04-19T10:00:00");
     private static final LocalDateTime SECOND_MEMBER_JOINED_AT = LocalDateTime.parse("2026-04-19T10:30:00");
@@ -20,7 +20,7 @@ final class GroupMockData {
     private GroupMockData() {
     }
 
-    static GroupResponse createGroupResponse(String name) {
+    public static GroupResponse createGroupResponse(String name) {
         return new GroupResponse(
                 1L,
                 "AB12CD34",
