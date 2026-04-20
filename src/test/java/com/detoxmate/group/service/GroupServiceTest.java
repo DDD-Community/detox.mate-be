@@ -153,8 +153,8 @@ public class GroupServiceTest {
         when(groupMemberRepository.existsByUserIdAndStatus(OWNER_USER_ID, "ACTIVE")).thenReturn(true);
 
         assertThatThrownBy(() -> groupService.createGroup(OWNER_USER_ID, GROUP_NAME))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage("이미 그룹이 있어서, 새로운 그룹을 생성할 수 없습니다.");
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("409 CONFLICT");
     }
 
     @Test
@@ -198,8 +198,8 @@ public class GroupServiceTest {
 
         // when & then
         assertThatThrownBy(() -> groupService.joinGroup(INVITE_CODE, OWNER_USER_ID))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage("초대코드에 해당하는 그룹이 없습니다.");
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("404 NOT_FOUND");
     }
 
     @Test
@@ -210,7 +210,8 @@ public class GroupServiceTest {
 
         // when & then
         assertThatThrownBy(() -> groupService.joinGroup(INVITE_CODE, MEMBER_USER_ID))
-                .isInstanceOf(RuntimeException.class);
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("409 CONFLICT");
     }
 
     @Test
@@ -223,7 +224,8 @@ public class GroupServiceTest {
 
         // when & then
         assertThatThrownBy(() -> groupService.joinGroup(INVITE_CODE, MEMBER_USER_ID))
-                .isInstanceOf(RuntimeException.class);
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("409 CONFLICT");
     }
 
     @Test

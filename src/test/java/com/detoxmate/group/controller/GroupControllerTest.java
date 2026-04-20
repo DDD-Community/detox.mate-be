@@ -10,17 +10,22 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatus;
 import org.springframework.restdocs.RestDocumentationContextProvider;
 import org.springframework.restdocs.RestDocumentationExtension;
+import org.springframework.restdocs.headers.HeaderDescriptor;
 import org.springframework.restdocs.payload.FieldDescriptor;
 import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.restdocs.request.ParameterDescriptor;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.server.ResponseStatusException;
 
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
 import static com.epages.restdocs.apispec.Schema.schema;
+import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
+import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.prettyPrint;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.preprocessRequest;
@@ -76,6 +81,7 @@ class GroupControllerTest {
 
     @Test
     void 그룹을_생성하면_생성된_그룹_정보를_반환한다() throws Exception {
+        HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
         FieldDescriptor[] requestFieldDescriptors = createGroupRequestFields();
         FieldDescriptor[] responseFieldDescriptors = groupResponseFields();
         when(groupService.createGroup(1L, "주말 디톡스"))
@@ -97,12 +103,14 @@ class GroupControllerTest {
                 .andDo(document("groups/create",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
+                        requestHeaders(requestHeaderDescriptors),
                         requestFields(requestFieldDescriptors),
                         responseFields(responseFieldDescriptors),
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Group")
                                 .summary("Create group")
                                 .description("그룹을 생성하고 생성자를 첫 멤버 및 첫 챌린지 참가자로 등록한다.")
+                                .requestHeaders(requestHeaderDescriptors)
                                 .requestSchema(schema("CreateGroupRequest"))
                                 .responseSchema(schema("GroupResponse"))
                                 .requestFields(requestFieldDescriptors)
@@ -129,6 +137,7 @@ class GroupControllerTest {
 
     @Test
     void 초대코드로_그룹에_참여하면_업데이트된_그룹_정보를_반환한다() throws Exception {
+        HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
         FieldDescriptor[] requestFieldDescriptors = joinGroupRequestFields();
         FieldDescriptor[] responseFieldDescriptors = groupResponseFields();
         when(groupService.joinGroup("AB123", 1L))
@@ -150,12 +159,14 @@ class GroupControllerTest {
                 .andDo(document("groups/join",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
+                        requestHeaders(requestHeaderDescriptors),
                         requestFields(requestFieldDescriptors),
                         responseFields(responseFieldDescriptors),
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Group")
                                 .summary("Join group")
                                 .description("초대코드로 그룹에 참여하고 현재 챌린지가 모집 중이면 자동 참가한다.")
+                                .requestHeaders(requestHeaderDescriptors)
                                 .requestSchema(schema("JoinGroupRequest"))
                                 .responseSchema(schema("GroupResponse"))
                                 .requestFields(requestFieldDescriptors)
@@ -180,7 +191,46 @@ class GroupControllerTest {
     }
 
     @Test
+    void 존재하지_않는_초대코드로_그룹에_참여하면_404_에러를_반환한다() throws Exception {
+        when(groupService.joinGroup("ZZZZZ", 1L))
+                .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "초대코드에 해당하는 그룹이 없습니다."));
+
+        mockMvc.perform(post("/groups/join")
+                        .header("Authorization", "Bearer access-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "inviteCode": "ZZZZZ"
+                        }
+                        """))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("NOT_FOUND"))
+                .andExpect(jsonPath("$.status").value(404));
+    }
+
+    @Test
+    void 이미_그룹이_있는_유저가_그룹을_생성하면_409_에러를_반환한다() throws Exception {
+        when(groupService.createGroup(1L, "주말 디톡스"))
+                .thenThrow(new ResponseStatusException(HttpStatus.CONFLICT, "이미 그룹이 있어서, 새로운 그룹을 생성할 수 없습니다."));
+
+        mockMvc.perform(post("/groups")
+                        .header("Authorization", "Bearer access-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "name": "주말 디톡스"
+                        }
+                        """))
+                .andExpect(status().isConflict())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("CONFLICT"))
+                .andExpect(jsonPath("$.status").value(409));
+    }
+
+    @Test
     void 내_그룹_목록을_조회하면_그룹_배열을_반환한다() throws Exception {
+        HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
         FieldDescriptor[] responseFieldDescriptors = groupListResponseFields();
         when(groupService.getMyGroups(1L))
                 .thenReturn(GroupMockData.myGroupsResponse());
@@ -195,11 +245,13 @@ class GroupControllerTest {
                 .andDo(document("me/groups-get",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
+                        requestHeaders(requestHeaderDescriptors),
                         responseFields(responseFieldDescriptors),
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Group")
                                 .summary("Get my groups")
                                 .description("내가 속한 그룹 목록을 조회한다.")
+                                .requestHeaders(requestHeaderDescriptors)
                                 .responseSchema(schema("MyGroupsResponse"))
                                 .responseFields(responseFieldDescriptors)
                                 .build()
@@ -217,6 +269,7 @@ class GroupControllerTest {
 
     @Test
     void 그룹_상세를_조회하면_그룹_정보를_반환한다() throws Exception {
+        HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
         FieldDescriptor[] responseFieldDescriptors = groupResponseFields();
         ParameterDescriptor[] pathParameterDescriptors = groupIdPathParameters();
         com.epages.restdocs.apispec.ParameterDescriptorWithType[] typedPathParameterDescriptors = groupIdOpenApiPathParameters();
@@ -233,12 +286,14 @@ class GroupControllerTest {
                 .andDo(document("groups/get-by-id",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
+                        requestHeaders(requestHeaderDescriptors),
                         pathParameters(pathParameterDescriptors),
                         responseFields(responseFieldDescriptors),
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Group")
                                 .summary("Get group detail")
                                 .description("그룹 상세 정보를 조회한다.")
+                                .requestHeaders(requestHeaderDescriptors)
                                 .pathParameters(typedPathParameterDescriptors)
                                 .responseSchema(schema("GroupResponse"))
                                 .responseFields(responseFieldDescriptors)
@@ -266,6 +321,12 @@ class GroupControllerTest {
                 com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName("id")
                         .type(SimpleType.INTEGER)
                         .description("조회할 그룹 ID")
+        };
+    }
+
+    private HeaderDescriptor[] authorizationHeaderDescriptors() {
+        return new HeaderDescriptor[] {
+                headerWithName("Authorization").description("Bearer {accessToken} 형식의 서비스 access token")
         };
     }
 

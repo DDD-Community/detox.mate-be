@@ -32,7 +32,7 @@ public class GroupService {
     @Transactional
     public GroupResponse createGroup(Long creatorUserId, String groupName) {
         if (groupMemberService.existsActiveGroupMember(creatorUserId)) {
-            throw new IllegalStateException("이미 그룹이 있어서, 새로운 그룹을 생성할 수 없습니다.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 그룹이 있어서, 새로운 그룹을 생성할 수 없습니다.");
         }
 
         Group createdGroup = saveGroupWithUniqueInviteCode(groupName);
@@ -52,16 +52,16 @@ public class GroupService {
     @Transactional
     public GroupResponse joinGroup(String inviteCode, Long userId) {
         Group group = groupRepository.findByInviteCode(inviteCode)
-                .orElseThrow(() -> new IllegalStateException("초대코드에 해당하는 그룹이 없습니다."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "초대코드에 해당하는 그룹이 없습니다."));
 
         if (groupMemberService.existsActiveGroupMember(userId)) {
-            throw new IllegalStateException("이미 그룹이 있어서, 새로운 그룹에 참여할 수 없습니다.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 그룹이 있어서, 새로운 그룹에 참여할 수 없습니다.");
         }
 
         GroupChallenge groupChallenge = groupChallengeService.getLatestChallenge(group.getId());
 
         if (groupChallenge.getStatus().name().equals("ACTIVE")) {
-            throw new IllegalStateException("챌린지가 이미 진행 중이라서, 그룹에 참여할 수 없습니다");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "챌린지가 이미 진행 중이라서, 그룹에 참여할 수 없습니다");
         }
 
         GroupMember groupMember = groupMemberService.saveGroupMember(userId, group.getId());
@@ -152,6 +152,6 @@ public class GroupService {
             }
         }
 
-        throw new IllegalStateException("사용 가능한 초대코드를 생성할 수 없습니다.");
+        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "사용 가능한 초대코드를 생성할 수 없습니다.");
     }
 }
