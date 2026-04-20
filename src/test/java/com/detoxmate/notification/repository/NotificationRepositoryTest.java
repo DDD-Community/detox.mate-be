@@ -41,7 +41,7 @@ class NotificationRepositoryTest {
         Notification saved = notificationRepository.save(notification);
         em.flush();
         em.clear();
-        Notification found = notificationRepository.findById(saved.getId()).orElseThrow;
+        Notification found = notificationRepository.findById(saved.getId()).orElseThrow();
 
         //then
         assertThat(found.getId()).isEqualTo(saved.getId());
