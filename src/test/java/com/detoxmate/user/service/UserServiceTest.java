@@ -16,7 +16,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import org.mockito.InOrder;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class UserServiceTest {
