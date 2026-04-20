@@ -10,6 +10,7 @@ import com.detoxmate.group.repository.GroupChallengeRepository;
 import com.detoxmate.group.repository.GroupMemberRepository;
 import com.detoxmate.group.repository.GroupRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -54,5 +55,10 @@ public class GroupServiceTest {
         GroupResponse response = groupService.createGroup(1L, "나의그룹");
 
         assertThat(response.name()).isEqualTo("나의그룹");
+    }
+
+    @Test
+    @Disabled("GroupService.join is not implemented yet")
+    void 모집중인_그룹에_유효한_초대코드로_참여하면_그룹_멤버와_챌린지_참가자가_추가된다() {
     }
 }

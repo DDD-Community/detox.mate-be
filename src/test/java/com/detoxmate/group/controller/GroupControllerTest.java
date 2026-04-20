@@ -49,6 +49,8 @@ class GroupControllerTest {
     void setUp(RestDocumentationContextProvider restDocumentation) {
         groupService = mock(GroupService.class);
         userService = mock(UserService.class);
+        when(userService.getMe("access-token"))
+                .thenReturn(new MyProfileResponse(1L, "지민", "https://..."));
         mockMvc = MockMvcBuilders.standaloneSetup(new GroupController(groupService))
                 .setCustomArgumentResolvers(new CurrentUserResolver(userService))
                 .setControllerAdvice(new com.detoxmate.common.error.GlobalExceptionHandler())
@@ -75,8 +77,6 @@ class GroupControllerTest {
     void 그룹을_생성하면_생성된_그룹_정보를_반환한다() throws Exception {
         FieldDescriptor[] requestFieldDescriptors = createGroupRequestFields();
         FieldDescriptor[] responseFieldDescriptors = groupResponseFields();
-        when(userService.getMe("access-token"))
-                .thenReturn(new MyProfileResponse(1L, "지민", "https://..."));
         when(groupService.createGroup(1L, "주말 디톡스"))
                 .thenReturn(GroupMockData.createGroupResponse("주말 디톡스"));
 
@@ -146,6 +146,21 @@ class GroupControllerTest {
     }
 
     @Test
+    void 그룹_참여_요청에_Authorization_헤더가_없으면_401_에러를_반환한다() throws Exception {
+        mockMvc.perform(post("/groups/join")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "inviteCode": "AB12CD34"
+                        }
+                        """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+                .andExpect(jsonPath("$.status").value(401));
+    }
+
+    @Test
     void 내_그룹_목록을_조회하면_그룹_배열을_반환한다() throws Exception {
         FieldDescriptor[] responseFieldDescriptors = groupListResponseFields();
 
@@ -167,6 +182,15 @@ class GroupControllerTest {
                                 .responseFields(responseFieldDescriptors)
                                 .build()
                         )));
+    }
+
+    @Test
+    void 내_그룹_목록_조회_요청에_Authorization_헤더가_없으면_401_에러를_반환한다() throws Exception {
+        mockMvc.perform(get("/me/groups"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+                .andExpect(jsonPath("$.status").value(401));
     }
 
     @Test
