@@ -12,6 +12,7 @@ import java.util.List;
 
 public final class GroupMockData {
 
+    private static final String INVITE_CODE = "AB123";
     private static final LocalDateTime GROUP_CREATED_AT = LocalDateTime.parse("2026-04-19T10:00:00");
     private static final LocalDateTime SECOND_MEMBER_JOINED_AT = LocalDateTime.parse("2026-04-19T10:30:00");
     private static final LocalDateTime ACTIVE_CHALLENGE_START_AT = LocalDateTime.parse("2026-04-20T09:00:00");
@@ -23,7 +24,7 @@ public final class GroupMockData {
     public static GroupResponse createGroupResponse(String name) {
         return new GroupResponse(
                 1L,
-                "AB12CD34",
+                INVITE_CODE,
                 name,
                 "OWNER",
                 List.of(ownerMember()),
@@ -49,7 +50,7 @@ public final class GroupMockData {
     static List<GroupResponse> myGroupsResponse() {
         return List.of(new GroupResponse(
                 1L,
-                "AB12CD34",
+                INVITE_CODE,
                 "주말 디톡스",
                 "OWNER",
                 List.of(ownerMember()),
@@ -61,9 +62,9 @@ public final class GroupMockData {
 
     static GroupResponse groupDetailResponse(long id) {
         return new GroupResponse(
-                id,
-                "AB12CD34",
-                "주말 디톡스",
+            id,
+            INVITE_CODE,
+            "주말 디톡스",
                 "OWNER",
                 List.of(ownerMember(), memberParticipant()),
                 activeChallengeSummary(10L),
