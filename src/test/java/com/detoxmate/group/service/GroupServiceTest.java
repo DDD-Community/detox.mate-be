@@ -11,13 +11,18 @@ import static org.mockito.Mockito.when;
 
 public class GroupServiceTest {
 
+    private final GroupRepository groupRepository = mock(GroupRepository.class);
+    private final GroupMemberService groupMemberService = mock(GroupMemberService.class);
+    private final GroupChallengeService groupChallengeService = mock(GroupChallengeService.class);
+    private final GroupChallengeParticipantService groupChallengeParticipantService = mock(GroupChallengeParticipantService.class);
+
+    private final GroupService groupService = new GroupService(
+            groupRepository, groupMemberService, groupChallengeService, groupChallengeParticipantService
+    );
+
     @Test
     void 유효한_이름으로_그룹을_생성하면_생성된_그룹을_반환한다() {
-        Long creatorUserId = 1L;
         String groupName = "테스트1";
-
-        GroupRepository groupRepository = mock(GroupRepository.class);
-        GroupService groupService = new GroupService(groupRepository);
 
         when(groupRepository.save(any(Group.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
