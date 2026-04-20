@@ -229,6 +229,30 @@ public class GroupServiceTest {
     }
 
     @Test
+    void 그룹_챌린지가_완료되었으면_예외를_던진다() {
+        when(groupRepository.findByInviteCode(INVITE_CODE)).thenReturn(Optional.of(recruitingGroup()));
+        when(groupMemberRepository.existsByUserIdAndStatus(MEMBER_USER_ID, "ACTIVE")).thenReturn(false);
+        when(groupChallengeRepository.findTopByGroupIdOrderByChallengeNoDesc(GROUP_ID))
+                .thenReturn(Optional.of(completedChallenge()));
+
+        assertThatThrownBy(() -> groupService.joinGroup(INVITE_CODE, MEMBER_USER_ID))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("409 CONFLICT");
+    }
+
+    @Test
+    void 그룹_챌린지가_취소되었으면_예외를_던진다() {
+        when(groupRepository.findByInviteCode(INVITE_CODE)).thenReturn(Optional.of(recruitingGroup()));
+        when(groupMemberRepository.existsByUserIdAndStatus(MEMBER_USER_ID, "ACTIVE")).thenReturn(false);
+        when(groupChallengeRepository.findTopByGroupIdOrderByChallengeNoDesc(GROUP_ID))
+                .thenReturn(Optional.of(canceledChallenge()));
+
+        assertThatThrownBy(() -> groupService.joinGroup(INVITE_CODE, MEMBER_USER_ID))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("409 CONFLICT");
+    }
+
+    @Test
     void 모집중인_그룹에_참여하면_그룹_멤버와_챌린지_참가자가_추가된다() {
         // given
         when(groupRepository.findByInviteCode(INVITE_CODE)).thenReturn(Optional.of(recruitingGroup()));
@@ -292,6 +316,18 @@ public class GroupServiceTest {
     private GroupChallenge activeChallenge() {
         GroupChallenge challenge = recruitingChallenge();
         ReflectionTestUtils.setField(challenge, "status", GroupChallengeStatus.ACTIVE);
+        return challenge;
+    }
+
+    private GroupChallenge completedChallenge() {
+        GroupChallenge challenge = recruitingChallenge();
+        ReflectionTestUtils.setField(challenge, "status", GroupChallengeStatus.COMPLETED);
+        return challenge;
+    }
+
+    private GroupChallenge canceledChallenge() {
+        GroupChallenge challenge = recruitingChallenge();
+        ReflectionTestUtils.setField(challenge, "status", GroupChallengeStatus.CANCELED);
         return challenge;
     }
 

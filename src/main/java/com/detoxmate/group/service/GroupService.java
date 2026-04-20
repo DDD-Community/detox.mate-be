@@ -2,6 +2,7 @@ package com.detoxmate.group.service;
 
 import com.detoxmate.group.domain.Group;
 import com.detoxmate.group.domain.GroupChallenge;
+import com.detoxmate.group.domain.GroupChallengeStatus;
 import com.detoxmate.group.domain.GroupMember;
 import com.detoxmate.group.dto.GroupChallengeSummaryResponse;
 import com.detoxmate.group.dto.GroupMemberResponse;
@@ -60,8 +61,8 @@ public class GroupService {
 
         GroupChallenge groupChallenge = groupChallengeService.getLatestChallenge(group.getId());
 
-        if (groupChallenge.getStatus().name().equals("ACTIVE")) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "챌린지가 이미 진행 중이라서, 그룹에 참여할 수 없습니다");
+        if (groupChallenge.getStatus() != GroupChallengeStatus.RECRUITING) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "현재 참여 가능한 그룹 챌린지가 없습니다.");
         }
 
         GroupMember groupMember = groupMemberService.saveGroupMember(userId, group.getId());
