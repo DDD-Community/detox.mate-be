@@ -9,6 +9,7 @@ import com.detoxmate.group.dto.GroupResponse;
 import com.detoxmate.group.repository.GroupRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -21,6 +22,7 @@ public class GroupService {
     private final GroupChallengeService groupChallengeService;
     private final GroupChallengeParticipantService groupChallengeParticipantService;
 
+    @Transactional
     public GroupResponse createGroup(Long creatorUserId, String groupName) {
         Group createdGroup = this.saveGroup(groupName);
         GroupMember groupMember = groupMemberService.saveGroupOwner(creatorUserId, createdGroup.getId());

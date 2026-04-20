@@ -1,7 +1,11 @@
 package com.detoxmate.group.controller;
 
+import com.detoxmate.auth.CurrentUserResolver;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.SimpleType;
+import com.detoxmate.group.service.GroupService;
+import com.detoxmate.user.dto.MyProfileResponse;
+import com.detoxmate.user.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,26 +35,53 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(RestDocumentationExtension.class)
 class GroupControllerTest {
 
+    private GroupService groupService;
+    private UserService userService;
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp(RestDocumentationContextProvider restDocumentation) {
-        mockMvc = MockMvcBuilders.standaloneSetup(new GroupController())
+        groupService = mock(GroupService.class);
+        userService = mock(UserService.class);
+        mockMvc = MockMvcBuilders.standaloneSetup(new GroupController(groupService))
+                .setCustomArgumentResolvers(new CurrentUserResolver(userService))
                 .setControllerAdvice(new com.detoxmate.common.error.GlobalExceptionHandler())
                 .apply(documentationConfiguration(restDocumentation))
                 .build();
     }
 
     @Test
+    void 그룹_생성_요청에_Authorization_헤더가_없으면_401_에러를_반환한다() throws Exception {
+        mockMvc.perform(post("/groups")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "name": "주말 디톡스"
+                        }
+                        """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+                .andExpect(jsonPath("$.status").value(401));
+    }
+
+    @Test
     void 그룹을_생성하면_생성된_그룹_정보를_반환한다() throws Exception {
         FieldDescriptor[] requestFieldDescriptors = createGroupRequestFields();
         FieldDescriptor[] responseFieldDescriptors = groupResponseFields();
+        when(userService.getMe("access-token"))
+                .thenReturn(new MyProfileResponse(1L, "지민", "https://..."));
+        when(groupService.createGroup(1L, "주말 디톡스"))
+                .thenReturn(GroupMockData.createGroupResponse("주말 디톡스"));
 
         mockMvc.perform(post("/groups")
+                        .header("Authorization", "Bearer access-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                         {
@@ -85,6 +116,7 @@ class GroupControllerTest {
         FieldDescriptor[] responseFieldDescriptors = groupResponseFields();
 
         mockMvc.perform(post("/groups/join")
+                        .header("Authorization", "Bearer access-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                         {
@@ -117,7 +149,8 @@ class GroupControllerTest {
     void 내_그룹_목록을_조회하면_그룹_배열을_반환한다() throws Exception {
         FieldDescriptor[] responseFieldDescriptors = groupListResponseFields();
 
-        mockMvc.perform(get("/me/groups"))
+        mockMvc.perform(get("/me/groups")
+                        .header("Authorization", "Bearer access-token"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$[0].id").value(1))

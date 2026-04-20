@@ -4,7 +4,11 @@ import com.detoxmate.common.AccessTokenExtractor;
 import com.detoxmate.group.dto.CreateGroupRequest;
 import com.detoxmate.group.dto.GroupResponse;
 import com.detoxmate.group.dto.JoinGroupRequest;
+import com.detoxmate.group.service.GroupService;
+import com.detoxmate.user.dto.MyProfileResponse;
+import com.detoxmate.user.service.UserService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,7 +22,10 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
+@RequiredArgsConstructor
 public class GroupController {
+    private final GroupService groupService;
+    private final UserService userService;
 
     @PostMapping("/groups")
     @ResponseStatus(HttpStatus.CREATED)
@@ -26,8 +33,10 @@ public class GroupController {
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationHeader,
             @Valid @RequestBody CreateGroupRequest request
     ) {
-        AccessTokenExtractor.require(authorizationHeader);
-        return GroupMockData.createGroupResponse(request.name());
+        String accessToken = AccessTokenExtractor.require(authorizationHeader);
+        MyProfileResponse user = userService.getMe(accessToken);
+
+        return groupService.createGroup(user.id(), request.name());
     }
 
     @PostMapping("/groups/join")

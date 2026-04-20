@@ -9,7 +9,6 @@ import com.detoxmate.group.repository.GroupChallengeParticipantRepository;
 import com.detoxmate.group.repository.GroupChallengeRepository;
 import com.detoxmate.group.repository.GroupMemberRepository;
 import com.detoxmate.group.repository.GroupRepository;
-import com.detoxmate.user.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -26,16 +25,13 @@ public class GroupServiceTest {
     private final GroupChallengeRepository groupChallengeRepository = mock(GroupChallengeRepository.class);
     private final GroupChallengeParticipantRepository groupChallengeParticipantRepository = mock(GroupChallengeParticipantRepository.class);
 
-    // 다른 도메인 경계 — mock
-    private final UserService userService = mock(UserService.class);
-
     // 내부 그룹 서비스 — 실객체
     private final GroupMemberService groupMemberService = new GroupMemberService(groupMemberRepository);
     private final GroupChallengeService groupChallengeService = new GroupChallengeService(groupChallengeRepository);
     private final GroupChallengeParticipantService groupChallengeParticipantService = new GroupChallengeParticipantService(groupChallengeParticipantRepository);
 
     private final GroupService groupService = new GroupService(
-            groupRepository, groupMemberService, groupChallengeService, groupChallengeParticipantService, userService
+            groupRepository, groupMemberService, groupChallengeService, groupChallengeParticipantService
     );
 
     @BeforeEach
