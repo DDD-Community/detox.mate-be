@@ -25,6 +25,7 @@ public class UserController {
         return userService.getMe(accessToken);
     }
 
+    // @Note: dev 용 API
     @DeleteMapping("/me")
     public void withdraw(
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationHeader
