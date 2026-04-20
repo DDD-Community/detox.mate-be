@@ -49,7 +49,11 @@ public class GroupServiceTest {
 
     // 내부 그룹 서비스 — 실객체
     private final GroupMemberService groupMemberService = new GroupMemberService(groupMemberRepository);
-    private final GroupChallengeService groupChallengeService = new GroupChallengeService(groupChallengeRepository);
+    private final GroupChallengeService groupChallengeService = new GroupChallengeService(
+            groupChallengeRepository,
+            groupChallengeParticipantRepository,
+            groupRepository
+    );
     private final GroupChallengeParticipantService groupChallengeParticipantService = new GroupChallengeParticipantService(groupChallengeParticipantRepository);
     private final InviteCodeGenerator inviteCodeGenerator = mock(InviteCodeGenerator.class);
 

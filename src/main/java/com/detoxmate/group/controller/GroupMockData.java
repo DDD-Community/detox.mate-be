@@ -5,7 +5,6 @@ import com.detoxmate.group.dto.GroupChallengeResponse;
 import com.detoxmate.group.dto.GroupChallengeSummaryResponse;
 import com.detoxmate.group.dto.GroupMemberResponse;
 import com.detoxmate.group.dto.GroupResponse;
-import com.detoxmate.group.dto.GoalTimeResponse;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -161,10 +160,7 @@ public final class GroupMockData {
                 "JOINED",
                 GROUP_CREATED_AT,
                 null,
-                List.of(
-                        goalTime("INSTAGRAM", 30),
-                        goalTime("YOUTUBE", 60)
-                )
+                List.of()
         );
     }
 
@@ -178,14 +174,7 @@ public final class GroupMockData {
                 "JOINED",
                 SECOND_MEMBER_JOINED_AT,
                 null,
-                List.of(
-                        goalTime("INSTAGRAM", 45),
-                        goalTime("YOUTUBE", 75)
-                )
+                List.of()
         );
-    }
-
-    private static GoalTimeResponse goalTime(String type, int minutes) {
-        return new GoalTimeResponse(type, minutes);
     }
 }

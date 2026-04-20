@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 
 @Getter
 @Entity
-@Table(name = "groups")
+@Table(name = "`groups`")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Group {
 
