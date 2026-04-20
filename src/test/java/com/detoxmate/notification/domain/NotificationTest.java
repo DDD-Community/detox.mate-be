@@ -45,6 +45,48 @@ class NotificationTest {
     }
 
     @Test
+    @DisplayName("타입 코드가 null이면 생성할 수 없다.")
+    void createNotificationTypeWithNullCode(){
+        //given
+        String title = "반응 알림";
+        String messageTemplate =  "{nickname}님이 반응을 남겼습니다.";
+
+        //when & then
+        assertThatThrownBy(() -> Notification.create(null,title,messageTemplate))
+                .isInstanceOf(CustomException.class)
+                .extracting(e -> ((CustomException) e).getErrorCode())
+                .isEqualTo(NotificationErrorCode.NOTIFICATION_TYPE_REQUIRED);
+    }
+
+    @Test
+    @DisplayName("알림 타이틀이 null이면 생성할 수 없다.")
+    void createNotificationTitleWithNullCode(){
+        //given
+        NotificationType type = NotificationType.create(NotificationTypeCode.REACTION);
+        String messageTemplate = "{nickname}님이 반응을 남겼습니다.";
+
+        //when & then
+        assertThatThrownBy(() -> Notification.create(type,null,messageTemplate))
+                .isInstanceOf(CustomException.class)
+                .extracting(e -> ((CustomException) e).getErrorCode())
+                .isEqualTo(NotificationErrorCode.NOTIFICATION_TITLE_REQUIRED);
+    }
+
+    @Test
+    @DisplayName("알림 메시지템플릿이 null이면 생성할 수 없다.")
+    void createNotificationMessageTemplateWithNullCode(){
+        //given
+        NotificationType type = NotificationType.create(NotificationTypeCode.REACTION);
+        String title = "반응 알림";
+
+        //when & then
+        assertThatThrownBy(() -> Notification.create(type,title,null))
+                .isInstanceOf(CustomException.class)
+                .extracting(e -> ((CustomException) e).getErrorCode())
+                .isEqualTo(NotificationErrorCode.NOTIFICATION_MESSAGE_TEMPLATE_REQUIRED);
+    }
+
+    @Test
     @DisplayName("알림 메시지는 255자를 초과할 수 없다.")
     void notificationTitleLength(){
         //given
