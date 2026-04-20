@@ -2,7 +2,6 @@ package com.detoxmate.group.service;
 
 import com.detoxmate.group.domain.Group;
 import com.detoxmate.group.domain.GroupChallenge;
-import com.detoxmate.group.domain.GroupChallengeParticipant;
 import com.detoxmate.group.domain.GroupMember;
 import com.detoxmate.group.dto.GroupChallengeSummaryResponse;
 import com.detoxmate.group.dto.GroupMemberResponse;
@@ -28,21 +27,14 @@ public class GroupService {
         GroupChallenge groupChallenge = groupChallengeService.saveGroupChallenge(groupMember.getGroupId());
         groupChallengeParticipantService.saveGroupChallengeParticipant(groupMember.getId(), groupChallenge.getId());
 
+        List<GroupMemberResponse> members = groupMemberService.getGroupMembers(createdGroup.getId());
+
         return new GroupResponse(
                 createdGroup.getId(),
                 createdGroup.getInviteCode(),
                 createdGroup.getName(),
                 groupMember.getRole(),
-                List.of(new GroupMemberResponse(
-                        groupMember.getId(),
-                        groupMember.getUserId(),
-                        null,
-                        null,
-                        groupMember.getRole(),
-                        groupMember.getStatus(),
-                        groupMember.getJoinedAt(),
-                        null
-                )),
+                members,
                 new GroupChallengeSummaryResponse(
                         groupChallenge.getId(),
                         groupChallenge.getChallengeNo(),
