@@ -89,6 +89,7 @@ class UserDevControllerTest {
                                 .tag("User Dev")
                                 .summary("Withdraw my account for dev")
                                 .description("dev 환경에서 Authorization 헤더의 access token으로 회원 탈퇴를 수행한다.")
+                                .requestHeaders(requestHeaderDescriptors)
                                 .responseSchema(schema("ErrorResponse"))
                                 .responseFields(errorResponseFieldDescriptors)
                                 .build()

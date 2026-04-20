@@ -110,6 +110,7 @@ class UserControllerTest {
                                 .tag("User")
                                 .summary("Get my profile")
                                 .description("Authorization 헤더의 access token으로 내 프로필 정보를 조회한다.")
+                                .requestHeaders(requestHeaderDescriptors)
                                 .responseSchema(schema("ErrorResponse"))
                                 .responseFields(errorResponseFieldDescriptors)
                                 .build()
