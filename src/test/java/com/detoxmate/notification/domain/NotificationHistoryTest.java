@@ -75,7 +75,7 @@ class NotificationHistoryTest {
         Long recipientId = 1L;
 
         //when & then
-        assertThatThrownBy(()-> Notification.from(null,recipientId,"xeulbn"))
+        assertThatThrownBy(()-> NotificationHistory.from(null,recipientId,"xeulbn"))
                 .isInstanceOf(CustomException.class)
                 .extracting(e-> ((CustomException)e).getErrorCode())
                 .isEqualTo(NotificationErrorCode.NOTIFICATION_HISTORY_NOTIFICATION_REQUIRED);

@@ -12,6 +12,8 @@ public enum NotificationErrorCode implements ErrorCode {
     NOTIFICATION_TITLE_REQUIRED(HttpStatus.BAD_REQUEST,"알림 제목은 필수값입니다."),
     NOTIFICATION_MESSAGE_TEMPLATE_REQUIRED(HttpStatus.BAD_REQUEST,"알림 메시지는 필수값입니다."),
     NOTIFICATION_NICKNAME_REQUIRED(HttpStatus.BAD_REQUEST, "알림은 닉네임이 필수입니다."),
+    NOTIFICATION_HISTORY_NOTIFICATION_REQUIRED(HttpStatus.BAD_REQUEST,"알림 히스토리에는 알림값이 필수입니다."),
+    NOTIFICATION_HISTORY_USER_ID_REQUIRED(HttpStatus.BAD_REQUEST,"알림 히스토리에는 사용자 ID가 필수입니다."),
 
     INVALID_TITLE(HttpStatus.BAD_REQUEST, "잘못된 알림 제목입니다."),
     NOTIFICATION_TITLE_LENGTH_EXCEEDED(HttpStatus.BAD_REQUEST, "알림 제목은 50자를 초과했습니다."),
