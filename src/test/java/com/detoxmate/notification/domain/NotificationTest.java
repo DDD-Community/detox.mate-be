@@ -19,7 +19,7 @@ class NotificationTest {
         String messageTemplate = "{nickname}님이 반응을 남겼습니다.";
 
         //when
-        Notification notification = Notification.of(type,title,messageTemplate);
+        Notification notification = Notification.create(type,title,messageTemplate);
 
         //then
         assertThat(notification.getType()).isEqualTo(type);
@@ -37,10 +37,10 @@ class NotificationTest {
         String messageTemplate = "{nickname}님이 반응을 남겼습니다.";
 
         //when & then
-        assertThatThrownBy(() -> Notification.of(type, overLengthTitle, messageTemplate))
+        assertThatThrownBy(() -> Notification.create(type, overLengthTitle, messageTemplate))
                 .isInstanceOf(CustomException.class)
                 .extracting(e -> ((CustomException) e).getErrorCode())
-                .isEqualTo(NotificationErrorCode.TITLE_TOO_LONG);
+                .isEqualTo(NotificationErrorCode.NOTIFICATION_TITLE_LENGTH_EXCEEDED);
 
     }
 
@@ -53,17 +53,17 @@ class NotificationTest {
         String overLengthMessage = "a".repeat(256);
 
         //when & then
-        assertThatThrownBy(()-> Notification.of(type,title,overLengthMessage))
+        assertThatThrownBy(()-> Notification.create(type,title,overLengthMessage))
                 .isInstanceOf(CustomException.class)
                 .extracting(e-> ((CustomException)e).getErrorCode())
-                .isEqualTo(NotificationErrorCode.MESSAGE_TOO_LONG);
+                .isEqualTo(NotificationErrorCode.NOTIFICATION_MESSAGE_TEMPLATE_LENGTH_EXCEEDED);
     }
 
     @Test
     @DisplayName("알림 템플릿의 메시지에 닉네임을 치환한다.")
     void resolveTemplate(){
         //given
-        Notification notification = Notification.of(
+        Notification notification = Notification.create(
                 NotificationType.create(NotificationTypeCode.CERTIFICATION),
                 "인증 알림",
                 "{nickname}님이 인증을 완료했습니다."
@@ -82,7 +82,7 @@ class NotificationTest {
     @DisplayName("템플릿에 닉네임 플레이스홀더가 있는데 닉네임이 null이면 예외가 발생한다.")
     void resolveWithNullNickName(){
         //given
-        Notification notification = Notification.of(
+        Notification notification = Notification.create(
                 NotificationType.create(NotificationTypeCode.COMMENT),
                 "댓글 알림",
                 "{nickname}님이 댓글을 남겼습니다."
@@ -92,14 +92,14 @@ class NotificationTest {
         assertThatThrownBy(()-> notification.resolve(null))
                 .isInstanceOf(CustomException.class)
                 .extracting(e->((CustomException)e).getErrorCode())
-                .isEqualTo(NotificationErrorCode.NICKNAME_REQUIRED);
+                .isEqualTo(NotificationErrorCode.NOTIFICATION_NICKNAME_REQUIRED);
     }
     
     @Test
     @DisplayName("템플릿에 닉네임 플레이스홀더가 없으면 닉네임이 null이어도 원본 메시지를 그대로 반환한다.")
     void resolveWithoutPlaceholder(){
         //given
-        Notification notification = Notification.of(
+        Notification notification = Notification.create(
                 NotificationType.create(NotificationTypeCode.CERTIFICATION),
                 "인증 시간 알림",
                 "오늘 인증까지 1시간 남았습니다."
