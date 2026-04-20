@@ -25,6 +25,10 @@ public class GroupMemberService {
         return groupMemberRepository.findMembersWithUserByGroupId(groupId);
     }
 
+    public List<GroupMember> getActiveGroupMembers(Long userId) {
+        return groupMemberRepository.findAllByUserIdAndStatus(userId, "ACTIVE");
+    }
+
     public boolean existsActiveGroupMember(Long userId) {
         return groupMemberRepository.existsByUserIdAndStatus(userId, "ACTIVE");
     }

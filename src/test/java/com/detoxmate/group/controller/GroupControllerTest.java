@@ -36,6 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(RestDocumentationExtension.class)
@@ -111,21 +112,39 @@ class GroupControllerTest {
     }
 
     @Test
+    void 그룹_생성_요청의_이름이_12자를_초과하면_400_에러를_반환한다() throws Exception {
+        mockMvc.perform(post("/groups")
+                        .header("Authorization", "Bearer access-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "name": "1234567890123"
+                        }
+                        """))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
     void 초대코드로_그룹에_참여하면_업데이트된_그룹_정보를_반환한다() throws Exception {
         FieldDescriptor[] requestFieldDescriptors = joinGroupRequestFields();
         FieldDescriptor[] responseFieldDescriptors = groupResponseFields();
+        when(groupService.joinGroup("AB123", 1L))
+                .thenReturn(GroupMockData.joinGroupResponse("AB123"));
 
         mockMvc.perform(post("/groups/join")
                         .header("Authorization", "Bearer access-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                         {
-                          "inviteCode": "AB12CD34"
+                          "inviteCode": "AB123"
                         }
                         """))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.inviteCode").value("AB12CD34"))
+                .andExpect(jsonPath("$.inviteCode").value("AB123"))
                 .andExpect(jsonPath("$.myRole").value("MEMBER"))
                 .andExpect(jsonPath("$.members[1].displayName").value("민수"))
                 .andDo(document("groups/join",
@@ -151,7 +170,7 @@ class GroupControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                         {
-                          "inviteCode": "AB12CD34"
+                          "inviteCode": "AB123"
                         }
                         """))
                 .andExpect(status().isUnauthorized())
@@ -163,6 +182,8 @@ class GroupControllerTest {
     @Test
     void 내_그룹_목록을_조회하면_그룹_배열을_반환한다() throws Exception {
         FieldDescriptor[] responseFieldDescriptors = groupListResponseFields();
+        when(groupService.getMyGroups(1L))
+                .thenReturn(GroupMockData.myGroupsResponse());
 
         mockMvc.perform(get("/me/groups")
                         .header("Authorization", "Bearer access-token"))
@@ -170,6 +191,7 @@ class GroupControllerTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$[0].id").value(1))
                 .andExpect(jsonPath("$[0].currentChallenge.status").value("ACTIVE"))
+                .andDo(result -> verify(groupService).getMyGroups(1L))
                 .andDo(document("me/groups-get",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),

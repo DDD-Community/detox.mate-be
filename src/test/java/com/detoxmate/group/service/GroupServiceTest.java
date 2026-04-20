@@ -13,6 +13,7 @@ import com.detoxmate.group.repository.GroupMemberRepository;
 import com.detoxmate.group.repository.GroupRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
@@ -29,7 +30,9 @@ import static org.mockito.Mockito.when;
 public class GroupServiceTest {
 
     private static final String INVITE_CODE = "ABCDE";
+    private static final String SECOND_INVITE_CODE = "FGH12";
     private static final String GROUP_NAME = "주말 디톡스";
+    private static final String TOO_LONG_GROUP_NAME = "1234567890123";
     private static final Long GROUP_ID = 1L;
     private static final Long OWNER_USER_ID = 1L;
     private static final Long MEMBER_USER_ID = 2L;
@@ -48,9 +51,10 @@ public class GroupServiceTest {
     private final GroupMemberService groupMemberService = new GroupMemberService(groupMemberRepository);
     private final GroupChallengeService groupChallengeService = new GroupChallengeService(groupChallengeRepository);
     private final GroupChallengeParticipantService groupChallengeParticipantService = new GroupChallengeParticipantService(groupChallengeParticipantRepository);
+    private final InviteCodeGenerator inviteCodeGenerator = mock(InviteCodeGenerator.class);
 
     private final GroupService groupService = new GroupService(
-            groupRepository, groupMemberService, groupChallengeService, groupChallengeParticipantService
+            groupRepository, groupMemberService, groupChallengeService, groupChallengeParticipantService, inviteCodeGenerator
     );
 
     @BeforeEach
@@ -63,6 +67,9 @@ public class GroupServiceTest {
 
     @Test
     void 그룹_생성_시_생성자가_OWNER_멤버로_등록된다() {
+        when(groupMemberRepository.existsByUserIdAndStatus(OWNER_USER_ID, "ACTIVE")).thenReturn(false);
+        when(inviteCodeGenerator.generate()).thenReturn(INVITE_CODE);
+
         GroupResponse response = groupService.createGroup(1L, "테스트그룹");
 
         assertThat(response.myRole()).isEqualTo("OWNER");
@@ -70,9 +77,73 @@ public class GroupServiceTest {
 
     @Test
     void 그룹_생성_시_그룹_이름이_반환된다() {
+        when(groupMemberRepository.existsByUserIdAndStatus(OWNER_USER_ID, "ACTIVE")).thenReturn(false);
+        when(inviteCodeGenerator.generate()).thenReturn(INVITE_CODE);
+
         GroupResponse response = groupService.createGroup(1L, "나의그룹");
 
         assertThat(response.name()).isEqualTo("나의그룹");
+    }
+
+    @Test
+    void 내가_속한_그룹_목록을_조회하면_그룹_응답_리스트를_반환한다() {
+        when(groupMemberRepository.findAllByUserIdAndStatus(OWNER_USER_ID, "ACTIVE"))
+                .thenReturn(List.of(ownerGroupMember()));
+        when(groupRepository.findById(GROUP_ID)).thenReturn(Optional.of(recruitingGroup()));
+        when(groupChallengeRepository.findTopByGroupIdOrderByChallengeNoDesc(GROUP_ID))
+                .thenReturn(Optional.of(activeChallenge()));
+        when(groupMemberRepository.findMembersWithUserByGroupId(GROUP_ID))
+                .thenReturn(List.of(ownerMember()));
+
+        List<GroupResponse> responses = groupService.getMyGroups(OWNER_USER_ID);
+
+        assertThat(responses).hasSize(1);
+        assertThat(responses.getFirst().id()).isEqualTo(GROUP_ID);
+        assertThat(responses.getFirst().myRole()).isEqualTo("OWNER");
+        assertThat(responses.getFirst().currentChallenge().status()).isEqualTo("ACTIVE");
+    }
+
+    @Test
+    void 이미_다른_그룹에_속한_유저면_새로운_그룹을_생성할_수_없다() {
+        when(groupMemberRepository.existsByUserIdAndStatus(OWNER_USER_ID, "ACTIVE")).thenReturn(true);
+
+        assertThatThrownBy(() -> groupService.createGroup(OWNER_USER_ID, GROUP_NAME))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("이미 그룹이 있어서, 새로운 그룹을 생성할 수 없습니다.");
+    }
+
+    @Test
+    void 그룹_이름이_12자를_초과하면_예외를_던진다() {
+        when(groupMemberRepository.existsByUserIdAndStatus(OWNER_USER_ID, "ACTIVE")).thenReturn(false);
+        when(inviteCodeGenerator.generate()).thenReturn(INVITE_CODE);
+
+        assertThatThrownBy(() -> groupService.createGroup(OWNER_USER_ID, TOO_LONG_GROUP_NAME))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("그룹 이름은 12자 이하여야 합니다.");
+    }
+
+    @Test
+    void 그룹_생성_시_5자리_초대코드를_반환한다() {
+        when(groupMemberRepository.existsByUserIdAndStatus(OWNER_USER_ID, "ACTIVE")).thenReturn(false);
+        when(inviteCodeGenerator.generate()).thenReturn(INVITE_CODE);
+
+        GroupResponse response = groupService.createGroup(OWNER_USER_ID, GROUP_NAME);
+
+        assertThat(response.inviteCode()).isEqualTo(INVITE_CODE);
+        assertThat(response.inviteCode()).hasSize(5);
+    }
+
+    @Test
+    void 그룹_생성_시_초대코드가_중복되면_새로운_코드로_재생성한다() {
+        when(groupMemberRepository.existsByUserIdAndStatus(OWNER_USER_ID, "ACTIVE")).thenReturn(false);
+        when(inviteCodeGenerator.generate()).thenReturn(INVITE_CODE, SECOND_INVITE_CODE);
+        when(groupRepository.save(any(Group.class)))
+                .thenThrow(new DataIntegrityViolationException("duplicate invite code"))
+                .thenAnswer(i -> i.getArgument(0));
+
+        GroupResponse response = groupService.createGroup(OWNER_USER_ID, GROUP_NAME);
+
+        assertThat(response.inviteCode()).isEqualTo(SECOND_INVITE_CODE);
     }
 
     @Test
@@ -156,6 +227,12 @@ public class GroupServiceTest {
     private GroupMember joinedMember() {
         GroupMember groupMember = GroupMember.createMember(MEMBER_USER_ID, GROUP_ID);
         ReflectionTestUtils.setField(groupMember, "id", JOINED_GROUP_MEMBER_ID);
+        return groupMember;
+    }
+
+    private GroupMember ownerGroupMember() {
+        GroupMember groupMember = GroupMember.createOwner(OWNER_USER_ID, GROUP_ID);
+        ReflectionTestUtils.setField(groupMember, "id", 100L);
         return groupMember;
     }
 

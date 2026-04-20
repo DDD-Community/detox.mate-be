@@ -12,6 +12,8 @@ import java.util.Optional;
 public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> {
     Optional<GroupMember> findByUserId(Long userId);
 
+    List<GroupMember> findAllByUserIdAndStatus(Long userId, String status);
+
     boolean existsByUserIdAndStatus(Long userId, String status);
 
     @Query("""

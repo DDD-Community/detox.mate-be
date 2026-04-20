@@ -20,6 +20,8 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Group {
 
+    public static final int MAX_NAME_LENGTH = 12;
+
     @Id
     @Column(name = "group_id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,7 +30,7 @@ public class Group {
     @Column(name = "name", nullable = false, length = 12)
     private String name;
 
-    @Column(name = "invite_code", length = 10)
+    @Column(name = "invite_code", nullable = false, unique = true, length = 5)
     private String inviteCode;
 
     @CreationTimestamp
@@ -40,6 +42,7 @@ public class Group {
     private LocalDateTime updatedAt;
 
     private Group(String name, String inviteCode) {
+        validateName(name);
         this.name = name;
         this.inviteCode = inviteCode;
     }
@@ -50,5 +53,11 @@ public class Group {
 
     public static Group createNew(String name, String inviteCode) {
         return new Group(name, inviteCode);
+    }
+
+    private static void validateName(String name) {
+        if (name != null && name.length() > MAX_NAME_LENGTH) {
+            throw new IllegalArgumentException("그룹 이름은 12자 이하여야 합니다.");
+        }
     }
 }

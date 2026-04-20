@@ -36,14 +36,14 @@ public class GroupController {
             CurrentUser currentUser,
             @Valid @RequestBody JoinGroupRequest request
     ) {
-        return GroupMockData.joinGroupResponse(request.inviteCode());
+        return groupService.joinGroup(request.inviteCode(), currentUser.id());
     }
 
     @GetMapping("/me/groups")
     public List<GroupResponse> getMyGroups(
             CurrentUser currentUser
     ) {
-        return GroupMockData.myGroupsResponse();
+        return groupService.getMyGroups(currentUser.id());
     }
 
     @GetMapping("/groups/{id}")

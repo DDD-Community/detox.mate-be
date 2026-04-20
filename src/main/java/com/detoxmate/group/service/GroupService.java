@@ -8,6 +8,7 @@ import com.detoxmate.group.dto.GroupMemberResponse;
 import com.detoxmate.group.dto.GroupResponse;
 import com.detoxmate.group.repository.GroupRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,14 +18,21 @@ import java.util.List;
 @RequiredArgsConstructor
 public class GroupService {
 
+    private static final int MAX_INVITE_CODE_GENERATION_ATTEMPTS = 10;
+
     private final GroupRepository groupRepository;
     private final GroupMemberService groupMemberService;
     private final GroupChallengeService groupChallengeService;
     private final GroupChallengeParticipantService groupChallengeParticipantService;
+    private final InviteCodeGenerator inviteCodeGenerator;
 
     @Transactional
     public GroupResponse createGroup(Long creatorUserId, String groupName) {
-        Group createdGroup = this.saveGroup(groupName);
+        if (groupMemberService.existsActiveGroupMember(creatorUserId)) {
+            throw new IllegalStateException("이미 그룹이 있어서, 새로운 그룹을 생성할 수 없습니다.");
+        }
+
+        Group createdGroup = saveGroupWithUniqueInviteCode(groupName);
         GroupMember groupMember = groupMemberService.saveGroupOwner(creatorUserId, createdGroup.getId());
         GroupChallenge groupChallenge = groupChallengeService.saveGroupChallenge(groupMember.getGroupId());
         groupChallengeParticipantService.saveGroupChallengeParticipant(groupMember.getId(), groupChallenge.getId());
@@ -34,8 +42,8 @@ public class GroupService {
         return toGroupResponse(createdGroup, groupMember, groupChallenge, members);
     }
 
-    public Group saveGroup(String groupName) {
-        return groupRepository.save(Group.createNew(groupName));
+    public Group saveGroup(String groupName, String inviteCode) {
+        return groupRepository.save(Group.createNew(groupName, inviteCode));
     }
 
     @Transactional
@@ -61,6 +69,19 @@ public class GroupService {
         return toGroupResponse(group, groupMember, groupChallenge, members);
     }
 
+    public List<GroupResponse> getMyGroups(Long userId) {
+        return groupMemberService.getActiveGroupMembers(userId).stream()
+                .map(groupMember -> {
+                    Group group = groupRepository.findById(groupMember.getGroupId())
+                            .orElseThrow();
+                    GroupChallenge groupChallenge = groupChallengeService.getLatestChallenge(groupMember.getGroupId());
+                    List<GroupMemberResponse> members = groupMemberService.getGroupMembers(groupMember.getGroupId());
+
+                    return toGroupResponse(group, groupMember, groupChallenge, members);
+                })
+                .toList();
+    }
+
     private GroupResponse toGroupResponse(
             Group group,
             GroupMember currentMember,
@@ -83,5 +104,19 @@ public class GroupService {
                 group.getCreatedAt(),
                 group.getUpdatedAt()
         );
+    }
+
+    private Group saveGroupWithUniqueInviteCode(String groupName) {
+        for (int attempt = 0; attempt < MAX_INVITE_CODE_GENERATION_ATTEMPTS; attempt++) {
+            String inviteCode = inviteCodeGenerator.generate();
+
+            try {
+                return saveGroup(groupName, inviteCode);
+            } catch (DataIntegrityViolationException exception) {
+                // `invite_code` 유일성은 DB가 보장하므로, 중복 충돌이 나면 여기서 재시도한다.
+            }
+        }
+
+        throw new IllegalStateException("사용 가능한 초대코드를 생성할 수 없습니다.");
     }
 }
