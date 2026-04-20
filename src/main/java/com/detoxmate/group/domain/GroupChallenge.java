@@ -2,6 +2,8 @@ package com.detoxmate.group.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -32,6 +34,7 @@ public class GroupChallenge {
     private Integer challengeNo;
 
     @Column(name = "status", nullable = false, length = 20)
+    @Enumerated(EnumType.STRING)
     private GroupChallengeStatus status;
 
     @Column(name = "start_at")
@@ -51,7 +54,7 @@ public class GroupChallenge {
     private GroupChallenge(Long groupId, Integer challengeNo, GroupChallengeStatus status) {
         this.groupId = groupId;
         this.challengeNo = challengeNo;
-        this.status = GroupChallengeStatus.valueOf(status.name());
+        this.status = status;
     }
 
     public static GroupChallenge createFirst(Long groupId) {

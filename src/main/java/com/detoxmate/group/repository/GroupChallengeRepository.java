@@ -10,7 +10,11 @@ import java.util.List;
 import java.util.Optional;
 
 public interface GroupChallengeRepository extends JpaRepository<GroupChallenge, Long> {
+    List<GroupChallenge> findAllByGroupId(Long groupId);
+
     Optional<GroupChallenge> findTopByGroupIdOrderByChallengeNoDesc(Long groupId);
+
+    void deleteAllByGroupId(Long groupId);
 
     @Query("""
             SELECT DISTINCT gc

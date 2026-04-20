@@ -95,6 +95,20 @@ public class GroupService {
         return toGroupResponse(group, currentMember, groupChallenge, members);
     }
 
+    @Transactional
+    public void deleteGroup(Long groupId) {
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "그룹을 찾을 수 없습니다."));
+        List<Long> groupChallengeIds = groupChallengeService.getGroupChallenges(groupId).stream()
+                .map(GroupChallenge::getId)
+                .toList();
+
+        groupChallengeParticipantService.deleteGroupChallengeParticipants(groupChallengeIds);
+        groupChallengeService.deleteGroupChallenges(groupId);
+        groupMemberService.deleteGroupMembers(groupId);
+        groupRepository.delete(group);
+    }
+
     private GroupResponse toGroupResponse(
             Group group,
             GroupMember currentMember,

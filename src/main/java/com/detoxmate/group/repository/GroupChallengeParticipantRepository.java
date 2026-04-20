@@ -10,6 +10,8 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface GroupChallengeParticipantRepository extends JpaRepository<GroupChallengeParticipant, Long> {
+    void deleteAllByGroupChallengeIdIn(List<Long> groupChallengeIds);
+
     @Query("""
             SELECT COUNT(gcp) > 0
             FROM GroupChallengeParticipant gcp

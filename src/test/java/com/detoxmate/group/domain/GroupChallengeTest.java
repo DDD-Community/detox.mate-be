@@ -22,6 +22,6 @@ public class GroupChallengeTest {
 
         GroupChallenge challenge = GroupChallenge.createFirst(groupId);
 
-        assertThat(challenge.getStatus()).isEqualTo(GroupChallengeStatus.RECRUITING.name());
+        assertThat(challenge.getStatus()).isEqualTo(GroupChallengeStatus.RECRUITING);
     }
 }

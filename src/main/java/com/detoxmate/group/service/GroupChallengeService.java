@@ -37,6 +37,14 @@ public class GroupChallengeService {
                 .orElseThrow();
     }
 
+    public List<GroupChallenge> getGroupChallenges(Long groupId) {
+        return groupChallengeRepository.findAllByGroupId(groupId);
+    }
+
+    public void deleteGroupChallenges(Long groupId) {
+        groupChallengeRepository.deleteAllByGroupId(groupId);
+    }
+
     public List<GroupChallengeResponse> getMyGroupChallenges(Long userId, String status) {
         GroupChallengeStatus groupChallengeStatus = parseStatus(status);
         List<GroupChallenge> groupChallenges =

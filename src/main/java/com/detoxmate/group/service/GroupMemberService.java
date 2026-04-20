@@ -37,4 +37,8 @@ public class GroupMemberService {
     public boolean existsActiveGroupMember(Long userId) {
         return groupMemberRepository.existsByUserIdAndStatus(userId, "ACTIVE");
     }
+
+    public void deleteGroupMembers(Long groupId) {
+        groupMemberRepository.deleteAllByGroupId(groupId);
+    }
 }

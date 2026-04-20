@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,6 +24,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -37,6 +39,7 @@ public class GroupServiceTest {
     private static final Long OWNER_USER_ID = 1L;
     private static final Long MEMBER_USER_ID = 2L;
     private static final Long RECRUITING_CHALLENGE_ID = 10L;
+    private static final Long ACTIVE_CHALLENGE_ID = 11L;
     private static final Long JOINED_GROUP_MEMBER_ID = 101L;
     private static final LocalDateTime GROUP_CREATED_AT = LocalDateTime.of(2026, 4, 19, 10, 0);
     private static final LocalDateTime MEMBER_JOINED_AT = LocalDateTime.of(2026, 4, 19, 10, 30);
@@ -246,6 +249,36 @@ public class GroupServiceTest {
         assertThat(response.currentChallenge().status()).isEqualTo("RECRUITING");
     }
 
+    @Test
+    void 테스트를_위해_그룹과_하위_데이터를_모두_삭제할_수_있다() {
+        when(groupRepository.findById(GROUP_ID)).thenReturn(Optional.of(recruitingGroup()));
+        when(groupChallengeRepository.findAllByGroupId(GROUP_ID))
+                .thenReturn(List.of(recruitingChallenge(), secondChallenge()));
+
+        groupService.deleteGroup(GROUP_ID);
+
+        var inOrder = inOrder(
+                groupChallengeParticipantRepository,
+                groupChallengeRepository,
+                groupMemberRepository,
+                groupRepository
+        );
+        inOrder.verify(groupChallengeParticipantRepository)
+                .deleteAllByGroupChallengeIdIn(List.of(RECRUITING_CHALLENGE_ID, ACTIVE_CHALLENGE_ID));
+        inOrder.verify(groupChallengeRepository).deleteAllByGroupId(GROUP_ID);
+        inOrder.verify(groupMemberRepository).deleteAllByGroupId(GROUP_ID);
+        inOrder.verify(groupRepository).delete(any(Group.class));
+    }
+
+    @Test
+    void 삭제할_그룹이_없으면_예외를_던진다() {
+        when(groupRepository.findById(GROUP_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> groupService.deleteGroup(GROUP_ID))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("404 NOT_FOUND");
+    }
+
     private Group recruitingGroup() {
         Group group = Group.createNew(GROUP_NAME, INVITE_CODE);
         ReflectionTestUtils.setField(group, "id", GROUP_ID);
@@ -257,6 +290,12 @@ public class GroupServiceTest {
     private GroupChallenge activeChallenge() {
         GroupChallenge challenge = recruitingChallenge();
         ReflectionTestUtils.setField(challenge, "status", GroupChallengeStatus.ACTIVE);
+        return challenge;
+    }
+
+    private GroupChallenge secondChallenge() {
+        GroupChallenge challenge = GroupChallenge.createFirst(GROUP_ID);
+        ReflectionTestUtils.setField(challenge, "id", ACTIVE_CHALLENGE_ID);
         return challenge;
     }
 

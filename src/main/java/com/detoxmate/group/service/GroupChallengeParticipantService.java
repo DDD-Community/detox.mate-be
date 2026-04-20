@@ -5,6 +5,8 @@ import com.detoxmate.group.repository.GroupChallengeParticipantRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class GroupChallengeParticipantService {
@@ -12,5 +14,13 @@ public class GroupChallengeParticipantService {
 
     public GroupChallengeParticipant saveGroupChallengeParticipant(Long groupMemberId, Long groupChallengeId) {
         return groupChallengeParticipantRepository.save(GroupChallengeParticipant.join(groupMemberId, groupChallengeId));
+    }
+
+    public void deleteGroupChallengeParticipants(List<Long> groupChallengeIds) {
+        if (groupChallengeIds.isEmpty()) {
+            return;
+        }
+
+        groupChallengeParticipantRepository.deleteAllByGroupChallengeIdIn(groupChallengeIds);
     }
 }
