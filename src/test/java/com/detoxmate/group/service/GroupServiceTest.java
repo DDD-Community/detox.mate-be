@@ -104,6 +104,44 @@ public class GroupServiceTest {
     }
 
     @Test
+    void 그룹_ID로_내가_속한_그룹을_조회하면_그룹_상세를_반환한다() {
+        when(groupRepository.findById(GROUP_ID)).thenReturn(Optional.of(recruitingGroup()));
+        when(groupMemberRepository.findByUserIdAndGroupIdAndStatus(OWNER_USER_ID, GROUP_ID, "ACTIVE"))
+                .thenReturn(Optional.of(ownerGroupMember()));
+        when(groupChallengeRepository.findTopByGroupIdOrderByChallengeNoDesc(GROUP_ID))
+                .thenReturn(Optional.of(activeChallenge()));
+        when(groupMemberRepository.findMembersWithUserByGroupId(GROUP_ID))
+                .thenReturn(List.of(ownerMember(), joinedMemberResponse()));
+
+        GroupResponse response = groupService.getGroup(GROUP_ID, OWNER_USER_ID);
+
+        assertThat(response.id()).isEqualTo(GROUP_ID);
+        assertThat(response.myRole()).isEqualTo("OWNER");
+        assertThat(response.members()).hasSize(2);
+        assertThat(response.currentChallenge().status()).isEqualTo("ACTIVE");
+    }
+
+    @Test
+    void 존재하지_않는_그룹을_조회하면_예외를_던진다() {
+        when(groupRepository.findById(GROUP_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> groupService.getGroup(GROUP_ID, OWNER_USER_ID))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+                .hasMessageContaining("404 NOT_FOUND");
+    }
+
+    @Test
+    void 내가_속하지_않은_그룹을_조회하면_예외를_던진다() {
+        when(groupRepository.findById(GROUP_ID)).thenReturn(Optional.of(recruitingGroup()));
+        when(groupMemberRepository.findByUserIdAndGroupIdAndStatus(MEMBER_USER_ID, GROUP_ID, "ACTIVE"))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> groupService.getGroup(GROUP_ID, MEMBER_USER_ID))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+                .hasMessageContaining("403 FORBIDDEN");
+    }
+
+    @Test
     void 이미_다른_그룹에_속한_유저면_새로운_그룹을_생성할_수_없다() {
         when(groupMemberRepository.existsByUserIdAndStatus(OWNER_USER_ID, "ACTIVE")).thenReturn(true);
 

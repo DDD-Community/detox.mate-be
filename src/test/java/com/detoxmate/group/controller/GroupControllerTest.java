@@ -220,12 +220,16 @@ class GroupControllerTest {
         FieldDescriptor[] responseFieldDescriptors = groupResponseFields();
         ParameterDescriptor[] pathParameterDescriptors = groupIdPathParameters();
         com.epages.restdocs.apispec.ParameterDescriptorWithType[] typedPathParameterDescriptors = groupIdOpenApiPathParameters();
+        when(groupService.getGroup(1L, 1L))
+                .thenReturn(GroupMockData.groupDetailResponse(1L));
 
-        mockMvc.perform(get("/groups/{id}", 1L))
+        mockMvc.perform(get("/groups/{id}", 1L)
+                        .header("Authorization", "Bearer access-token"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.members[1].role").value("MEMBER"))
+                .andDo(result -> verify(groupService).getGroup(1L, 1L))
                 .andDo(document("groups/get-by-id",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
@@ -240,6 +244,15 @@ class GroupControllerTest {
                                 .responseFields(responseFieldDescriptors)
                                 .build()
                         )));
+    }
+
+    @Test
+    void 그룹_상세_조회_요청에_Authorization_헤더가_없으면_401_에러를_반환한다() throws Exception {
+        mockMvc.perform(get("/groups/{id}", 1L))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+                .andExpect(jsonPath("$.status").value(401));
     }
 
     private ParameterDescriptor[] groupIdPathParameters() {

@@ -47,7 +47,10 @@ public class GroupController {
     }
 
     @GetMapping("/groups/{id}")
-    public GroupResponse getGroup(@PathVariable long id) {
-        return GroupMockData.groupDetailResponse(id);
+    public GroupResponse getGroup(
+            CurrentUser currentUser,
+            @PathVariable long id
+    ) {
+        return groupService.getGroup(id, currentUser.id());
     }
 }

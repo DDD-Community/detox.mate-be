@@ -9,10 +9,13 @@ import com.detoxmate.group.dto.GroupResponse;
 import com.detoxmate.group.repository.GroupRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
@@ -82,6 +85,16 @@ public class GroupService {
                 .toList();
     }
 
+    public GroupResponse getGroup(Long groupId, Long userId) {
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "그룹을 찾을 수 없습니다."));
+        GroupMember currentMember = getAccessibleGroupMember(userId, groupId);
+        GroupChallenge groupChallenge = groupChallengeService.getLatestChallenge(groupId);
+        List<GroupMemberResponse> members = groupMemberService.getGroupMembers(groupId);
+
+        return toGroupResponse(group, currentMember, groupChallenge, members);
+    }
+
     private GroupResponse toGroupResponse(
             Group group,
             GroupMember currentMember,
@@ -104,6 +117,14 @@ public class GroupService {
                 group.getCreatedAt(),
                 group.getUpdatedAt()
         );
+    }
+
+    private GroupMember getAccessibleGroupMember(Long userId, Long groupId) {
+        try {
+            return groupMemberService.getActiveGroupMember(userId, groupId);
+        } catch (NoSuchElementException exception) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "내가 속한 그룹만 조회할 수 있습니다.");
+        }
     }
 
     private Group saveGroupWithUniqueInviteCode(String groupName) {
