@@ -2,23 +2,41 @@ package com.detoxmate.group.service;
 
 import com.detoxmate.group.domain.Group;
 import com.detoxmate.group.domain.GroupChallenge;
+import com.detoxmate.group.domain.GroupChallengeStatus;
 import com.detoxmate.group.domain.GroupChallengeParticipant;
 import com.detoxmate.group.domain.GroupMember;
+import com.detoxmate.group.dto.GroupMemberResponse;
 import com.detoxmate.group.dto.GroupResponse;
 import com.detoxmate.group.repository.GroupChallengeParticipantRepository;
 import com.detoxmate.group.repository.GroupChallengeRepository;
 import com.detoxmate.group.repository.GroupMemberRepository;
 import com.detoxmate.group.repository.GroupRepository;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class GroupServiceTest {
+
+    private static final String INVITE_CODE = "ABCDE";
+    private static final String GROUP_NAME = "주말 디톡스";
+    private static final Long GROUP_ID = 1L;
+    private static final Long OWNER_USER_ID = 1L;
+    private static final Long MEMBER_USER_ID = 2L;
+    private static final Long RECRUITING_CHALLENGE_ID = 10L;
+    private static final Long JOINED_GROUP_MEMBER_ID = 101L;
+    private static final LocalDateTime GROUP_CREATED_AT = LocalDateTime.of(2026, 4, 19, 10, 0);
+    private static final LocalDateTime MEMBER_JOINED_AT = LocalDateTime.of(2026, 4, 19, 10, 30);
 
     // DB 경계 — mock
     private final GroupRepository groupRepository = mock(GroupRepository.class);
@@ -58,7 +76,116 @@ public class GroupServiceTest {
     }
 
     @Test
-    @Disabled("GroupService.join is not implemented yet")
-    void 모집중인_그룹에_유효한_초대코드로_참여하면_그룹_멤버와_챌린지_참가자가_추가된다() {
+    void 초대코드에_해당하는_그룹이_없으면_예외를_던진다() {
+        // given
+        when(groupRepository.findByInviteCode(INVITE_CODE)).thenReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> groupService.joinGroup(INVITE_CODE, OWNER_USER_ID))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("초대코드에 해당하는 그룹이 없습니다.");
+    }
+
+    @Test
+    void 이미_다른_그룹에_속한_유저면_예외를_던진다() {
+        // given
+        when(groupRepository.findByInviteCode(INVITE_CODE)).thenReturn(Optional.of(recruitingGroup()));
+        when(groupMemberRepository.existsByUserIdAndStatus(MEMBER_USER_ID, "ACTIVE")).thenReturn(true);
+
+        // when & then
+        assertThatThrownBy(() -> groupService.joinGroup(INVITE_CODE, MEMBER_USER_ID))
+                .isInstanceOf(RuntimeException.class);
+    }
+
+    @Test
+    void 그룹_챌린지가_이미_실행중이면_예외를_던진다() {
+        // given
+        when(groupRepository.findByInviteCode(INVITE_CODE)).thenReturn(Optional.of(recruitingGroup()));
+        when(groupMemberRepository.existsByUserIdAndStatus(MEMBER_USER_ID, "ACTIVE")).thenReturn(false);
+        when(groupChallengeRepository.findTopByGroupIdOrderByChallengeNoDesc(GROUP_ID))
+                .thenReturn(Optional.of(activeChallenge()));
+
+        // when & then
+        assertThatThrownBy(() -> groupService.joinGroup(INVITE_CODE, MEMBER_USER_ID))
+                .isInstanceOf(RuntimeException.class);
+    }
+
+    @Test
+    void 모집중인_그룹에_참여하면_그룹_멤버와_챌린지_참가자가_추가된다() {
+        // given
+        when(groupRepository.findByInviteCode(INVITE_CODE)).thenReturn(Optional.of(recruitingGroup()));
+        when(groupMemberRepository.existsByUserIdAndStatus(MEMBER_USER_ID, "ACTIVE")).thenReturn(false);
+        when(groupChallengeRepository.findTopByGroupIdOrderByChallengeNoDesc(GROUP_ID))
+                .thenReturn(Optional.of(recruitingChallenge()));
+        when(groupMemberRepository.save(any(GroupMember.class))).thenReturn(joinedMember());
+        when(groupMemberRepository.findMembersWithUserByGroupId(GROUP_ID)).thenReturn(groupMembers());
+
+        // when
+        GroupResponse response = groupService.joinGroup(INVITE_CODE, MEMBER_USER_ID);
+
+        // then
+        verify(groupMemberRepository).save(any(GroupMember.class));
+        verify(groupChallengeParticipantRepository).save(any(GroupChallengeParticipant.class));
+        assertThat(response.id()).isEqualTo(GROUP_ID);
+        assertThat(response.inviteCode()).isEqualTo(INVITE_CODE);
+        assertThat(response.myRole()).isEqualTo("MEMBER");
+        assertThat(response.members()).hasSize(2);
+        assertThat(response.currentChallenge().status()).isEqualTo("RECRUITING");
+    }
+
+    private Group recruitingGroup() {
+        Group group = Group.createNew(GROUP_NAME, INVITE_CODE);
+        ReflectionTestUtils.setField(group, "id", GROUP_ID);
+        ReflectionTestUtils.setField(group, "createdAt", GROUP_CREATED_AT);
+        ReflectionTestUtils.setField(group, "updatedAt", MEMBER_JOINED_AT);
+        return group;
+    }
+
+    private GroupChallenge activeChallenge() {
+        GroupChallenge challenge = recruitingChallenge();
+        ReflectionTestUtils.setField(challenge, "status", GroupChallengeStatus.ACTIVE);
+        return challenge;
+    }
+
+    private GroupChallenge recruitingChallenge() {
+        GroupChallenge challenge = GroupChallenge.createFirst(GROUP_ID);
+        ReflectionTestUtils.setField(challenge, "id", RECRUITING_CHALLENGE_ID);
+        return challenge;
+    }
+
+    private GroupMember joinedMember() {
+        GroupMember groupMember = GroupMember.createMember(MEMBER_USER_ID, GROUP_ID);
+        ReflectionTestUtils.setField(groupMember, "id", JOINED_GROUP_MEMBER_ID);
+        return groupMember;
+    }
+
+    private List<GroupMemberResponse> groupMembers() {
+        return List.of(ownerMember(), joinedMemberResponse());
+    }
+
+    private GroupMemberResponse ownerMember() {
+        return new GroupMemberResponse(
+                100L,
+                OWNER_USER_ID,
+                "지민",
+                "https://...",
+                "OWNER",
+                "ACTIVE",
+                GROUP_CREATED_AT,
+                null
+        );
+    }
+
+    private GroupMemberResponse joinedMemberResponse() {
+        return new GroupMemberResponse(
+                JOINED_GROUP_MEMBER_ID,
+                MEMBER_USER_ID,
+                "민수",
+                null,
+                "MEMBER",
+                "ACTIVE",
+                MEMBER_JOINED_AT,
+                null
+        );
     }
 }

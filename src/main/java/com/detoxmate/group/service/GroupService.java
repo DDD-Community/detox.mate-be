@@ -31,25 +31,57 @@ public class GroupService {
 
         List<GroupMemberResponse> members = groupMemberService.getGroupMembers(createdGroup.getId());
 
-        return new GroupResponse(
-                createdGroup.getId(),
-                createdGroup.getInviteCode(),
-                createdGroup.getName(),
-                groupMember.getRole(),
-                members,
-                new GroupChallengeSummaryResponse(
-                        groupChallenge.getId(),
-                        groupChallenge.getChallengeNo(),
-                        groupChallenge.getStatus(),
-                        groupChallenge.getStartAt(),
-                        groupChallenge.getEndAt()
-                ),
-                createdGroup.getCreatedAt(),
-                createdGroup.getUpdatedAt()
-        );
+        return toGroupResponse(createdGroup, groupMember, groupChallenge, members);
     }
 
     public Group saveGroup(String groupName) {
         return groupRepository.save(Group.createNew(groupName));
+    }
+
+    @Transactional
+    public GroupResponse joinGroup(String inviteCode, Long userId) {
+        Group group = groupRepository.findByInviteCode(inviteCode)
+                .orElseThrow(() -> new IllegalStateException("초대코드에 해당하는 그룹이 없습니다."));
+
+        if (groupMemberService.existsActiveGroupMember(userId)) {
+            throw new IllegalStateException("이미 그룹이 있어서, 새로운 그룹에 참여할 수 없습니다.");
+        }
+
+        GroupChallenge groupChallenge = groupChallengeService.getLatestChallenge(group.getId());
+
+        if (groupChallenge.getStatus().name().equals("ACTIVE")) {
+            throw new IllegalStateException("챌린지가 이미 진행 중이라서, 그룹에 참여할 수 없습니다");
+        }
+
+        GroupMember groupMember = groupMemberService.saveGroupMember(userId, group.getId());
+        groupChallengeParticipantService.saveGroupChallengeParticipant(groupMember.getId(), groupChallenge.getId());
+
+        List<GroupMemberResponse> members = groupMemberService.getGroupMembers(group.getId());
+
+        return toGroupResponse(group, groupMember, groupChallenge, members);
+    }
+
+    private GroupResponse toGroupResponse(
+            Group group,
+            GroupMember currentMember,
+            GroupChallenge groupChallenge,
+            List<GroupMemberResponse> members
+    ) {
+        return new GroupResponse(
+                group.getId(),
+                group.getInviteCode(),
+                group.getName(),
+                currentMember.getRole(),
+                members,
+                new GroupChallengeSummaryResponse(
+                        groupChallenge.getId(),
+                        groupChallenge.getChallengeNo(),
+                        groupChallenge.getStatus().name(),
+                        groupChallenge.getStartAt(),
+                        groupChallenge.getEndAt()
+                ),
+                group.getCreatedAt(),
+                group.getUpdatedAt()
+        );
     }
 }

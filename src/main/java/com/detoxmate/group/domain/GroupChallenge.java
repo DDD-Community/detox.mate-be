@@ -32,7 +32,7 @@ public class GroupChallenge {
     private Integer challengeNo;
 
     @Column(name = "status", nullable = false, length = 20)
-    private String status;
+    private GroupChallengeStatus status;
 
     @Column(name = "start_at")
     private LocalDateTime startAt;
@@ -51,7 +51,7 @@ public class GroupChallenge {
     private GroupChallenge(Long groupId, Integer challengeNo, GroupChallengeStatus status) {
         this.groupId = groupId;
         this.challengeNo = challengeNo;
-        this.status = status.name();
+        this.status = GroupChallengeStatus.valueOf(status.name());
     }
 
     public static GroupChallenge createFirst(Long groupId) {
