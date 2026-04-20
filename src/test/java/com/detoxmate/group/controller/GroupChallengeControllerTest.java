@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.http.MediaType;
 import org.springframework.restdocs.RestDocumentationContextProvider;
 import org.springframework.restdocs.RestDocumentationExtension;
+import org.springframework.restdocs.headers.HeaderDescriptor;
 import org.springframework.restdocs.payload.FieldDescriptor;
 import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.restdocs.request.ParameterDescriptor;
@@ -23,6 +24,8 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
 import static com.epages.restdocs.apispec.Schema.schema;
+import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
+import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.prettyPrint;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.preprocessRequest;
@@ -62,6 +65,7 @@ class GroupChallengeControllerTest {
 
     @Test
     void 내_그룹_챌린지_목록을_조회하면_챌린지_배열을_반환한다() throws Exception {
+        HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
         FieldDescriptor[] responseFieldDescriptors = groupChallengeListResponseFields();
         ParameterDescriptor[] queryParameterDescriptors = groupChallengeListQueryParameters();
         com.epages.restdocs.apispec.ParameterDescriptorWithType[] typedQueryParameterDescriptors = groupChallengeListOpenApiQueryParameters();
@@ -80,12 +84,14 @@ class GroupChallengeControllerTest {
                 .andDo(document("me/group-challenges-get",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
+                        requestHeaders(requestHeaderDescriptors),
                         queryParameters(queryParameterDescriptors),
                         responseFields(responseFieldDescriptors),
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Group Challenge")
                                 .summary("Get my group challenges")
                                 .description("내가 참여한 그룹 챌린지 목록을 조회한다.")
+                                .requestHeaders(requestHeaderDescriptors)
                                 .queryParameters(typedQueryParameterDescriptors)
                                 .responseSchema(schema("MyGroupChallengesResponse"))
                                 .responseFields(responseFieldDescriptors)
@@ -131,6 +137,7 @@ class GroupChallengeControllerTest {
 
     @Test
     void 그룹_챌린지_상세를_조회하면_챌린지_정보를_반환한다() throws Exception {
+        HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
         FieldDescriptor[] responseFieldDescriptors = groupChallengeResponseFields();
         ParameterDescriptor[] pathParameterDescriptors = groupChallengeIdPathParameters();
         com.epages.restdocs.apispec.ParameterDescriptorWithType[] typedPathParameterDescriptors = groupChallengeIdOpenApiPathParameters();
@@ -149,12 +156,14 @@ class GroupChallengeControllerTest {
                 .andDo(document("group-challenges/get-by-id",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
+                        requestHeaders(requestHeaderDescriptors),
                         pathParameters(pathParameterDescriptors),
                         responseFields(responseFieldDescriptors),
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Group Challenge")
                                 .summary("Get group challenge detail")
                                 .description("그룹 챌린지 상세 정보를 조회한다.")
+                                .requestHeaders(requestHeaderDescriptors)
                                 .pathParameters(typedPathParameterDescriptors)
                                 .responseSchema(schema("GroupChallengeResponse"))
                                 .responseFields(responseFieldDescriptors)
@@ -199,6 +208,12 @@ class GroupChallengeControllerTest {
                 com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName("id")
                         .type(SimpleType.INTEGER)
                         .description("조회할 그룹 챌린지 ID")
+        };
+    }
+
+    private HeaderDescriptor[] authorizationHeaderDescriptors() {
+        return new HeaderDescriptor[] {
+                headerWithName("Authorization").description("Bearer {accessToken} 형식의 서비스 access token")
         };
     }
 
