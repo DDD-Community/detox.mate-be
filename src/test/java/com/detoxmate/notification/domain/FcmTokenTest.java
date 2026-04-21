@@ -15,20 +15,24 @@ class FcmTokenTest {
     @DisplayName("유효한 정보로 FCM 토큰을 생성한다.")
     void createFcmToken(){
         //given & when
-        FcmToken fcmToken = FcmToken.create(1L,"validToken",DevicePlatform.IOS);
+        String validToken = "validToken";
+        FcmToken fcmToken = FcmToken.create(1L,validToken,DevicePlatform.IOS);
 
         //then
         assertThat(fcmToken.getUserId()).isEqualTo(1L);
-        assertThat(fcmToken.getToken()).isEqualTo("validToken");
+        assertThat(fcmToken.getToken()).isEqualTo(validToken);
         assertThat(fcmToken.getPlatform()).isEqualTo(DevicePlatform.IOS);
     }
 
     @Test
     @DisplayName("userId가 null이면 예외를 던진다")
     void failWhenUserIdIsNull(){
+        //given
+        String validToken = "validToken";
+
         //when & then
         assertThatThrownBy(()->
-                FcmToken.create(null,"valid-token",DevicePlatform.IOS))
+                FcmToken.create(null,validToken,DevicePlatform.IOS))
                 .isInstanceOf(CustomException.class)
                 .extracting(e->((CustomException)e).getErrorCode())
                 .isEqualTo(FcmTokenErrorCode.USER_ID_REQUIRED);
@@ -48,9 +52,11 @@ class FcmTokenTest {
     @Test
     @DisplayName("토큰이 공백이면 예외를 던진다")
     void failWhenTokenIsBlank(){
+        //given
+        String emptyToken = " ";
         //when & then
         assertThatThrownBy(()->
-                FcmToken.create(1L," ",DevicePlatform.IOS))
+                FcmToken.create(1L,emptyToken,DevicePlatform.IOS))
                 .isInstanceOf(CustomException.class)
                 .extracting(e->((CustomException)e).getErrorCode())
                 .isEqualTo(FcmTokenErrorCode.TOKEN_REQUIRED);
@@ -74,9 +80,11 @@ class FcmTokenTest {
     @Test
     @DisplayName("플랫폼이 null이면 예외를 던진다")
     void failWhenPlatformIsNull(){
+        String validToken = "validToken";
+
         //when & then
         assertThatThrownBy(()->
-                FcmToken.create(1L,"valid-token",null))
+                FcmToken.create(1L,validToken,null))
                 .isInstanceOf(CustomException.class)
                 .extracting(e->((CustomException)e).getErrorCode())
                 .isEqualTo(FcmTokenErrorCode.PLATFORM_REQUIRED);

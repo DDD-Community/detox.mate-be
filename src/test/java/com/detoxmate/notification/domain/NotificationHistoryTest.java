@@ -15,20 +15,25 @@ class NotificationHistoryTest {
     @Test
     @DisplayName("알림 템플릿과 수신자, 행위자 닉네임으로 알림 이력을 생성합니다.")
     void createNotificationHistory() {
+        //given
+        String notificationTitle = "댓글 알림";
+        String notificationMessageTemplate = "{nickname}님이 댓글을 남겼습니다.";
+
         Notification notification = Notification.create(
                 NotificationType.create(NotificationTypeCode.COMMENT),
-                "댓글 알림",
-                "{nickname}님이 댓글을 남겼습니다."
+                notificationTitle,
+                notificationMessageTemplate
         );
         Long recipientId = 1L;
         String actorNickname= "xeulbn";
+        String resolveNotificationMessage = "xeulbn님이 댓글을 남겼습니다.";
 
         //when
         NotificationHistory history = NotificationHistory.from(notification,recipientId,actorNickname);
 
         //then
         assertThat(history.getUserId()).isEqualTo(recipientId);
-        assertThat(history.getMessage()).isEqualTo("xeulbn님이 댓글을 남겼습니다.");
+        assertThat(history.getMessage()).isEqualTo(resolveNotificationMessage);
         assertThat(history.getNotification()).isEqualTo(notification);
     }
 
@@ -36,10 +41,13 @@ class NotificationHistoryTest {
     @DisplayName("닉네임 플레이스홀더가 없는 템플릿으로도 알림 이력을 생성할 수 있다.")
     void createNotificationHistoryWithoutPlaceHolder(){
         //given
+        String notificationTitle = "인증 시간 알림";
+        String notificationMessageTemplate = "오늘 인증까지 1시간 남았습니다.";
+
         Notification notification = Notification.create(
                 NotificationType.create(NotificationTypeCode.CERTIFICATION),
-                "인증 시간 알림",
-                "오늘 인증까지 1시간 남았습니다."
+                notificationTitle,
+                notificationMessageTemplate
         );
         Long recipientId = 1L;
 
@@ -48,7 +56,7 @@ class NotificationHistoryTest {
 
         //then
         assertThat(history.getUserId()).isEqualTo(recipientId);
-        assertThat(history.getMessage()).isEqualTo("오늘 인증까지 1시간 남았습니다.");
+        assertThat(history.getMessage()).isEqualTo(notificationMessageTemplate);
     }
 
     @Test
