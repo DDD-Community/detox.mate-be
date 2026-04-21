@@ -18,3 +18,6 @@ auth:
     access-token-expires-in: 3600
   refresh-token:
     expires-in: 15552000
+
+firebase:
+  service-account-path: classpath:firebase/not-found.json

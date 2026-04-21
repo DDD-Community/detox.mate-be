@@ -52,3 +52,9 @@ out/
 /docs
 
 .claude/worktrees
+
+##Firebase ##
+src/main/resources/firebase/detoxmate-dev-firebase-account.json
+
+# example은 커밋 허용 구조 공유용
+!src/main/resources/firebase/service-account.example.json
