@@ -1,6 +1,7 @@
 package com.detoxmate.user.controller;
 
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
+import com.detoxmate.auth.CurrentUserResolver;
 import com.detoxmate.user.dto.MyProfileResponse;
 import com.detoxmate.user.service.UserService;
 import io.jsonwebtoken.JwtException;
@@ -44,6 +45,7 @@ class UserControllerTest {
     void setUp(RestDocumentationContextProvider restDocumentation) {
         userService = mock(UserService.class);
         mockMvc = MockMvcBuilders.standaloneSetup(new UserController(userService))
+                .setCustomArgumentResolvers(new CurrentUserResolver(userService))
                 .setControllerAdvice(new com.detoxmate.common.error.GlobalExceptionHandler())
                 .apply(documentationConfiguration(restDocumentation))
                 .build();
@@ -62,6 +64,8 @@ class UserControllerTest {
     @Test
     void Authorization_헤더가_있으면_유저_정보를_반환한다() throws Exception {
         when(userService.getMe("access-token"))
+                .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png"));
+        when(userService.getMe(1L))
                 .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png"));
 
         HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();

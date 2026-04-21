@@ -22,11 +22,14 @@ public class UserService {
     public MyProfileResponse getMe(String accessToken) {
         User user = getUser(accessToken);
 
-        return new MyProfileResponse(
-                user.getId(),
-                user.getDisplayName(),
-                user.getProfileImageUrl()
-        );
+        return toMyProfileResponse(user);
+    }
+
+    @Transactional(readOnly = true)
+    public MyProfileResponse getMe(Long userId) {
+        User user = getUser(userId);
+
+        return toMyProfileResponse(user);
     }
 
     @Transactional
@@ -40,7 +43,19 @@ public class UserService {
 
     private User getUser(String accessToken) {
         Long userId = jwtTokenProvider.getUserId(accessToken);
+        return getUser(userId);
+    }
+
+    private User getUser(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow();
+    }
+
+    private MyProfileResponse toMyProfileResponse(User user) {
+        return new MyProfileResponse(
+                user.getId(),
+                user.getDisplayName(),
+                user.getProfileImageUrl()
+        );
     }
 }
