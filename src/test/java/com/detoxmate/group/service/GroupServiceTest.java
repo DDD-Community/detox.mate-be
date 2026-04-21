@@ -11,6 +11,8 @@ import com.detoxmate.group.repository.GroupChallengeParticipantRepository;
 import com.detoxmate.group.repository.GroupChallengeRepository;
 import com.detoxmate.group.repository.GroupMemberRepository;
 import com.detoxmate.group.repository.GroupRepository;
+import com.detoxmate.user.domain.User;
+import com.detoxmate.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -49,6 +51,7 @@ public class GroupServiceTest {
     private final GroupMemberRepository groupMemberRepository = mock(GroupMemberRepository.class);
     private final GroupChallengeRepository groupChallengeRepository = mock(GroupChallengeRepository.class);
     private final GroupChallengeParticipantRepository groupChallengeParticipantRepository = mock(GroupChallengeParticipantRepository.class);
+    private final UserRepository userRepository = mock(UserRepository.class);
 
     // 내부 그룹 서비스 — 실객체
     private final GroupMemberService groupMemberService = new GroupMemberService(groupMemberRepository);
@@ -61,11 +64,12 @@ public class GroupServiceTest {
     private final InviteCodeGenerator inviteCodeGenerator = mock(InviteCodeGenerator.class);
 
     private final GroupService groupService = new GroupService(
-            groupRepository, groupMemberService, groupChallengeService, groupChallengeParticipantService, inviteCodeGenerator
+            groupRepository, groupMemberService, groupChallengeService, groupChallengeParticipantService, inviteCodeGenerator, userRepository
     );
 
     @BeforeEach
     void setUp() {
+        when(userRepository.findByIdForUpdate(any(Long.class))).thenReturn(Optional.of(user()));
         when(groupRepository.save(any(Group.class))).thenAnswer(i -> i.getArgument(0));
         when(groupMemberRepository.save(any(GroupMember.class))).thenAnswer(i -> i.getArgument(0));
         when(groupChallengeRepository.save(any(GroupChallenge.class))).thenAnswer(i -> i.getArgument(0));
@@ -274,7 +278,6 @@ public class GroupServiceTest {
         assertThat(response.members()).hasSize(2);
         assertThat(response.currentChallenge().status()).isEqualTo("RECRUITING");
     }
-
     @Test
     void 테스트를_위해_그룹과_하위_데이터를_모두_삭제할_수_있다() {
         when(groupRepository.findById(GROUP_ID)).thenReturn(Optional.of(recruitingGroup()));
@@ -347,6 +350,12 @@ public class GroupServiceTest {
         GroupMember groupMember = GroupMember.createMember(MEMBER_USER_ID, GROUP_ID);
         ReflectionTestUtils.setField(groupMember, "id", JOINED_GROUP_MEMBER_ID);
         return groupMember;
+    }
+
+    private User user() {
+        User user = User.createNew("지민");
+        ReflectionTestUtils.setField(user, "id", OWNER_USER_ID);
+        return user;
     }
 
     private GroupMember ownerGroupMember() {

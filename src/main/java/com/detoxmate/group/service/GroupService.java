@@ -8,6 +8,7 @@ import com.detoxmate.group.dto.GroupChallengeSummaryResponse;
 import com.detoxmate.group.dto.GroupMemberResponse;
 import com.detoxmate.group.dto.GroupResponse;
 import com.detoxmate.group.repository.GroupRepository;
+import com.detoxmate.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -29,9 +30,12 @@ public class GroupService {
     private final GroupChallengeService groupChallengeService;
     private final GroupChallengeParticipantService groupChallengeParticipantService;
     private final InviteCodeGenerator inviteCodeGenerator;
+    private final UserRepository userRepository;
 
     @Transactional
     public GroupResponse createGroup(Long creatorUserId, String groupName) {
+        lockUserForGroupOperation(creatorUserId);
+
         if (groupMemberService.existsActiveGroupMember(creatorUserId)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 그룹이 있어서, 새로운 그룹을 생성할 수 없습니다.");
         }
@@ -52,6 +56,8 @@ public class GroupService {
 
     @Transactional
     public GroupResponse joinGroup(String inviteCode, Long userId) {
+        lockUserForGroupOperation(userId);
+
         Group group = groupRepository.findByInviteCode(inviteCode)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "초대코드에 해당하는 그룹이 없습니다."));
 
@@ -140,6 +146,11 @@ public class GroupService {
         } catch (NoSuchElementException exception) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "내가 속한 그룹만 조회할 수 있습니다.");
         }
+    }
+
+    private void lockUserForGroupOperation(Long userId) {
+        userRepository.findByIdForUpdate(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
     }
 
     private Group saveGroupWithUniqueInviteCode(String groupName) {
