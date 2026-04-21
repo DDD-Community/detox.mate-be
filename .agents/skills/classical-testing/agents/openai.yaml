@@ -1,0 +1,4 @@
+interface:
+  display_name: "Classical Testing"
+  short_description: "Write durable behavior-first tests"
+  default_prompt: "Use $classical-testing to design or revise tests around observable behavior and boundary-only mocks."

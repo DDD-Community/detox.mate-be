@@ -5,13 +5,13 @@ import com.detoxmate.group.dto.GroupChallengeResponse;
 import com.detoxmate.group.dto.GroupChallengeSummaryResponse;
 import com.detoxmate.group.dto.GroupMemberResponse;
 import com.detoxmate.group.dto.GroupResponse;
-import com.detoxmate.group.dto.GoalTimeResponse;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-final class GroupMockData {
+public final class GroupMockData {
 
+    private static final String INVITE_CODE = "AB123";
     private static final LocalDateTime GROUP_CREATED_AT = LocalDateTime.parse("2026-04-19T10:00:00");
     private static final LocalDateTime SECOND_MEMBER_JOINED_AT = LocalDateTime.parse("2026-04-19T10:30:00");
     private static final LocalDateTime ACTIVE_CHALLENGE_START_AT = LocalDateTime.parse("2026-04-20T09:00:00");
@@ -20,10 +20,10 @@ final class GroupMockData {
     private GroupMockData() {
     }
 
-    static GroupResponse createGroupResponse(String name) {
+    public static GroupResponse createGroupResponse(String name) {
         return new GroupResponse(
                 1L,
-                "AB12CD34",
+                INVITE_CODE,
                 name,
                 "OWNER",
                 List.of(ownerMember()),
@@ -49,7 +49,7 @@ final class GroupMockData {
     static List<GroupResponse> myGroupsResponse() {
         return List.of(new GroupResponse(
                 1L,
-                "AB12CD34",
+                INVITE_CODE,
                 "주말 디톡스",
                 "OWNER",
                 List.of(ownerMember()),
@@ -61,9 +61,9 @@ final class GroupMockData {
 
     static GroupResponse groupDetailResponse(long id) {
         return new GroupResponse(
-                id,
-                "AB12CD34",
-                "주말 디톡스",
+            id,
+            INVITE_CODE,
+            "주말 디톡스",
                 "OWNER",
                 List.of(ownerMember(), memberParticipant()),
                 activeChallengeSummary(10L),
@@ -160,10 +160,7 @@ final class GroupMockData {
                 "JOINED",
                 GROUP_CREATED_AT,
                 null,
-                List.of(
-                        goalTime("INSTAGRAM", 30),
-                        goalTime("YOUTUBE", 60)
-                )
+                List.of()
         );
     }
 
@@ -177,14 +174,7 @@ final class GroupMockData {
                 "JOINED",
                 SECOND_MEMBER_JOINED_AT,
                 null,
-                List.of(
-                        goalTime("INSTAGRAM", 45),
-                        goalTime("YOUTUBE", 75)
-                )
+                List.of()
         );
-    }
-
-    private static GoalTimeResponse goalTime(String type, int minutes) {
-        return new GoalTimeResponse(type, minutes);
     }
 }

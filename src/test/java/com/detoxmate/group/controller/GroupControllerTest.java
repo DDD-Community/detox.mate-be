@@ -1,22 +1,31 @@
 package com.detoxmate.group.controller;
 
+import com.detoxmate.auth.CurrentUserResolver;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.SimpleType;
+import com.detoxmate.group.service.GroupService;
+import com.detoxmate.user.dto.MyProfileResponse;
+import com.detoxmate.user.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatus;
 import org.springframework.restdocs.RestDocumentationContextProvider;
 import org.springframework.restdocs.RestDocumentationExtension;
+import org.springframework.restdocs.headers.HeaderDescriptor;
 import org.springframework.restdocs.payload.FieldDescriptor;
 import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.restdocs.request.ParameterDescriptor;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.server.ResponseStatusException;
 
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
 import static com.epages.restdocs.apispec.Schema.schema;
+import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
+import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.prettyPrint;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.preprocessRequest;
@@ -31,26 +40,55 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(RestDocumentationExtension.class)
 class GroupControllerTest {
 
+    private GroupService groupService;
+    private UserService userService;
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp(RestDocumentationContextProvider restDocumentation) {
-        mockMvc = MockMvcBuilders.standaloneSetup(new GroupController())
+        groupService = mock(GroupService.class);
+        userService = mock(UserService.class);
+        when(userService.getMe("access-token"))
+                .thenReturn(new MyProfileResponse(1L, "지민", "https://..."));
+        mockMvc = MockMvcBuilders.standaloneSetup(new GroupController(groupService))
+                .setCustomArgumentResolvers(new CurrentUserResolver(userService))
                 .setControllerAdvice(new com.detoxmate.common.error.GlobalExceptionHandler())
                 .apply(documentationConfiguration(restDocumentation))
                 .build();
     }
 
     @Test
+    void 그룹_생성_요청에_Authorization_헤더가_없으면_401_에러를_반환한다() throws Exception {
+        mockMvc.perform(post("/groups")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "name": "주말 디톡스"
+                        }
+                        """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+                .andExpect(jsonPath("$.status").value(401));
+    }
+
+    @Test
     void 그룹을_생성하면_생성된_그룹_정보를_반환한다() throws Exception {
+        HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
         FieldDescriptor[] requestFieldDescriptors = createGroupRequestFields();
         FieldDescriptor[] responseFieldDescriptors = groupResponseFields();
+        when(groupService.createGroup(1L, "주말 디톡스"))
+                .thenReturn(GroupMockData.createGroupResponse("주말 디톡스"));
 
         mockMvc.perform(post("/groups")
+                        .header("Authorization", "Bearer access-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                         {
@@ -65,12 +103,14 @@ class GroupControllerTest {
                 .andDo(document("groups/create",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
+                        requestHeaders(requestHeaderDescriptors),
                         requestFields(requestFieldDescriptors),
                         responseFields(responseFieldDescriptors),
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Group")
                                 .summary("Create group")
                                 .description("그룹을 생성하고 생성자를 첫 멤버 및 첫 챌린지 참가자로 등록한다.")
+                                .requestHeaders(requestHeaderDescriptors)
                                 .requestSchema(schema("CreateGroupRequest"))
                                 .responseSchema(schema("GroupResponse"))
                                 .requestFields(requestFieldDescriptors)
@@ -80,31 +120,53 @@ class GroupControllerTest {
     }
 
     @Test
-    void 초대코드로_그룹에_참여하면_업데이트된_그룹_정보를_반환한다() throws Exception {
-        FieldDescriptor[] requestFieldDescriptors = joinGroupRequestFields();
-        FieldDescriptor[] responseFieldDescriptors = groupResponseFields();
-
-        mockMvc.perform(post("/groups/join")
+    void 그룹_생성_요청의_이름이_12자를_초과하면_400_에러를_반환한다() throws Exception {
+        mockMvc.perform(post("/groups")
+                        .header("Authorization", "Bearer access-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                         {
-                          "inviteCode": "AB12CD34"
+                          "name": "1234567890123"
+                        }
+                        """))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    void 초대코드로_그룹에_참여하면_업데이트된_그룹_정보를_반환한다() throws Exception {
+        HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
+        FieldDescriptor[] requestFieldDescriptors = joinGroupRequestFields();
+        FieldDescriptor[] responseFieldDescriptors = groupResponseFields();
+        when(groupService.joinGroup("AB123", 1L))
+                .thenReturn(GroupMockData.joinGroupResponse("AB123"));
+
+        mockMvc.perform(post("/groups/join")
+                        .header("Authorization", "Bearer access-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "inviteCode": "AB123"
                         }
                         """))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.inviteCode").value("AB12CD34"))
+                .andExpect(jsonPath("$.inviteCode").value("AB123"))
                 .andExpect(jsonPath("$.myRole").value("MEMBER"))
                 .andExpect(jsonPath("$.members[1].displayName").value("민수"))
                 .andDo(document("groups/join",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
+                        requestHeaders(requestHeaderDescriptors),
                         requestFields(requestFieldDescriptors),
                         responseFields(responseFieldDescriptors),
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Group")
                                 .summary("Join group")
                                 .description("초대코드로 그룹에 참여하고 현재 챌린지가 모집 중이면 자동 참가한다.")
+                                .requestHeaders(requestHeaderDescriptors)
                                 .requestSchema(schema("JoinGroupRequest"))
                                 .responseSchema(schema("GroupResponse"))
                                 .requestFields(requestFieldDescriptors)
@@ -114,22 +176,82 @@ class GroupControllerTest {
     }
 
     @Test
-    void 내_그룹_목록을_조회하면_그룹_배열을_반환한다() throws Exception {
-        FieldDescriptor[] responseFieldDescriptors = groupListResponseFields();
+    void 그룹_참여_요청에_Authorization_헤더가_없으면_401_에러를_반환한다() throws Exception {
+        mockMvc.perform(post("/groups/join")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "inviteCode": "AB123"
+                        }
+                        """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+                .andExpect(jsonPath("$.status").value(401));
+    }
 
-        mockMvc.perform(get("/me/groups"))
+    @Test
+    void 존재하지_않는_초대코드로_그룹에_참여하면_404_에러를_반환한다() throws Exception {
+        when(groupService.joinGroup("ZZZZZ", 1L))
+                .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "초대코드에 해당하는 그룹이 없습니다."));
+
+        mockMvc.perform(post("/groups/join")
+                        .header("Authorization", "Bearer access-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "inviteCode": "ZZZZZ"
+                        }
+                        """))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("NOT_FOUND"))
+                .andExpect(jsonPath("$.status").value(404));
+    }
+
+    @Test
+    void 이미_그룹이_있는_유저가_그룹을_생성하면_409_에러를_반환한다() throws Exception {
+        when(groupService.createGroup(1L, "주말 디톡스"))
+                .thenThrow(new ResponseStatusException(HttpStatus.CONFLICT, "이미 그룹이 있어서, 새로운 그룹을 생성할 수 없습니다."));
+
+        mockMvc.perform(post("/groups")
+                        .header("Authorization", "Bearer access-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "name": "주말 디톡스"
+                        }
+                        """))
+                .andExpect(status().isConflict())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("CONFLICT"))
+                .andExpect(jsonPath("$.status").value(409));
+    }
+
+    @Test
+    void 내_그룹_목록을_조회하면_그룹_배열을_반환한다() throws Exception {
+        HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
+        FieldDescriptor[] responseFieldDescriptors = groupListResponseFields();
+        when(groupService.getMyGroups(1L))
+                .thenReturn(GroupMockData.myGroupsResponse());
+
+        mockMvc.perform(get("/me/groups")
+                        .header("Authorization", "Bearer access-token"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$[0].id").value(1))
                 .andExpect(jsonPath("$[0].currentChallenge.status").value("ACTIVE"))
+                .andDo(result -> verify(groupService).getMyGroups(1L))
                 .andDo(document("me/groups-get",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
+                        requestHeaders(requestHeaderDescriptors),
                         responseFields(responseFieldDescriptors),
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Group")
                                 .summary("Get my groups")
                                 .description("내가 속한 그룹 목록을 조회한다.")
+                                .requestHeaders(requestHeaderDescriptors)
                                 .responseSchema(schema("MyGroupsResponse"))
                                 .responseFields(responseFieldDescriptors)
                                 .build()
@@ -137,30 +259,89 @@ class GroupControllerTest {
     }
 
     @Test
+    void 내_그룹_목록_조회_요청에_Authorization_헤더가_없으면_401_에러를_반환한다() throws Exception {
+        mockMvc.perform(get("/me/groups"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+                .andExpect(jsonPath("$.status").value(401));
+    }
+
+    @Test
     void 그룹_상세를_조회하면_그룹_정보를_반환한다() throws Exception {
+        HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
         FieldDescriptor[] responseFieldDescriptors = groupResponseFields();
         ParameterDescriptor[] pathParameterDescriptors = groupIdPathParameters();
         com.epages.restdocs.apispec.ParameterDescriptorWithType[] typedPathParameterDescriptors = groupIdOpenApiPathParameters();
+        when(groupService.getGroup(1L, 1L))
+                .thenReturn(GroupMockData.groupDetailResponse(1L));
 
-        mockMvc.perform(get("/groups/{id}", 1L))
+        mockMvc.perform(get("/groups/{id}", 1L)
+                        .header("Authorization", "Bearer access-token"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.members[1].role").value("MEMBER"))
+                .andDo(result -> verify(groupService).getGroup(1L, 1L))
                 .andDo(document("groups/get-by-id",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
+                        requestHeaders(requestHeaderDescriptors),
                         pathParameters(pathParameterDescriptors),
                         responseFields(responseFieldDescriptors),
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Group")
                                 .summary("Get group detail")
                                 .description("그룹 상세 정보를 조회한다.")
+                                .requestHeaders(requestHeaderDescriptors)
                                 .pathParameters(typedPathParameterDescriptors)
                                 .responseSchema(schema("GroupResponse"))
                                 .responseFields(responseFieldDescriptors)
                                 .build()
                         )));
+    }
+
+    @Test
+    void 그룹_상세_조회_요청에_Authorization_헤더가_없으면_401_에러를_반환한다() throws Exception {
+        mockMvc.perform(get("/groups/{id}", 1L))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+                .andExpect(jsonPath("$.status").value(401));
+    }
+
+    @Test
+    void 그룹을_탈퇴하면_204_응답을_반환한다() throws Exception {
+        HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
+        ParameterDescriptor[] pathParameterDescriptors = leaveGroupPathParameters();
+        com.epages.restdocs.apispec.ParameterDescriptorWithType[] typedPathParameterDescriptors = leaveGroupOpenApiPathParameters();
+
+        mockMvc.perform(post("/groups/{id}/leave", 1L)
+                        .header("Authorization", "Bearer access-token"))
+                .andExpect(status().isNoContent())
+                .andDo(result -> verify(groupService).leaveGroup(1L, 1L))
+                .andDo(document("groups/leave",
+                        preprocessRequest(prettyPrint()),
+                        preprocessResponse(prettyPrint()),
+                        requestHeaders(requestHeaderDescriptors),
+                        pathParameters(pathParameterDescriptors),
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Group")
+                                .summary("Leave group")
+                                .description("현재 사용자가 그룹을 탈퇴하고 최신 챌린지 참가 상태가 있으면 함께 이탈 처리한다.")
+                                .requestHeaders(requestHeaderDescriptors)
+                                .pathParameters(typedPathParameterDescriptors)
+                                .build()
+                        )));
+    }
+
+    @Test
+    void 그룹_탈퇴_요청에_Authorization_헤더가_없으면_401_에러를_반환한다() throws Exception {
+        mockMvc.perform(post("/groups/{id}/leave", 1L))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+                .andExpect(jsonPath("$.status").value(401));
     }
 
     private ParameterDescriptor[] groupIdPathParameters() {
@@ -169,11 +350,31 @@ class GroupControllerTest {
         };
     }
 
+    private ParameterDescriptor[] leaveGroupPathParameters() {
+        return new ParameterDescriptor[] {
+                parameterWithName("id").description("탈퇴할 그룹 ID")
+        };
+    }
+
     private com.epages.restdocs.apispec.ParameterDescriptorWithType[] groupIdOpenApiPathParameters() {
         return new com.epages.restdocs.apispec.ParameterDescriptorWithType[] {
                 com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName("id")
                         .type(SimpleType.INTEGER)
                         .description("조회할 그룹 ID")
+        };
+    }
+
+    private com.epages.restdocs.apispec.ParameterDescriptorWithType[] leaveGroupOpenApiPathParameters() {
+        return new com.epages.restdocs.apispec.ParameterDescriptorWithType[] {
+                com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName("id")
+                        .type(SimpleType.INTEGER)
+                        .description("탈퇴할 그룹 ID")
+        };
+    }
+
+    private HeaderDescriptor[] authorizationHeaderDescriptors() {
+        return new HeaderDescriptor[] {
+                headerWithName("Authorization").description("Bearer {accessToken} 형식의 서비스 access token")
         };
     }
 
