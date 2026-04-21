@@ -53,4 +53,13 @@ public class GroupController {
     ) {
         return groupService.getGroup(id, currentUser.id());
     }
+
+    @PostMapping("/groups/{id}/leave")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void leaveGroup(
+            CurrentUser currentUser,
+            @PathVariable long id
+    ) {
+        groupService.leaveGroup(id, currentUser.id());
+    }
 }

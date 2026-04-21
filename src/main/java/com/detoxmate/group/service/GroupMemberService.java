@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -34,11 +35,19 @@ public class GroupMemberService {
                 .orElseThrow();
     }
 
+    public Optional<GroupMember> findActiveGroupMember(Long userId, Long groupId) {
+        return groupMemberRepository.findByUserIdAndGroupIdAndStatus(userId, groupId, "ACTIVE");
+    }
+
     public boolean existsActiveGroupMember(Long userId) {
         return groupMemberRepository.existsByUserIdAndStatus(userId, "ACTIVE");
     }
 
     public void deleteGroupMembers(Long groupId) {
         groupMemberRepository.deleteAllByGroupId(groupId);
+    }
+
+    public void leaveGroupMember(GroupMember groupMember) {
+        groupMember.leave();
     }
 }

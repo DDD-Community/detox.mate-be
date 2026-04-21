@@ -66,4 +66,13 @@ public class GroupMember {
     public static GroupMember createMember(Long userId, Long groupId) {
         return new GroupMember(userId, groupId, GroupMemberRole.MEMBER, GroupMemberStatus.ACTIVE, LocalDateTime.now());
     }
+
+    public void leave() {
+        if (!GroupMemberStatus.ACTIVE.name().equals(status)) {
+            return;
+        }
+
+        status = GroupMemberStatus.LEFT.name();
+        leftAt = LocalDateTime.now();
+    }
 }

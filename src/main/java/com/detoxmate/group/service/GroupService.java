@@ -116,6 +116,21 @@ public class GroupService {
         groupRepository.delete(group);
     }
 
+    @Transactional
+    public void leaveGroup(Long groupId, Long userId) {
+        lockUserForGroupOperation(userId);
+
+        groupRepository.findById(groupId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "그룹을 찾을 수 없습니다."));
+
+        GroupMember groupMember = groupMemberService.findActiveGroupMember(userId, groupId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "내가 속한 그룹만 탈퇴할 수 있습니다."));
+        GroupChallenge latestChallenge = groupChallengeService.getLatestChallenge(groupId);
+
+        groupMemberService.leaveGroupMember(groupMember);
+        groupChallengeParticipantService.withdrawGroupChallengeParticipant(latestChallenge.getId(), groupMember.getId());
+    }
+
     private GroupResponse toGroupResponse(
             Group group,
             GroupMember currentMember,

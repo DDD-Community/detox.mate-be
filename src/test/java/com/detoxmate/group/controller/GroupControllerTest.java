@@ -310,9 +310,49 @@ class GroupControllerTest {
                 .andExpect(jsonPath("$.status").value(401));
     }
 
+    @Test
+    void 그룹을_탈퇴하면_204_응답을_반환한다() throws Exception {
+        HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
+        ParameterDescriptor[] pathParameterDescriptors = leaveGroupPathParameters();
+        com.epages.restdocs.apispec.ParameterDescriptorWithType[] typedPathParameterDescriptors = leaveGroupOpenApiPathParameters();
+
+        mockMvc.perform(post("/groups/{id}/leave", 1L)
+                        .header("Authorization", "Bearer access-token"))
+                .andExpect(status().isNoContent())
+                .andDo(result -> verify(groupService).leaveGroup(1L, 1L))
+                .andDo(document("groups/leave",
+                        preprocessRequest(prettyPrint()),
+                        preprocessResponse(prettyPrint()),
+                        requestHeaders(requestHeaderDescriptors),
+                        pathParameters(pathParameterDescriptors),
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Group")
+                                .summary("Leave group")
+                                .description("현재 사용자가 그룹을 탈퇴하고 최신 챌린지 참가 상태가 있으면 함께 이탈 처리한다.")
+                                .requestHeaders(requestHeaderDescriptors)
+                                .pathParameters(typedPathParameterDescriptors)
+                                .build()
+                        )));
+    }
+
+    @Test
+    void 그룹_탈퇴_요청에_Authorization_헤더가_없으면_401_에러를_반환한다() throws Exception {
+        mockMvc.perform(post("/groups/{id}/leave", 1L))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+                .andExpect(jsonPath("$.status").value(401));
+    }
+
     private ParameterDescriptor[] groupIdPathParameters() {
         return new ParameterDescriptor[] {
                 parameterWithName("id").description("조회할 그룹 ID")
+        };
+    }
+
+    private ParameterDescriptor[] leaveGroupPathParameters() {
+        return new ParameterDescriptor[] {
+                parameterWithName("id").description("탈퇴할 그룹 ID")
         };
     }
 
@@ -321,6 +361,14 @@ class GroupControllerTest {
                 com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName("id")
                         .type(SimpleType.INTEGER)
                         .description("조회할 그룹 ID")
+        };
+    }
+
+    private com.epages.restdocs.apispec.ParameterDescriptorWithType[] leaveGroupOpenApiPathParameters() {
+        return new com.epages.restdocs.apispec.ParameterDescriptorWithType[] {
+                com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName("id")
+                        .type(SimpleType.INTEGER)
+                        .description("탈퇴할 그룹 ID")
         };
     }
 

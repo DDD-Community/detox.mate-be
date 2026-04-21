@@ -2,6 +2,7 @@ package com.detoxmate.group.service;
 
 import com.detoxmate.group.domain.Group;
 import com.detoxmate.group.domain.GroupChallenge;
+import com.detoxmate.group.domain.GroupChallengeParticipantStatus;
 import com.detoxmate.group.domain.GroupChallengeStatus;
 import com.detoxmate.group.domain.GroupChallengeParticipant;
 import com.detoxmate.group.domain.GroupMember;
@@ -308,6 +309,37 @@ public class GroupServiceTest {
                 .hasMessageContaining("404 NOT_FOUND");
     }
 
+    @Test
+    void 그룹을_탈퇴하면_멤버를_LEFT로_변경하고_최신_챌린지_참가자를_WITHDRAWN으로_변경한다() {
+        GroupMember groupMember = ownerGroupMember();
+        GroupChallengeParticipant participant = joinedParticipant(groupMember.getId(), RECRUITING_CHALLENGE_ID);
+        when(groupRepository.findById(GROUP_ID)).thenReturn(Optional.of(recruitingGroup()));
+        when(groupMemberRepository.findByUserIdAndGroupIdAndStatus(OWNER_USER_ID, GROUP_ID, "ACTIVE"))
+                .thenReturn(Optional.of(groupMember));
+        when(groupChallengeRepository.findTopByGroupIdOrderByChallengeNoDesc(GROUP_ID))
+                .thenReturn(Optional.of(recruitingChallenge()));
+        when(groupChallengeParticipantRepository.findByGroupChallengeIdAndGroupMemberId(RECRUITING_CHALLENGE_ID, groupMember.getId()))
+                .thenReturn(Optional.of(participant));
+
+        groupService.leaveGroup(GROUP_ID, OWNER_USER_ID);
+
+        assertThat(groupMember.getStatus()).isEqualTo("LEFT");
+        assertThat(groupMember.getLeftAt()).isNotNull();
+        assertThat(participant.getStatus()).isEqualTo(GroupChallengeParticipantStatus.WITHDRAWN.name());
+        assertThat(participant.getWithdrawnAt()).isNotNull();
+    }
+
+    @Test
+    void 내가_속하지_않은_그룹은_탈퇴할_수_없다() {
+        when(groupRepository.findById(GROUP_ID)).thenReturn(Optional.of(recruitingGroup()));
+        when(groupMemberRepository.findByUserIdAndGroupIdAndStatus(OWNER_USER_ID, GROUP_ID, "ACTIVE"))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> groupService.leaveGroup(GROUP_ID, OWNER_USER_ID))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("403 FORBIDDEN");
+    }
+
     private Group recruitingGroup() {
         Group group = Group.createNew(GROUP_NAME, INVITE_CODE);
         ReflectionTestUtils.setField(group, "id", GROUP_ID);
@@ -350,6 +382,12 @@ public class GroupServiceTest {
         GroupMember groupMember = GroupMember.createMember(MEMBER_USER_ID, GROUP_ID);
         ReflectionTestUtils.setField(groupMember, "id", JOINED_GROUP_MEMBER_ID);
         return groupMember;
+    }
+
+    private GroupChallengeParticipant joinedParticipant(Long groupMemberId, Long groupChallengeId) {
+        GroupChallengeParticipant participant = GroupChallengeParticipant.join(groupMemberId, groupChallengeId);
+        ReflectionTestUtils.setField(participant, "id", 1000L);
+        return participant;
     }
 
     private User user() {

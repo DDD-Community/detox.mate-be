@@ -23,4 +23,9 @@ public class GroupChallengeParticipantService {
 
         groupChallengeParticipantRepository.deleteAllByGroupChallengeIdIn(groupChallengeIds);
     }
+
+    public void withdrawGroupChallengeParticipant(Long groupChallengeId, Long groupMemberId) {
+        groupChallengeParticipantRepository.findByGroupChallengeIdAndGroupMemberId(groupChallengeId, groupMemberId)
+                .ifPresent(GroupChallengeParticipant::withdraw);
+    }
 }

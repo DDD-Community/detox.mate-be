@@ -61,4 +61,13 @@ public class GroupChallengeParticipant {
     public static GroupChallengeParticipant join(Long groupMemberId, Long groupChallengeId) {
         return new GroupChallengeParticipant(groupMemberId, groupChallengeId, GroupChallengeParticipantStatus.JOINED);
     }
+
+    public void withdraw() {
+        if (!GroupChallengeParticipantStatus.JOINED.name().equals(status)) {
+            return;
+        }
+
+        status = GroupChallengeParticipantStatus.WITHDRAWN.name();
+        withdrawnAt = LocalDateTime.now();
+    }
 }
