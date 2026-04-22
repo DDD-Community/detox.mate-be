@@ -25,6 +25,7 @@ public class FcmToken {
     private static final int TOKEN_MAX_LENGTH = 4096;
 
     @Id
+    @Column(name = "fcm_token_id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
