@@ -3,6 +3,8 @@ package com.detoxmate.notification.controller;
 import com.detoxmate.auth.JwtTokenProvider;
 import com.detoxmate.notification.domain.DevicePlatform;
 import com.detoxmate.notification.domain.FcmToken;
+import com.detoxmate.notification.dto.RegisterFcmTokenRequest;
+import com.detoxmate.notification.dto.RemoveFcmTokenRequest;
 import com.detoxmate.notification.repository.FcmTokenRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
@@ -28,7 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class FcmTokenControllerTest {
 
-    private static final String TOKENS_URL = "/api/v1/notifications/tokens";
+    private static final String TOKENS_URL = "/notifications/tokens";
     private static final Long TEST_USER_ID = 1L;
 
     @Autowired

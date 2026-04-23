@@ -12,10 +12,10 @@ import com.detoxmate.notification.repository.FcmTokenRepository;
 import com.detoxmate.notification.repository.NotificationHistoryRepository;
 import com.detoxmate.notification.repository.NotificationRepository;
 import com.detoxmate.notification.util.FcmSender;
+import com.detoxmate.notification.util.TokenMasker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.ArrayList;
@@ -36,6 +36,11 @@ public class NotificationService {
         DispatchContext context = prepareWithinTx(userId,typeCode,nickname);
         List<String> deadTokens = dispatchPush(context,userId);
         cleanUpDeadTokens(deadTokens);
+
+        log.info("[Notification][send] done. userId={}, typeCode={}, sentTokens={}, deadTokens={}",
+                userId, typeCode,
+                context.tokens().size() - deadTokens.size(),
+                deadTokens.size());
     }
 
     private DispatchContext prepareWithinTx(Long userId, NotificationTypeCode typeCode, String nickname){
@@ -62,7 +67,7 @@ public class NotificationService {
                 fcmSender.send(token, context.title(),context.body());
             }catch(CustomException e){
                 log.warn("[Notification][dispatch-push] FCM send failed. userId={},token={},errorCode={}",
-                        userId, mask(token),e.getErrorCode());
+                        userId, TokenMasker.mask(token),e.getErrorCode(),e);
 
                 if(isDeadTokenError(e.getErrorCode())){
                     deadTokens.add(token);
@@ -86,11 +91,6 @@ public class NotificationService {
             tokens.forEach(fcmTokenRepository::deleteByToken);
         });
         log.info("[Notification][clean-up-dead-tokens] Cleaned up {} dead FCM tokens",tokens.size());
-    }
-
-    private String mask(String token) {
-        if (token == null || token.length() < 10) return "***";
-        return token.substring(0, 4) + "****" + token.substring(token.length() - 4);
     }
 
     private record DispatchContext(List<String> tokens, String title, String body) {}
