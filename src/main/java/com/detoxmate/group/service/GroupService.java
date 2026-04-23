@@ -1,9 +1,6 @@
 package com.detoxmate.group.service;
 
-import com.detoxmate.group.domain.Group;
-import com.detoxmate.group.domain.GroupChallenge;
-import com.detoxmate.group.domain.GroupChallengeStatus;
-import com.detoxmate.group.domain.GroupMember;
+import com.detoxmate.group.domain.*;
 import com.detoxmate.group.dto.GroupChallengeSummaryResponse;
 import com.detoxmate.group.dto.GroupMemberResponse;
 import com.detoxmate.group.dto.GroupResponse;
@@ -16,14 +13,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
 public class GroupService {
-
-    private static final int MAX_INVITE_CODE_GENERATION_ATTEMPTS = 10;
 
     private final GroupRepository groupRepository;
     private final GroupMemberService groupMemberService;
@@ -40,7 +36,10 @@ public class GroupService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 그룹이 있어서, 새로운 그룹을 생성할 수 없습니다.");
         }
 
-        Group createdGroup = saveGroupWithUniqueInviteCode(groupName);
+        Group group = Group.createNew(groupName, inviteCodeGenerator);
+        group.updateOwner(creatorUserId);
+
+
         GroupMember groupMember = groupMemberService.saveGroupOwner(creatorUserId, createdGroup.getId());
         GroupChallenge groupChallenge = groupChallengeService.saveGroupChallenge(groupMember.getGroupId());
         groupChallengeParticipantService.saveGroupChallengeParticipant(groupMember.getId(), groupChallenge.getId());
@@ -166,19 +165,5 @@ public class GroupService {
     private void lockUserForGroupOperation(Long userId) {
         userRepository.findByIdForUpdate(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
-    }
-
-    private Group saveGroupWithUniqueInviteCode(String groupName) {
-        for (int attempt = 0; attempt < MAX_INVITE_CODE_GENERATION_ATTEMPTS; attempt++) {
-            String inviteCode = inviteCodeGenerator.generate();
-
-            try {
-                return saveGroup(groupName, inviteCode);
-            } catch (DataIntegrityViolationException exception) {
-                // `invite_code` 유일성은 DB가 보장하므로, 중복 충돌이 나면 여기서 재시도한다.
-            }
-        }
-
-        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "사용 가능한 초대코드를 생성할 수 없습니다.");
     }
 }
