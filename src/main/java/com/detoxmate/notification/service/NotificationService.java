@@ -21,6 +21,12 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * FCM 전용 알림 발송 서비스.
+ * 현재 채널이 FCM 하나뿐이라 채널 추상화를 두지 않았습니다.
+ * 이메일/SMS 등 다른 채널이 실제로 추가되는 시점에 NotificationChannel 인터페이스로 리팩터 고려해보겠습니다.
+ */
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
