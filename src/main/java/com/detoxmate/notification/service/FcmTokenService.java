@@ -17,16 +17,18 @@ public class FcmTokenService {
     private final FcmTokenRepository fcmTokenRepository;
 
     @Transactional
-    public FcmToken register (Long userId, String token, DevicePlatform devicePlatform) {
-        fcmTokenRepository.deleteByToken(token);
-        log.info("[Notification][fcm-token-register] userId={}, platform={}, token={}",
-                userId, devicePlatform, TokenMasker.mask(token));
-        return fcmTokenRepository.save(FcmToken.create(userId, token, devicePlatform));
+    public FcmToken register(Long userId, String token, DevicePlatform platform) {
+        return fcmTokenRepository.findByToken(token)
+                .map(existing -> {
+                    existing.reassignTo(userId, platform);
+                    return existing;
+                })
+                .orElseGet(() -> fcmTokenRepository.save(FcmToken.create(userId, token, platform)));
     }
 
     @Transactional
-    public void remove(String token) {
-        fcmTokenRepository.deleteByToken(token);
+    public void remove(Long userId, String token) {
+        fcmTokenRepository.deleteByUserIdAndToken(userId, token);
     }
 
 }

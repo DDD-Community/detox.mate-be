@@ -6,6 +6,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 import java.util.Optional;
@@ -14,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
+@ActiveProfiles("test")
 class FcmTokenRepositoryTest {
 
     @Autowired
@@ -93,17 +95,27 @@ class FcmTokenRepositoryTest {
     }
 
     @Test
-    @DisplayName("토큰 문자열로 Fcm 토큰을 삭제할 수 있다")
-    void deleteByToken(){
+    @DisplayName("사용자 ID와 토큰으로 FCM 토큰을 삭제할 수 있다")
+    void deleteByUserIdAndToken(){
         //given
-        FcmToken token = FcmToken.create(1L,"test-token-abc-123",DevicePlatform.IOS);
+        FcmToken token = FcmToken.create(1L,"test-token",DevicePlatform.IOS);
         fcmTokenRepository.save(token);
 
         //when
-        fcmTokenRepository.deleteByToken("test-token-abc-123");
+        fcmTokenRepository.deleteByUserIdAndToken(1L,"test-token");
 
         //then
-        assertThat(fcmTokenRepository.findByToken("test-token-abc-123")).isEmpty();
+        assertThat(fcmTokenRepository.findByToken("test-token")).isEmpty();
     }
 
+    @Test
+    @DisplayName("소유자가 다르면 deleteByUserIdAndToken은 아무것도 지우지 않는다")
+    void deleteByUserIdAndToken_doesNothing_whenOwnerMismatch() {
+        FcmToken saved = FcmToken.create(1L, "token-A", DevicePlatform.IOS);
+        fcmTokenRepository.save(saved);
+
+        fcmTokenRepository.deleteByUserIdAndToken(2L, "token-A"); // 다른 유저가 지우려 시도
+
+        assertThat(fcmTokenRepository.findByToken("token-A")).isPresent();
+    }
 }

@@ -11,12 +11,16 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 
+@Transactional
 @ExtendWith(MockitoExtension.class)
 class FcmTokenServiceTest {
 
@@ -43,29 +47,48 @@ class FcmTokenServiceTest {
     }
 
     @Test
-    @DisplayName("등록 시 기존 동일 토큰은 먼저 삭제된다")
-    void registerDeletesExistingToken(){
-        //given
+    @DisplayName("같은 토큰이 이미 존재하면 소유자가 새 유저로 갱신된다")
+    void register_reassignsOwnerWhenTokenExists() {
+        // given: 기존 소유자가 999L 인 토큰
+        FcmToken existing = FcmToken.create(999L, "test-token-abc", DevicePlatform.ANDROID);
+        given(fcmTokenRepository.findByToken("test-token-abc"))
+                .willReturn(Optional.of(existing));
+
+        // when
+        FcmToken result = fcmTokenService.register(2L, "test-token-abc", DevicePlatform.IOS);
+
+        // then: 돌아온 토큰의 상태만 확인
+        assertThat(result.getUserId()).isEqualTo(2L);
+        assertThat(result.getPlatform()).isEqualTo(DevicePlatform.IOS);
+        assertThat(result.getToken()).isEqualTo("test-token-abc");
+    }
+
+    @Test
+    @DisplayName("같은 토큰이 없으면 새로 저장된다")
+    void register_insertsWhenTokenNotExists() {
+        // given
+        given(fcmTokenRepository.findByToken("test-token-abc"))
+                .willReturn(Optional.empty());
         given(fcmTokenRepository.save(any(FcmToken.class)))
                 .willAnswer(inv -> inv.getArgument(0));
 
-        //when
-        fcmTokenService.register(2L,"test-token-abc",DevicePlatform.IOS);
+        // when
+        FcmToken result = fcmTokenService.register(2L, "test-token-abc", DevicePlatform.IOS);
 
-        //then
-        InOrder inOrder = Mockito.inOrder(fcmTokenRepository);
-        inOrder.verify(fcmTokenRepository).deleteByToken("test-token-abc");
-        inOrder.verify(fcmTokenRepository).save(any(FcmToken.class));
+        // then
+        assertThat(result.getUserId()).isEqualTo(2L);
+        assertThat(result.getToken()).isEqualTo("test-token-abc");
+        assertThat(result.getPlatform()).isEqualTo(DevicePlatform.IOS);
     }
 
     @Test
     @DisplayName("토큰을 삭제할 수 있다")
     void removeToken(){
         //when
-        fcmTokenService.remove("test-token-abc");
+        fcmTokenService.remove(1L,"test-token-abc");
 
         //then
-        verify(fcmTokenRepository).deleteByToken("test-token-abc");
+        verify(fcmTokenRepository).deleteByUserIdAndToken(1L,"test-token-abc");
     }
 
 }

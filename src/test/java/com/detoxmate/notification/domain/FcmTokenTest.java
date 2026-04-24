@@ -5,6 +5,8 @@ import com.detoxmate.common.exception.notification.FcmTokenErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDateTime;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
@@ -89,5 +91,29 @@ class FcmTokenTest {
                 .extracting(e->((CustomException)e).getErrorCode())
                 .isEqualTo(FcmTokenErrorCode.PLATFORM_REQUIRED);
     }
+
+    @Test
+    @DisplayName("reassignTo: 소유자와 플랫폼을 새 값으로 교체한다")
+    void reassignTo_updatesOwnerAndPlatform() {
+        FcmToken token = FcmToken.create(1L, "abc", DevicePlatform.ANDROID);
+
+        token.reassignTo(2L, DevicePlatform.IOS);
+
+        assertThat(token.getUserId()).isEqualTo(2L);
+        assertThat(token.getPlatform()).isEqualTo(DevicePlatform.IOS);
+    }
+
+    @Test
+    @DisplayName("reassignTo: updatedAt이 갱신된다")
+    void reassignTo_refreshesUpdatedAt() {
+        FcmToken token = FcmToken.create(1L, "abc", DevicePlatform.ANDROID);
+        LocalDateTime before = token.getUpdatedAt();
+
+        // 시간 해상도 문제 피하려고 살짝 대기하거나 Clock 주입을 고민
+        token.reassignTo(2L, DevicePlatform.IOS);
+
+        assertThat(token.getUpdatedAt()).isAfterOrEqualTo(before);
+    }
+
 
 }

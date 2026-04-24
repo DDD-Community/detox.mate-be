@@ -32,6 +32,6 @@ public class FcmTokenController {
     public void remove(CurrentUser user, @Valid @RequestBody RemoveFcmTokenRequest request) {
         log.info("[Notification][remove-token] userId={}, token={}",
                 user.id(), TokenMasker.mask(request.token()));
-        fcmTokenService.remove(request.token());
+        fcmTokenService.remove(user.id(),request.token());
     }
 }

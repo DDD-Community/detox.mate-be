@@ -6,7 +6,11 @@ import com.detoxmate.notification.domain.FcmToken;
 import com.detoxmate.notification.dto.RegisterFcmTokenRequest;
 import com.detoxmate.notification.dto.RemoveFcmTokenRequest;
 import com.detoxmate.notification.repository.FcmTokenRepository;
+import com.detoxmate.notification.util.FcmSender;
+import com.detoxmate.user.domain.User;
+import com.detoxmate.user.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +19,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,17 +36,27 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class FcmTokenControllerTest {
 
     private static final String TOKENS_URL = "/notifications/tokens";
-    private static final Long TEST_USER_ID = 1L;
+    private Long testUserId;
 
     @Autowired
     MockMvc mockMvc;
     @Autowired
-    ObjectMapper objectMapper;
-    @Autowired
     FcmTokenRepository fcmTokenRepository;
     @Autowired
     JwtTokenProvider jwtTokenProvider;
+    @Autowired
+    UserRepository userRepository;
 
+    @MockitoBean
+    FcmSender fcmSender;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @BeforeEach
+    void setUp(){
+        User user = userRepository.save(User.createNew("xeulbn"));
+        testUserId = user.getId();
+    }
 
     @Test
     @DisplayName("POST /tokens - 토큰이 DB에 저장된다")
@@ -51,36 +66,36 @@ class FcmTokenControllerTest {
 
         // when & then
         mockMvc.perform(post(TOKENS_URL)
-                        .header(HttpHeaders.AUTHORIZATION, bearer(TEST_USER_ID))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(testUserId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated());
 
         // 실제 DB 상태로 검증
         FcmToken saved = fcmTokenRepository.findByToken("test-token-abc").orElseThrow();
-        assertThat(saved.getUserId()).isEqualTo(TEST_USER_ID);
+        assertThat(saved.getUserId()).isEqualTo(testUserId);
         assertThat(saved.getPlatform()).isEqualTo(DevicePlatform.IOS);
 
     }
 
     @Test
-    @DisplayName("POST /tokens - 같은 토큰 재등록 시 userId가 갱신된다")
-    void register_replacesExistingToken() throws Exception{
-        // given: 다른 유저가 이미 이 토큰을 등록한 상태
-        fcmTokenRepository.save(FcmToken.create(99L, "shared-token", DevicePlatform.IOS));
-
+    @DisplayName("POST /tokens - 같은 토큰을 다른 유저가 재등록하면 소유자와 플랫폼이 교체된다")
+    void register_replacesExistingToken() throws Exception {
+        // given: 기존 소유자(999L), 안드로이드
+        fcmTokenRepository.save(FcmToken.create(999L, "shared-token", DevicePlatform.ANDROID));
         var request = new RegisterFcmTokenRequest("shared-token", DevicePlatform.IOS);
 
         // when
         mockMvc.perform(post(TOKENS_URL)
-                        .header(HttpHeaders.AUTHORIZATION, bearer(TEST_USER_ID))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(testUserId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated());
 
-        // then: 기존 건 delete + 새 건 insert
+        // then: 같은 row의 소유자와 플랫폼이 갱신되고 전체 개수는 1
         FcmToken saved = fcmTokenRepository.findByToken("shared-token").orElseThrow();
-        assertThat(saved.getUserId()).isEqualTo(TEST_USER_ID);
+        assertThat(saved.getUserId()).isEqualTo(testUserId);
+        assertThat(saved.getPlatform()).isEqualTo(DevicePlatform.IOS);   // ← 추가
         assertThat(fcmTokenRepository.findAll()).hasSize(1);
     }
 
@@ -92,7 +107,7 @@ class FcmTokenControllerTest {
                 """;
 
         mockMvc.perform(post(TOKENS_URL)
-                        .header(HttpHeaders.AUTHORIZATION, bearer(TEST_USER_ID))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(testUserId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isBadRequest());
@@ -108,7 +123,7 @@ class FcmTokenControllerTest {
                 """;
 
         mockMvc.perform(post(TOKENS_URL)
-                        .header(HttpHeaders.AUTHORIZATION, bearer(TEST_USER_ID))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(testUserId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isBadRequest());
@@ -120,12 +135,12 @@ class FcmTokenControllerTest {
     @DisplayName("DELETE /tokens — 토큰이 DB에서 삭제된다")
     void remove_deletesToken() throws Exception {
         // given
-        fcmTokenRepository.save(FcmToken.create(TEST_USER_ID, "to-delete", DevicePlatform.IOS));
+        fcmTokenRepository.save(FcmToken.create(testUserId, "to-delete", DevicePlatform.IOS));
         var request = new RemoveFcmTokenRequest("to-delete");
 
         // when & then
         mockMvc.perform(delete(TOKENS_URL)
-                        .header(HttpHeaders.AUTHORIZATION, bearer(TEST_USER_ID))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(testUserId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNoContent());
@@ -150,6 +165,5 @@ class FcmTokenControllerTest {
     private String bearer(Long userId) {
         return "Bearer " + jwtTokenProvider.createAccessToken(userId);
     }
-
 
 }

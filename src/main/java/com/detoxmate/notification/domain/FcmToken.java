@@ -42,11 +42,15 @@ public class FcmToken {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
     private FcmToken(Long userId, String token, DevicePlatform platform) {
         this.userId = userId;
         this.token = token;
         this.platform = platform;
         this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 
     public static FcmToken create(Long userId, String token, DevicePlatform platform) {
@@ -70,5 +74,11 @@ public class FcmToken {
         if(platform==null){
             throw new CustomException(FcmTokenErrorCode.PLATFORM_REQUIRED);
         }
+    }
+
+    public void reassignTo(Long newUserId, DevicePlatform newPlatform) {
+        this.userId = newUserId;
+        this.platform = newPlatform;
+        this.updatedAt = LocalDateTime.now();
     }
 }
