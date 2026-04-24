@@ -20,7 +20,8 @@ public enum NotificationErrorCode implements ErrorCode {
     NOTIFICATION_MESSAGE_TEMPLATE_LENGTH_EXCEEDED(HttpStatus.BAD_REQUEST, "알림 메시지는 255자를 초과했습니다."),
 
     ALREADY_READ(HttpStatus.BAD_REQUEST, "이미 읽은 알림입니다."),
-    NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다.");
+    NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다."),
+    NOTIFICATION_CONTEXT_INVALID_PAIRS(HttpStatus.INTERNAL_SERVER_ERROR, "알림 컨텍스트 변수는 키-값 쌍으로 전달되어야 합니다.");
 
     private final HttpStatus httpStatus;
     private final String message;

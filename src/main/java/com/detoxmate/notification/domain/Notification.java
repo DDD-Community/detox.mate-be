@@ -45,6 +45,9 @@ public class Notification {
         return new Notification(type, title, messageTemplate);
     }
 
+    /**
+    만약 message에 댓글 내용도 함께 들어간다면, resolve로직은 변경되어야합니다.
+     */
     public String resolve(String nickname){
         if(!messageTemplate.contains(NICKNAME_PLACEHOLDER)){
             return messageTemplate;

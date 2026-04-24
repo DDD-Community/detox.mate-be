@@ -38,6 +38,7 @@ public class NotificationService {
     private final FcmSender fcmSender;
     private final TransactionTemplate transactionTemplate;
 
+    //TODO : 알림 정확한 기획 나오는대로 Context주고 받을지 이것만 주고받을지를 다시 고민해봐야합니다.
     public void send(Long userId, NotificationTypeCode typeCode, String nickname){
         DispatchContext context = prepareWithinTx(userId,typeCode,nickname);
         List<String> deadTokens = dispatchPush(context,userId);
