@@ -69,3 +69,10 @@ operation::activity-records/achievement-check[snippets='http-request,request-hea
 
 operation::activity-records/create[snippets='http-request,request-headers,request-fields,http-response,response-fields']
 operation::activity-records/create-invalid-request[snippets='http-request,request-headers,request-fields,http-response,response-fields']
+
+== Upload API
+
+=== Issue Presigned URL
+
+operation::uploads/presigned-urls[snippets='http-request,request-headers,request-fields,http-response,response-fields']
+operation::uploads/presigned-urls-invalid-request[snippets='http-request,request-headers,request-fields,http-response,response-fields']
