@@ -15,6 +15,13 @@ version: 3.0.0
 
 GitHub PR 생성을 자동화하며, 커밋 정리와 브랜치 관리를 처리한다.
 
+## Language Policy
+
+- PR 제목과 본문은 기본적으로 **한국어로 작성**한다.
+- 기술 용어, 라이브러리명, API 경로, 코드 식별자, 도메인에서 이미 영어로 굳어진 용어만 영어를 유지한다.
+- 커밋 메시지가 영어여도 PR 제목/본문은 한국어로 다시 작성한다.
+- 기존 PR을 업데이트할 때도 같은 규칙을 적용한다.
+
 ## Prerequisites
 
 - Git repository
@@ -66,7 +73,7 @@ gh pr list --head <current-branch> --json number,title,body,url
    - `documentation`: Documentation
    - `dependencies`: Dependency update
    - `github_actions`: CI/CD changes
-4. PR 제목: conventional commit 형식, 커밋이 한국어면 한국어로
+4. PR 제목: conventional commit 형식을 유지하되, **항상 한국어로 작성**
 5. 리뷰어 결정:
    a. `.agents/skills/shared/config/discord-members.json` 읽기 (key = GitHub username)
    b. `gh api user --jq '.login'`으로 현재 사용자 확인
@@ -82,6 +89,7 @@ gh pr list --head <current-branch> --json number,title,body,url
 2. `gh pr view --json title,body,number,url`로 기존 PR 정보 조회
 3. 새로 추가된 커밋 확인: `git log <last-pr-commit>..HEAD --oneline`
 4. 추가된 커밋을 반영하여 **PR 제목 및 설명 업데이트**:
+   - 제목/본문은 새 PR 생성과 동일하게 **한국어 기본 작성 원칙**을 따른다.
    ```bash
    gh pr edit <number> --title "새 제목" --body "$(cat <<'EOF'
    업데이트된 본문
