@@ -70,8 +70,13 @@ dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
+    //firebase
+    implementation 'com.google.firebase:firebase-admin:9.8.0'
+
     // Test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
     testImplementation 'com.epages:restdocs-api-spec-mockmvc:0.20.0'
     testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc:4.0.0'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
@@ -114,6 +119,11 @@ tasks.named('bootRun') {
 
 tasks.named('bootJar') {
     dependsOn tasks.named('copyOpenapi3Spec')
+    exclude 'firebase/**'
+}
+
+tasks.named('jar') {
+    exclude 'firebase/**'
 }
 
 tasks.named('resolveMainClassName') {

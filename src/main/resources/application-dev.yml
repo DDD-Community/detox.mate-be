@@ -45,6 +45,9 @@ management:
       probes:
         enabled: true
 
+firebase:
+  service-account-path: file:/opt/detoxmate/firebase/detoxmate-dev-firebase-account.json
+
 auth:
   jwt:
     secret: ${JWT_SECRET}

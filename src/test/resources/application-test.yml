@@ -4,6 +4,9 @@ spring:
     driver-class-name: org.h2.Driver
     username: sa
     password:
+  main:
+    allow-bean-definition-overriding: true
+
   jpa:
     hibernate:
       ddl-auto: create-drop
@@ -18,3 +21,6 @@ auth:
     access-token-expires-in: 3600
   refresh-token:
     expires-in: 15552000
+
+firebase:
+  service-account-path: classpath:firebase/not-found.json
