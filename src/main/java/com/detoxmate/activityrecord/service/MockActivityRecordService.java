@@ -35,7 +35,7 @@ public class MockActivityRecordService implements ActivityRecordService {
     public ActivityRecordAchievementCheckResponse checkAchievement(Long userId, ActivityRecordAchievementCheckRequest request) {
         validateDuplicateUsageGoalType(request.details());
         List<ActivityRecordDetailResult> results = toResults(request.details());
-        return new ActivityRecordAchievementCheckResponse(results, hasAnyNotAchieved(results));
+        return new ActivityRecordAchievementCheckResponse(results, allAchieved(results));
     }
 
     @Override
@@ -43,9 +43,9 @@ public class MockActivityRecordService implements ActivityRecordService {
         validateDuplicateUsageGoalType(request.details());
 
         List<ActivityRecordDetailResult> results = toResults(request.details());
-        boolean hasAnyNotAchieved = hasAnyNotAchieved(results);
+        boolean allAchieved = allAchieved(results);
 
-        if (hasAnyNotAchieved && isBlank(request.reflectionText())) {
+        if (allAchieved && isBlank(request.reflectionText())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "미달성인 경우 reflectionText 는 필수입니다.");
         }
 
@@ -53,7 +53,7 @@ public class MockActivityRecordService implements ActivityRecordService {
                 sequence.getAndIncrement(),
                 LocalDateTime.now(),
                 results,
-                hasAnyNotAchieved
+                allAchieved
         );
     }
 
@@ -82,7 +82,7 @@ public class MockActivityRecordService implements ActivityRecordService {
                 .toList();
     }
 
-    private boolean hasAnyNotAchieved(List<ActivityRecordDetailResult> details) {
+    private boolean allAchieved(List<ActivityRecordDetailResult> details) {
         return details.stream().anyMatch(detail -> !detail.isAchieved());
     }
 

@@ -4,6 +4,6 @@ import java.util.List;
 
 public record ActivityRecordAchievementCheckResponse(
         List<ActivityRecordDetailResult> details,
-        boolean hasAnyNotAchieved
+        boolean allAchieved
 ) {
 }

@@ -113,7 +113,7 @@ class ActivityRecordControllerTest {
                 .andExpect(jsonPath("$.details[1].usageGoalType").value("INSTAGRAM"))
                 .andExpect(jsonPath("$.details[1].goalMinutes").value(30))
                 .andExpect(jsonPath("$.details[1].isAchieved").value(true))
-                .andExpect(jsonPath("$.hasAnyNotAchieved").value(true))
+                .andExpect(jsonPath("$.allAchieved").value(false))
                 .andDo(document("activity-records/achievement-check",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
@@ -205,7 +205,7 @@ class ActivityRecordControllerTest {
                 .andExpect(jsonPath("$.details[0].isAchieved").value(false))
                 .andExpect(jsonPath("$.details[1].usageGoalType").value("INSTAGRAM"))
                 .andExpect(jsonPath("$.details[1].isAchieved").value(true))
-                .andExpect(jsonPath("$.hasAnyNotAchieved").value(true))
+                .andExpect(jsonPath("$.allAchieved").value(false))
                 .andDo(document("activity-records/create",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
@@ -313,7 +313,7 @@ class ActivityRecordControllerTest {
                 fieldWithPath("details[].isAchieved")
                         .type(JsonFieldType.BOOLEAN)
                         .description("해당 목표 타입 달성 여부"),
-                fieldWithPath("hasAnyNotAchieved")
+                fieldWithPath("allAchieved")
                         .type(JsonFieldType.BOOLEAN)
                         .description("하나라도 미달성인 detail 이 있는지 여부")
         };
@@ -364,7 +364,7 @@ class ActivityRecordControllerTest {
                 fieldWithPath("details[].isAchieved")
                         .type(JsonFieldType.BOOLEAN)
                         .description("해당 목표 타입 달성 여부"),
-                fieldWithPath("hasAnyNotAchieved")
+                fieldWithPath("allAchieved")
                         .type(JsonFieldType.BOOLEAN)
                         .description("하나라도 미달성인 detail 이 있는지 여부")
         };

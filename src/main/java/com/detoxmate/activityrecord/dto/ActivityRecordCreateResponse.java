@@ -7,6 +7,6 @@ public record ActivityRecordCreateResponse(
         long id,
         LocalDateTime createdAt,
         List<ActivityRecordDetailResult> details,
-        boolean hasAnyNotAchieved
+        boolean allAchieved
 ) {
 }
