@@ -8,7 +8,7 @@ import java.util.Map;
 
 /**
  * 혹시 몰라 작성한 VO입니다.
- * 댓글 이벤트에 댓글까지 들어가게 되면 이 Context를 사용해서 받을 예정입니다.
+ * 댓글 이벤트에 댓글 내용까지 들어가게 되면 이 Context를 사용해서 받을 예정입니다.
  */
 public record NotificationContext(Map<String,String> variables) {
     public NotificationContext {
