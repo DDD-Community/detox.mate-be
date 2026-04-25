@@ -27,7 +27,7 @@ version: 1.1.0
 - `build.gradle` 에서는 `openapi3`, `copyOpenapi3Spec`, `bootRun.dependsOn(copyOpenapi3Spec)`, `bootJar.dependsOn(copyOpenapi3Spec)` 흐름을 기준으로 본다.
 - `application.yml` 에서는 `springdoc.swagger-ui.url=/openapi3.yaml` 구성을 기준으로 본다.
 - 문서화 대상 endpoint마다 Swagger UI에서 request / response 가 보이도록 직접 펼쳐서 스크린샷을 남긴다.
-- 스크린샷 파일은 저장소 안에 커밋 가능한 경로로 저장한다.
+- 스크린샷은 검증과 PR 공유용으로만 사용하고, 저장소 파일로 커밋하지 않는다.
 - 문서화 작업이 끝나면 결과를 PR까지 반영한다.
 
 ## Existing Project Pattern
@@ -100,7 +100,7 @@ PR 생성/업데이트 규칙은 아래 스킬을 따른다.
 7. `src/docs/asciidoc/index.adoc` 에 snippet entry를 추가한다.
 8. 필요하면 `build.gradle` 의 문서 파이프라인은 건드리지 말고 기존 흐름에 맞춰 테스트만 추가한다.
 9. Swagger UI에서 각 endpoint를 직접 펼쳐 request / response가 함께 보이는 상태로 스크린샷을 찍는다.
-10. 스크린샷을 PR 본문에 붙일 수 있는 경로로 저장한다.
+10. 스크린샷은 저장소에 추가하지 않고 PR 공유 수단에만 사용한다.
 11. 작업 완료 후 `create-pr` 스킬 기준으로 PR을 생성하거나 갱신한다.
 
 ## Screenshot Rules
@@ -111,11 +111,8 @@ PR 생성/업데이트 규칙은 아래 스킬을 따른다.
   - request body 또는 request fields
   - responses 섹션
 - 단순히 Swagger UI 목록만 보이는 캡처는 허용하지 않는다.
-- 파일명은 endpoint를 식별할 수 있게 짓는다.
-  - 예: `swagger-auth-refresh.png`
-  - 예: `swagger-activity-record-create.png`
-- 저장 경로는 저장소 안의 문서 자산 경로를 우선 사용한다.
-  - 예: `docs/images/pr/`
+- 스크린샷은 저장소에 커밋하지 않는다.
+- PR에 첨부가 필요하면 저장소 파일 링크가 아니라 PR 첨부 방식 또는 외부 렌더링 방식으로 처리한다.
 
 ## Quality Rules
 
@@ -138,7 +135,7 @@ PR 생성/업데이트 규칙은 아래 스킬을 따른다.
    - `build/generated-snippets/**/resource.json`
    - `build/api-spec/openapi3.yaml`
    - `build/docs/asciidoc/index.html`
-   - 스크린샷 파일
+   - 스크린샷 캡처 결과
 
 확인 포인트:
 
@@ -152,8 +149,8 @@ PR 생성/업데이트 규칙은 아래 스킬을 따른다.
 
 - 문서화 작업이 끝나면 `create-pr` 스킬 규칙을 따라 반드시 PR을 생성하거나 기존 PR을 업데이트한다.
 - PR 본문에는 문서화한 endpoint 목록과 스크린샷을 포함한다.
-- 스크린샷은 endpoint별로 모두 첨부한다.
-- 스크린샷 첨부 후 PR 본문에서 실제 이미지가 렌더링되는지 확인한다.
+- 스크린샷은 endpoint별로 모두 첨부하되, 저장소 파일을 링크하는 방식은 사용하지 않는다.
+- 스크린샷 첨부 후 PR 본문 또는 코멘트에서 실제 이미지가 렌더링되는지 확인한다.
 - 기존 PR이 있으면 새 커밋과 함께 본문도 최신화한다.
 
 ## Output Expectations
@@ -163,6 +160,6 @@ PR 생성/업데이트 규칙은 아래 스킬을 따른다.
 - 어떤 Controller 또는 endpoint를 문서화했는지
 - 어떤 테스트 파일과 Asciidoc entry를 바꿨는지
 - 어떤 Gradle 명령으로 검증했는지
-- 어떤 Swagger 스크린샷 파일을 추가했는지
+- 어떤 endpoint 스크린샷을 확인했고, PR에는 어떻게 반영했는지
 - PR 생성 또는 업데이트 결과
 - 남은 리스크가 있으면 한 줄로만 명시
