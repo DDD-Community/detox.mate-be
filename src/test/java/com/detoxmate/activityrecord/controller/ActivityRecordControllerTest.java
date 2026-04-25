@@ -85,7 +85,7 @@ class ActivityRecordControllerTest {
                         new ActivityRecordDetailResult(UsageGoalTypeCode.TOTAL_USAGE, 80, 60, false),
                         new ActivityRecordDetailResult(UsageGoalTypeCode.INSTAGRAM, 20, 30, true)
                 ),
-                true
+                false
         ));
 
         mockMvc.perform(post("/activity-records/achievement-check")
@@ -175,7 +175,7 @@ class ActivityRecordControllerTest {
                         new ActivityRecordDetailResult(UsageGoalTypeCode.TOTAL_USAGE, 80, 60, false),
                         new ActivityRecordDetailResult(UsageGoalTypeCode.INSTAGRAM, 20, 30, true)
                 ),
-                true
+                false
         ));
 
         mockMvc.perform(post("/activity-records")

@@ -45,7 +45,7 @@ public class MockActivityRecordService implements ActivityRecordService {
         List<ActivityRecordDetailResult> results = toResults(request.details());
         boolean allAchieved = allAchieved(results);
 
-        if (allAchieved && isBlank(request.reflectionText())) {
+        if (!allAchieved && isBlank(request.reflectionText())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "미달성인 경우 reflectionText 는 필수입니다.");
         }
 
@@ -83,7 +83,7 @@ public class MockActivityRecordService implements ActivityRecordService {
     }
 
     private boolean allAchieved(List<ActivityRecordDetailResult> details) {
-        return details.stream().anyMatch(detail -> !detail.isAchieved());
+        return details.stream().allMatch(ActivityRecordDetailResult::isAchieved);
     }
 
     private boolean isBlank(String value) {
