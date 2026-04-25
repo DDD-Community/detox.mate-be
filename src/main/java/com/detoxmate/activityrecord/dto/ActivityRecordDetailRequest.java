@@ -9,6 +9,6 @@ public record ActivityRecordDetailRequest(
 
         @NotNull
         @Min(0)
-        Integer useMinutes
+        Integer usedMinutes
 ) {
 }

@@ -24,7 +24,7 @@ public class MockActivityRecordService implements ActivityRecordService {
     private static final Map<UsageGoalTypeCode, Integer> GOAL_MINUTES = new EnumMap<>(UsageGoalTypeCode.class);
 
     static {
-        GOAL_MINUTES.put(UsageGoalTypeCode.ALL_USE, 60);
+        GOAL_MINUTES.put(UsageGoalTypeCode.TOTAL_USAGE, 60);
         GOAL_MINUTES.put(UsageGoalTypeCode.INSTAGRAM, 30);
         GOAL_MINUTES.put(UsageGoalTypeCode.YOUTUBE, 30);
     }
@@ -71,10 +71,10 @@ public class MockActivityRecordService implements ActivityRecordService {
         return details.stream()
                 .map(detail -> {
                     int goalMinutes = GOAL_MINUTES.get(detail.usageGoalType());
-                    boolean isAchieved = detail.useMinutes() <= goalMinutes;
+                    boolean isAchieved = detail.usedMinutes() <= goalMinutes;
                     return new ActivityRecordDetailResult(
                             detail.usageGoalType(),
-                            detail.useMinutes(),
+                            detail.usedMinutes(),
                             goalMinutes,
                             isAchieved
                     );

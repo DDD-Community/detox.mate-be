@@ -78,11 +78,11 @@ class ActivityRecordControllerTest {
         FieldDescriptor[] responseFieldDescriptors = achievementCheckResponseFields();
 
         when(activityRecordService.checkAchievement(1L, new ActivityRecordAchievementCheckRequest(List.of(
-                new ActivityRecordDetailRequest(UsageGoalTypeCode.ALL_USE, 80),
+                new ActivityRecordDetailRequest(UsageGoalTypeCode.TOTAL_USAGE, 80),
                 new ActivityRecordDetailRequest(UsageGoalTypeCode.INSTAGRAM, 20)
         )))).thenReturn(new ActivityRecordAchievementCheckResponse(
                 List.of(
-                        new ActivityRecordDetailResult(UsageGoalTypeCode.ALL_USE, 80, 60, false),
+                        new ActivityRecordDetailResult(UsageGoalTypeCode.TOTAL_USAGE, 80, 60, false),
                         new ActivityRecordDetailResult(UsageGoalTypeCode.INSTAGRAM, 20, 30, true)
                 ),
                 true
@@ -95,19 +95,19 @@ class ActivityRecordControllerTest {
                                 {
                                   "details": [
                                     {
-                                      "usageGoalType": "ALL_USE",
-                                      "useMinutes": 80
+                                      "usageGoalType": "TOTAL_USAGE",
+                                      "usedMinutes": 80
                                     },
                                     {
                                       "usageGoalType": "INSTAGRAM",
-                                      "useMinutes": 20
+                                      "usedMinutes": 20
                                     }
                                   ]
                                 }
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.details[0].usageGoalType").value("ALL_USE"))
+                .andExpect(jsonPath("$.details[0].usageGoalType").value("TOTAL_USAGE"))
                 .andExpect(jsonPath("$.details[0].goalMinutes").value(60))
                 .andExpect(jsonPath("$.details[0].isAchieved").value(false))
                 .andExpect(jsonPath("$.details[1].usageGoalType").value("INSTAGRAM"))
@@ -141,8 +141,8 @@ class ActivityRecordControllerTest {
                                 {
                                   "details": [
                                     {
-                                      "usageGoalType": "ALL_USE",
-                                      "useMinutes": 80
+                                      "usageGoalType": "TOTAL_USAGE",
+                                      "usedMinutes": 80
                                     }
                                   ]
                                 }
@@ -165,14 +165,14 @@ class ActivityRecordControllerTest {
                 "activity-records/2026/04/26/sample.png",
                 "오늘은 산책했다",
                 List.of(
-                        new ActivityRecordDetailRequest(UsageGoalTypeCode.ALL_USE, 80),
+                        new ActivityRecordDetailRequest(UsageGoalTypeCode.TOTAL_USAGE, 80),
                         new ActivityRecordDetailRequest(UsageGoalTypeCode.INSTAGRAM, 20)
                 )
         ))).thenReturn(new ActivityRecordCreateResponse(
                 123L,
                 LocalDateTime.of(2026, 4, 26, 21, 30),
                 List.of(
-                        new ActivityRecordDetailResult(UsageGoalTypeCode.ALL_USE, 80, 60, false),
+                        new ActivityRecordDetailResult(UsageGoalTypeCode.TOTAL_USAGE, 80, 60, false),
                         new ActivityRecordDetailResult(UsageGoalTypeCode.INSTAGRAM, 20, 30, true)
                 ),
                 true
@@ -187,12 +187,12 @@ class ActivityRecordControllerTest {
                                   "reflectionText": "오늘은 산책했다",
                                   "details": [
                                     {
-                                      "usageGoalType": "ALL_USE",
-                                      "useMinutes": 80
+                                      "usageGoalType": "TOTAL_USAGE",
+                                      "usedMinutes": 80
                                     },
                                     {
                                       "usageGoalType": "INSTAGRAM",
-                                      "useMinutes": 20
+                                      "usedMinutes": 20
                                     }
                                   ]
                                 }
@@ -201,7 +201,7 @@ class ActivityRecordControllerTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.id").value(123))
                 .andExpect(jsonPath("$.createdAt").value("2026-04-26T21:30:00"))
-                .andExpect(jsonPath("$.details[0].usageGoalType").value("ALL_USE"))
+                .andExpect(jsonPath("$.details[0].usageGoalType").value("TOTAL_USAGE"))
                 .andExpect(jsonPath("$.details[0].isAchieved").value(false))
                 .andExpect(jsonPath("$.details[1].usageGoalType").value("INSTAGRAM"))
                 .andExpect(jsonPath("$.details[1].isAchieved").value(true))
@@ -234,7 +234,7 @@ class ActivityRecordControllerTest {
         when(activityRecordService.create(1L, new ActivityRecordCreateRequest(
                 null,
                 null,
-                List.of(new ActivityRecordDetailRequest(UsageGoalTypeCode.ALL_USE, 80))
+                List.of(new ActivityRecordDetailRequest(UsageGoalTypeCode.TOTAL_USAGE, 80))
         ))).thenThrow(new ResponseStatusException(
                 HttpStatus.BAD_REQUEST,
                 "미달성인 경우 reflectionText 는 필수입니다."
@@ -247,8 +247,8 @@ class ActivityRecordControllerTest {
                                 {
                                   "details": [
                                     {
-                                      "usageGoalType": "ALL_USE",
-                                      "useMinutes": 80
+                                      "usageGoalType": "TOTAL_USAGE",
+                                      "usedMinutes": 80
                                     }
                                   ]
                                 }
@@ -289,8 +289,8 @@ class ActivityRecordControllerTest {
                         .description("목표 타입별 사용시간 배열"),
                 fieldWithPath("details[].usageGoalType")
                         .type(JsonFieldType.STRING)
-                        .description("사용시간 목표 타입 (`ALL_USE`, `INSTAGRAM`, `YOUTUBE`)"),
-                fieldWithPath("details[].useMinutes")
+                        .description("사용시간 목표 타입 (`TOTAL_USAGE`, `INSTAGRAM`, `YOUTUBE`)"),
+                fieldWithPath("details[].usedMinutes")
                         .type(JsonFieldType.NUMBER)
                         .description("OCR 로 추출한 사용시간(분)")
         };
@@ -304,7 +304,7 @@ class ActivityRecordControllerTest {
                 fieldWithPath("details[].usageGoalType")
                         .type(JsonFieldType.STRING)
                         .description("사용시간 목표 타입"),
-                fieldWithPath("details[].useMinutes")
+                fieldWithPath("details[].usedMinutes")
                         .type(JsonFieldType.NUMBER)
                         .description("실제 사용시간(분)"),
                 fieldWithPath("details[].goalMinutes")
@@ -334,8 +334,8 @@ class ActivityRecordControllerTest {
                         .description("목표 타입별 사용시간 배열"),
                 fieldWithPath("details[].usageGoalType")
                         .type(JsonFieldType.STRING)
-                        .description("사용시간 목표 타입 (`ALL_USE`, `INSTAGRAM`, `YOUTUBE`)"),
-                fieldWithPath("details[].useMinutes")
+                        .description("사용시간 목표 타입 (`TOTAL_USAGE`, `INSTAGRAM`, `YOUTUBE`)"),
+                fieldWithPath("details[].usedMinutes")
                         .type(JsonFieldType.NUMBER)
                         .description("OCR 로 추출한 사용시간(분)")
         };
@@ -355,7 +355,7 @@ class ActivityRecordControllerTest {
                 fieldWithPath("details[].usageGoalType")
                         .type(JsonFieldType.STRING)
                         .description("사용시간 목표 타입"),
-                fieldWithPath("details[].useMinutes")
+                fieldWithPath("details[].usedMinutes")
                         .type(JsonFieldType.NUMBER)
                         .description("실제 사용시간(분)"),
                 fieldWithPath("details[].goalMinutes")
