@@ -6,9 +6,10 @@ description: |
   - 컨트롤러에 Swagger 어노테이션을 붙이지 않고 테스트에서 문서화
   - 지정된 Controller가 없으면 `dev...HEAD` diff 기준으로 변경된 Controller를 대상 선정
   - REST Docs snippet, openapi3.yaml, Swagger UI까지 이어지는 흐름으로 작업
+  - 문서화 대상 API별 Swagger UI 스크린샷을 남기고 PR까지 업데이트
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git:*), Bash(rg:*), Bash(./gradlew:*), Bash(find:*), Bash(sed:*), Bash(nl:*)
 model: sonnet
-version: 1.0.0
+version: 1.1.0
 ---
 
 # Controller API Docs
@@ -25,6 +26,9 @@ version: 1.0.0
 - 문서 생성 흐름은 `테스트 -> resource.json -> openapi3.yaml -> static resource -> Swagger UI` 이다.
 - `build.gradle` 에서는 `openapi3`, `copyOpenapi3Spec`, `bootRun.dependsOn(copyOpenapi3Spec)`, `bootJar.dependsOn(copyOpenapi3Spec)` 흐름을 기준으로 본다.
 - `application.yml` 에서는 `springdoc.swagger-ui.url=/openapi3.yaml` 구성을 기준으로 본다.
+- 문서화 대상 endpoint마다 Swagger UI에서 request / response 가 보이도록 직접 펼쳐서 스크린샷을 남긴다.
+- 스크린샷 파일은 저장소 안에 커밋 가능한 경로로 저장한다.
+- 문서화 작업이 끝나면 결과를 PR까지 반영한다.
 
 ## Existing Project Pattern
 
@@ -42,6 +46,16 @@ version: 1.0.0
 - `openapi3` task가 `resource.json` 을 모아 `build/api-spec/openapi3.yaml` 을 만든다.
 - `copyOpenapi3Spec` 가 그 파일을 `build/resources/main/static/openapi3.yaml` 로 복사한다.
 - Swagger UI는 `/swagger-ui.html` 에서 열리고 `/openapi3.yaml` 을 읽는다.
+
+PR 생성/업데이트 규칙은 아래 스킬을 따른다.
+
+- `.agents/skills/create-pr/SKILL.md`
+
+의미:
+
+- 문서화 완료 후 커밋되지 않은 변경을 정리한다.
+- 현재 브랜치에 PR이 없으면 생성하고, 있으면 업데이트한다.
+- PR 제목/본문은 기본적으로 한국어로 작성한다.
 
 ## Target Selection
 
@@ -85,6 +99,23 @@ version: 1.0.0
 6. `requestSchema(...)`, `responseSchema(...)` 를 명시해 component schema 이름을 안정화한다.
 7. `src/docs/asciidoc/index.adoc` 에 snippet entry를 추가한다.
 8. 필요하면 `build.gradle` 의 문서 파이프라인은 건드리지 말고 기존 흐름에 맞춰 테스트만 추가한다.
+9. Swagger UI에서 각 endpoint를 직접 펼쳐 request / response가 함께 보이는 상태로 스크린샷을 찍는다.
+10. 스크린샷을 PR 본문에 붙일 수 있는 경로로 저장한다.
+11. 작업 완료 후 `create-pr` 스킬 기준으로 PR을 생성하거나 갱신한다.
+
+## Screenshot Rules
+
+- 스크린샷은 endpoint별로 1장 이상 남긴다.
+- 각 스크린샷에는 최소한 아래가 보여야 한다.
+  - endpoint method + path
+  - request body 또는 request fields
+  - responses 섹션
+- 단순히 Swagger UI 목록만 보이는 캡처는 허용하지 않는다.
+- 파일명은 endpoint를 식별할 수 있게 짓는다.
+  - 예: `swagger-auth-refresh.png`
+  - 예: `swagger-activity-record-create.png`
+- 저장 경로는 저장소 안의 문서 자산 경로를 우선 사용한다.
+  - 예: `docs/images/pr/`
 
 ## Quality Rules
 
@@ -93,6 +124,8 @@ version: 1.0.0
 - nullable string 같은 필드는 `VARIES` 보다 더 구체적인 타입을 우선한다.
 - 같은 endpoint의 success/error 문서가 합쳐질 때 operationId가 깨지지 않도록 snippet naming을 일관되게 잡는다.
 - 오래된 snippet 때문에 생성물이 오염될 수 있으니 `test.doFirst { delete snippetsDir }` 전제를 깨지 않게 한다.
+- Swagger UI 스크린샷은 테스트/생성 산출물과 실제로 일치해야 한다.
+- PR 본문에 첨부하는 스크린샷은 현재 브랜치 기준 최신 화면이어야 한다.
 
 ## Verification
 
@@ -100,17 +133,28 @@ version: 1.0.0
 
 1. `./gradlew test openapi3 copyOpenapi3Spec`
 2. 필요하면 `./gradlew asciidoctor`
-3. 생성물 확인:
+3. 필요하면 애플리케이션 실행 후 `/swagger-ui.html` 확인
+4. 생성물 확인:
    - `build/generated-snippets/**/resource.json`
    - `build/api-spec/openapi3.yaml`
    - `build/docs/asciidoc/index.html`
+   - 스크린샷 파일
 
 확인 포인트:
 
 - 대상 endpoint가 `openapi3.yaml` 에 들어갔는가
 - 성공/실패 응답 schema가 모두 반영됐는가
 - Swagger UI가 읽는 기준 문서는 `/openapi3.yaml` 인가
+- Swagger UI에서 각 endpoint를 펼쳤을 때 request / response가 실제로 보이는가
 - 필요하면 `./gradlew bootRun --args='--spring.profiles.active=local'` 후 `/swagger-ui.html` 과 `/openapi3.yaml` 을 같이 확인한다
+
+## PR Rules
+
+- 문서화 작업이 끝나면 `create-pr` 스킬 규칙을 따라 반드시 PR을 생성하거나 기존 PR을 업데이트한다.
+- PR 본문에는 문서화한 endpoint 목록과 스크린샷을 포함한다.
+- 스크린샷은 endpoint별로 모두 첨부한다.
+- 스크린샷 첨부 후 PR 본문에서 실제 이미지가 렌더링되는지 확인한다.
+- 기존 PR이 있으면 새 커밋과 함께 본문도 최신화한다.
 
 ## Output Expectations
 
@@ -119,4 +163,6 @@ version: 1.0.0
 - 어떤 Controller 또는 endpoint를 문서화했는지
 - 어떤 테스트 파일과 Asciidoc entry를 바꿨는지
 - 어떤 Gradle 명령으로 검증했는지
+- 어떤 Swagger 스크린샷 파일을 추가했는지
+- PR 생성 또는 업데이트 결과
 - 남은 리스크가 있으면 한 줄로만 명시
