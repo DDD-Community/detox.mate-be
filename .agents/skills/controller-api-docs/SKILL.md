@@ -9,7 +9,7 @@ description: |
   - 문서화 대상 API별 Swagger UI 스크린샷을 남기고 PR까지 업데이트
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git:*), Bash(rg:*), Bash(./gradlew:*), Bash(find:*), Bash(sed:*), Bash(nl:*)
 model: sonnet
-version: 1.1.0
+version: 1.2.0
 ---
 
 # Controller API Docs
@@ -28,6 +28,7 @@ version: 1.1.0
 - `application.yml` 에서는 `springdoc.swagger-ui.url=/openapi3.yaml` 구성을 기준으로 본다.
 - 문서화 대상 endpoint마다 Swagger UI에서 request / response 가 보이도록 직접 펼쳐서 스크린샷을 남긴다.
 - 스크린샷은 검증과 PR 공유용으로만 사용하고, 저장소 파일로 커밋하지 않는다.
+- PR에 스크린샷을 올릴 때는 GitHub PR editor/comment box에 직접 업로드해서 GitHub hosted attachment URL을 사용한다.
 - 문서화 작업이 끝나면 결과를 PR까지 반영한다.
 
 ## Existing Project Pattern
@@ -112,7 +113,14 @@ PR 생성/업데이트 규칙은 아래 스킬을 따른다.
   - responses 섹션
 - 단순히 Swagger UI 목록만 보이는 캡처는 허용하지 않는다.
 - 스크린샷은 저장소에 커밋하지 않는다.
-- PR에 첨부가 필요하면 저장소 파일 링크가 아니라 PR 첨부 방식 또는 외부 렌더링 방식으로 처리한다.
+- PR 첨부는 GitHub hosted attachment URL만 허용한다.
+- 로컬 파일 경로, repo blob/raw 링크, 커밋된 이미지 파일 링크는 사용하지 않는다.
+- 기본 업로드 방식:
+  1. Swagger UI 스크린샷을 로컬에 임시 저장한다.
+  2. GitHub PR 본문 편집기 또는 comment box에 이미지를 drag & drop 또는 file attach 한다.
+  3. GitHub가 생성한 attachment markdown 또는 image URL을 확보한다.
+  4. 그 GitHub hosted URL을 PR 본문에 반영한다.
+- 본문 편집기 업로드가 불안정하면 comment box에 먼저 업로드해 URL을 확보한 뒤, 그 URL을 PR 본문 또는 코멘트에 사용한다.
 
 ## Quality Rules
 
@@ -150,6 +158,8 @@ PR 생성/업데이트 규칙은 아래 스킬을 따른다.
 - 문서화 작업이 끝나면 `create-pr` 스킬 규칙을 따라 반드시 PR을 생성하거나 기존 PR을 업데이트한다.
 - PR 본문에는 문서화한 endpoint 목록과 스크린샷을 포함한다.
 - 스크린샷은 endpoint별로 모두 첨부하되, 저장소 파일을 링크하는 방식은 사용하지 않는다.
+- 스크린샷은 GitHub attachment 리소스로 렌더링되어야 한다.
+- 가능하면 PR 본문에 정리하고, 본문 반영이 어려우면 PR comment에 endpoint별로 남긴다.
 - 스크린샷 첨부 후 PR 본문 또는 코멘트에서 실제 이미지가 렌더링되는지 확인한다.
 - 기존 PR이 있으면 새 커밋과 함께 본문도 최신화한다.
 
@@ -160,6 +170,6 @@ PR 생성/업데이트 규칙은 아래 스킬을 따른다.
 - 어떤 Controller 또는 endpoint를 문서화했는지
 - 어떤 테스트 파일과 Asciidoc entry를 바꿨는지
 - 어떤 Gradle 명령으로 검증했는지
-- 어떤 endpoint 스크린샷을 확인했고, PR에는 어떻게 반영했는지
+- 어떤 endpoint 스크린샷을 확인했고, GitHub attachment URL로 PR에 어떻게 반영했는지
 - PR 생성 또는 업데이트 결과
 - 남은 리스크가 있으면 한 줄로만 명시
