@@ -34,7 +34,7 @@ public class UserUsageGoalTime {
     private UsageGoalType usageGoalType;
 
     @Column(name = "goal_minutes", nullable = false)
-    private Long goalMinutes;
+    private Integer goalMinutes;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -48,7 +48,7 @@ public class UserUsageGoalTime {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    private UserUsageGoalTime(User user, UsageGoalType usageGoalType, long goalMinutes) {
+    private UserUsageGoalTime(User user, UsageGoalType usageGoalType, Integer goalMinutes) {
         validateUser(user);
         validateUsageGoalType(usageGoalType);
         validateGoalMinutes(goalMinutes);
@@ -57,7 +57,7 @@ public class UserUsageGoalTime {
         this.goalMinutes = goalMinutes;
     }
 
-    public static UserUsageGoalTime create(User user, UsageGoalType usageGoalType, long goalMinutes) {
+    public static UserUsageGoalTime create(User user, UsageGoalType usageGoalType, Integer goalMinutes) {
         return new UserUsageGoalTime(user, usageGoalType, goalMinutes);
     }
 
