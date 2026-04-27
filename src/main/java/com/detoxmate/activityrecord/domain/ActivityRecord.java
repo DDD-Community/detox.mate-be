@@ -42,8 +42,8 @@ public class ActivityRecord {
     @JoinColumn(name = "group_challenge_participant_id", nullable = false)
     private GroupChallengeParticipant groupChallengeParticipant;
 
-    @Column(name = "activity_image_url", length = 500)
-    private String activityImageUrl;
+    @Column(name = "activity_image_object_key", length = 500)
+    private String activityImageObjectKey;
 
     @Lob
     @Column(name = "reflection_text")
@@ -59,24 +59,24 @@ public class ActivityRecord {
     private ActivityRecord(
             User user,
             GroupChallengeParticipant groupChallengeParticipant,
-            String activityImageUrl,
+            String activityImageObjectKey,
             String reflectionText
     ) {
         validateUser(user);
         validateGroupChallengeParticipant(groupChallengeParticipant);
         this.user = user;
         this.groupChallengeParticipant = groupChallengeParticipant;
-        this.activityImageUrl = activityImageUrl;
+        this.activityImageObjectKey = activityImageObjectKey;
         this.reflectionText = reflectionText;
     }
 
     public static ActivityRecord create(
             User user,
             GroupChallengeParticipant groupChallengeParticipant,
-            String activityImageUrl,
+            String activityImageObjectKey,
             String reflectionText
     ) {
-        return new ActivityRecord(user, groupChallengeParticipant, activityImageUrl, reflectionText);
+        return new ActivityRecord(user, groupChallengeParticipant, activityImageObjectKey, reflectionText);
     }
 
     public ActivityRecordDetail addDetail(UserUsageGoalTime userUsageGoalTime, int useMinutes, boolean isAchieved) {

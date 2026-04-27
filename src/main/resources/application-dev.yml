@@ -54,3 +54,7 @@ auth:
     access-token-expires-in: ${JWT_ACCESS_TOKEN_EXPIRES_IN:3600}
   refresh-token:
     expires-in: ${REFRESH_TOKEN_EXPIRES_IN:15552000}
+
+app:
+  storage:
+    public-base-url: ${STORAGE_PUBLIC_BASE_URL:https://cdn.example.com}

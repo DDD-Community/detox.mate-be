@@ -15,3 +15,7 @@ springdoc:
     path: /swagger-ui.html
     disable-swagger-default-url: true
     url: /openapi3.yaml
+
+app:
+  storage:
+    public-base-url: https://cdn.example.com
