@@ -58,3 +58,21 @@ operation::me/group-challenges-get[snippets='http-request,query-parameters,http-
 === Get Group Challenge Detail
 
 operation::group-challenges/get-by-id[snippets='http-request,path-parameters,http-response,response-fields']
+
+== Activity Record API
+
+=== Check Activity Record Achievement
+
+operation::activity-records/achievement-check[snippets='http-request,request-headers,request-fields,http-response,response-fields']
+
+=== Create Activity Record
+
+operation::activity-records/create[snippets='http-request,request-headers,request-fields,http-response,response-fields']
+operation::activity-records/create-invalid-request[snippets='http-request,request-headers,request-fields,http-response,response-fields']
+
+== Upload API
+
+=== Issue Presigned URL
+
+operation::uploads/presigned-urls[snippets='http-request,request-headers,request-fields,http-response,response-fields']
+operation::uploads/presigned-urls-invalid-request[snippets='http-request,request-headers,request-fields,http-response,response-fields']

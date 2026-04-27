@@ -8,7 +8,7 @@ description: |
   - 기존 PR이 있으면 추가 커밋 반영하여 PR 업데이트
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git:*), Bash(gh:*), Bash(basename:*), AskUserQuestion
 model: sonnet
-version: 3.0.0
+version: 3.1.0
 ---
 
 # Create Pull Request (with Smart Commits)
@@ -83,6 +83,14 @@ gh pr list --head <current-branch> --json number,title,body,url
 7. `gh pr create --base dev --title "..." --body "$(cat <<'EOF' ... EOF)"`
 8. `gh pr edit <number> --add-label <label> --add-assignee <username> --add-reviewer <reviewer>`
 
+PR 본문에 이미지가 필요하면 아래 규칙을 따른다.
+
+- 저장소에 이미지 파일을 커밋해서 링크하지 않는다.
+- 로컬 파일 경로나 repo blob/raw URL을 사용하지 않는다.
+- GitHub PR 본문 편집기 또는 comment box에 이미지를 직접 업로드해 GitHub hosted attachment URL을 확보한다.
+- 확보한 attachment URL만 PR 본문 또는 PR comment에 사용한다.
+- 이미지 렌더링이 실제로 되는지 PR 화면에서 확인한다.
+
 #### Case B — 기존 PR에 추가 커밋:
 
 1. `git push`로 새 커밋 push
@@ -96,6 +104,7 @@ gh pr list --head <current-branch> --json number,title,body,url
    EOF
    )"
    ```
+5. PR 본문에 이미지가 필요하면 GitHub attachment URL 기준으로 본문을 다시 반영한다. repo 이미지 링크는 남기지 않는다.
 
 ### Phase 3: 결과 보고
 
