@@ -1,6 +1,11 @@
 {
   "version": 1,
   "skills": {
+    "121-java-object-oriented-design": {
+      "source": "jabrena/cursor-rules-java",
+      "sourceType": "github",
+      "computedHash": "48917aef6eafae15797d71db53ac4443cb385e9b8455c5e17892b460fd6472fd"
+    },
     "api-design-principles": {
       "source": "wshobson/agents",
       "sourceType": "github",
