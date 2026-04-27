@@ -61,3 +61,4 @@ src/main/resources/firebase/detoxmate-dev-firebase-account.json
 
 .DS_Store
 **/.DS_Store
+.agents/skills/shared/config/discord-webhook-url.txt
