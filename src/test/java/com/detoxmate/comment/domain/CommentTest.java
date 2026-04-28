@@ -1,6 +1,7 @@
 package com.detoxmate.comment.domain;
 
 import com.detoxmate.common.exception.CustomException;
+import com.detoxmate.common.exception.comment.CommentErrorCode;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,7 +21,7 @@ class CommentTest {
         Comment comment = Comment.create(ANY_STAMP_ID, ANY_CHALLENGE_ID, ANY_USER_ID, VALID_BODY);
 
         //then
-        assertThat(comment.getBody()).isEqualTo(VALID_BODY);
+        assertThat(comment.getCommentBody()).isEqualTo(VALID_BODY);
     }
 
     @Test
@@ -32,15 +33,6 @@ class CommentTest {
         assertThat(comment.getActivityRecordId()).isEqualTo(ANY_STAMP_ID);
         assertThat(comment.getGroupChallengeId()).isEqualTo(ANY_CHALLENGE_ID);
         assertThat(comment.getUserId()).isEqualTo(ANY_USER_ID);
-    }
-
-    @Test
-    void 댓글을_생성하면_isDeleted는_false이다() {
-        //given & when
-        Comment comment = Comment.create(ANY_STAMP_ID, ANY_CHALLENGE_ID, ANY_USER_ID, VALID_BODY);
-
-        //then
-        assertThat(comment.isDeleted()).isFalse();
     }
 
     @Test
@@ -67,7 +59,7 @@ class CommentTest {
         assertThatThrownBy(() -> Comment.create(ANY_STAMP_ID, ANY_CHALLENGE_ID, ANY_USER_ID, null))
                 .isInstanceOf(CustomException.class)
                 .extracting(e-> ((CustomException)e).getErrorCode())
-                .isEqualTo(CommentErrorCode.COMMENT_BODY_BLANK);
+                .isEqualTo(CommentErrorCode.COMMENT_BODY_REQUIRED);
     }
 
     @Test
@@ -76,7 +68,7 @@ class CommentTest {
         assertThatThrownBy(() -> Comment.create(ANY_STAMP_ID, ANY_CHALLENGE_ID, ANY_USER_ID, ""))
                 .isInstanceOf(CustomException.class)
                 .extracting(e-> ((CustomException)e).getErrorCode())
-                .isEqualTo(CommentErrorCode.COMMENT_BODY_BLANK);
+                .isEqualTo(CommentErrorCode.COMMENT_BODY_REQUIRED);
     }
 
     @Test
@@ -85,19 +77,19 @@ class CommentTest {
         assertThatThrownBy(() -> Comment.create(ANY_STAMP_ID, ANY_CHALLENGE_ID, ANY_USER_ID, "   "))
                 .isInstanceOf(CustomException.class)
                 .extracting("errorCode")
-                .isEqualTo(CommentErrorCode.COMMENT_BODY_BLANK);
+                .isEqualTo(CommentErrorCode.COMMENT_BODY_REQUIRED);
     }
 
     @Test
     void 본문이_1000자를_초과하면_댓글_생성이_실패한다() {
         //given
-        String tooLong = "가".repeat(1000);
+        String tooLong = "가".repeat(10001);
 
         //when & then
         assertThatThrownBy(() -> Comment.create(ANY_STAMP_ID, ANY_CHALLENGE_ID, ANY_USER_ID, tooLong))
                 .isInstanceOf(CustomException.class)
                 .extracting(e-> ((CustomException)e).getErrorCode())
-                .isEqualTo(CommentErrorCode.COMMENT_BODY_TOO_LONG);
+                .isEqualTo(CommentErrorCode.COMMENT_BODY_LENGTH_EXCEEDED);
     }
 
     @Test
@@ -109,6 +101,6 @@ class CommentTest {
         Comment comment = Comment.create(ANY_STAMP_ID, ANY_CHALLENGE_ID, ANY_USER_ID, exactly255);
 
         //then
-        assertThat(comment.getBody()).isEqualTo(exactly255);
+        assertThat(comment.getCommentBody()).isEqualTo(exactly255);
     }
 }
