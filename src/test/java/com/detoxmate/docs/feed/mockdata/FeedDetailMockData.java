@@ -1,4 +1,4 @@
-package com.detoxmate.feed.docs.mockdata;
+package com.detoxmate.docs.feed.mockdata;
 
 import com.detoxmate.feed.dto.response.*;
 

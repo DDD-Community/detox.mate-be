@@ -58,3 +58,39 @@ operation::me/group-challenges-get[snippets='http-request,query-parameters,http-
 === Get Group Challenge Detail
 
 operation::group-challenges/get-by-id[snippets='http-request,path-parameters,http-response,response-fields']
+
+  == Feed API
+
+  === Get Home Feed
+
+  operation::group-challenges/home-feed-get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+
+  === Get Feed Detail
+
+  operation::group-challenges/feed-detail-get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+
+  == Reaction API
+
+  === Create Reaction
+
+  operation::group-challenges/reaction-create[snippets='http-request,request-headers,path-parameters,request-fields,http-response,response-fields']
+
+  === Delete Reaction
+
+  operation::group-challenges/reaction-delete[snippets='http-request,request-headers,path-parameters,http-response']
+
+  == Comment API
+
+  === List Comments
+
+  operation::group-challenges/comments-list-get[snippets='http-request,request-headers,path-parameters,query-parameters,http-response,response-fields']
+
+  === Create Comment
+
+  operation::group-challenges/comment-create[snippets='http-request,request-headers,path-parameters,request-fields,http-response,response-fields']
+
+  == Poke API
+
+  === Poke Member
+
+  operation::group-challenges/poke-create[snippets='http-request,request-headers,path-parameters,http-response']

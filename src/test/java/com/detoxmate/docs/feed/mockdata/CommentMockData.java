@@ -1,4 +1,4 @@
-package com.detoxmate.feed.docs.mockdata;
+package com.detoxmate.docs.feed.mockdata;
 
 import com.detoxmate.comment.dto.response.*;
 
@@ -56,7 +56,7 @@ public class CommentMockData {
                 101L,
                 4L,
                 1L,
-                "ㄹㅇ 멋있어요",
+                "ㄹㅇ 존멋.",
                 Instant.parse("2026-04-26T11:00:00Z")
         );
     }
