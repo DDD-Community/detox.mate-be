@@ -96,14 +96,7 @@ public class CommentControllerDocsTest {
                                 fieldWithPath("items[].author.displayName").type(STRING).description("작성자 닉네임"),
                                 fieldWithPath("items[].author.profileImageUrl").type(STRING).description("작성자 프로필 URL"),
                                 fieldWithPath("items[].body").type(STRING).description("댓글 본문"),
-                                fieldWithPath("items[].relatedComment[].commentId").type(NUMBER).description("답글 ID"),
-                                fieldWithPath("items[].relatedComment[].author.userId").type(NUMBER).description("답글 작성자 ID"),
-                                fieldWithPath("items[].relatedComment[].author.displayName").type(STRING).description("답글 작성자 닉네임"),
-                                fieldWithPath("items[].relatedComment[].author.profileImageUrl").type(STRING).description("답글 작성자 프로필 URL"),
-                                fieldWithPath("items[].relatedComment[].body").type(STRING).description("답글 본문"),
-                                fieldWithPath("items[].relatedComment[].createdAt").type(STRING).description("답글 생성 시각"),
                                 fieldWithPath("items[].createdAt").type(STRING).description("댓글 생성 시각"),
-                                fieldWithPath("items[].replyCount").type(NUMBER).description("답글 수"),
                                 fieldWithPath("nextCursor").type(STRING).optional().description("다음 페이지 커서 (없으면 null)")
                         ),
                         resource(builder()
@@ -125,8 +118,7 @@ public class CommentControllerDocsTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                    "commentMessage": "와 대박!",
-                                    "parentCommentId": null
+                                    "commentMessage": "와 대박!"
                                 }
                                 """))
                 .andExpect(status().isCreated())
@@ -141,23 +133,20 @@ public class CommentControllerDocsTest {
                                 parameterWithName("stampId").description("스탬프 ID")
                         ),
                         requestFields(
-                                fieldWithPath("commentMessage").type(STRING).description("댓글 본문"),
-                                fieldWithPath("parentCommentId").type(NUMBER).optional()
-                                        .description("답글일 경우 부모 댓글 ID (같은 stamp 내여야 함)")
+                                fieldWithPath("commentMessage").type(STRING).description("댓글 본문")
                         ),
                         responseFields(
                                 fieldWithPath("commentId").type(NUMBER).description("생성된 댓글 ID"),
                                 fieldWithPath("groupChallengeId").type(NUMBER).description("챌린지 ID"),
                                 fieldWithPath("stampId").type(NUMBER).description("스탬프 ID"),
                                 fieldWithPath("userId").type(NUMBER).description("작성자 유저 ID"),
-                                fieldWithPath("parentCommentId").type(NUMBER).optional().description("부모 댓글 ID (없으면 null)"),
                                 fieldWithPath("commentMessage").type(STRING).description("댓글 본문"),
                                 fieldWithPath("createdAt").type(STRING).description("생성 시각")
                         ),
                         resource(builder()
                                 .tag("Comment")
-                                .summary("댓글/답글 작성")
-                                .description("스탬프에 댓글 또는 답글을 작성한다.")
+                                .summary("댓글 작성")
+                                .description("스탬프에 댓글을 작성한다.")
                                 .requestSchema(schema("CreateCommentRequest"))
                                 .responseSchema(schema("CommentResponse"))
                                 .build()

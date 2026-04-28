@@ -10,7 +10,6 @@ public record CommentResponse(
         Long groupChallengeId,
         Long stampId,
         Long userId,
-        Long parentCommentId,
         String commentMessage,
         Instant createdAt
 ) {
