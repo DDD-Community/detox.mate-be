@@ -112,5 +112,4 @@ class PokeServiceTest {
 
         assertThat(pokeRepository.count()).isZero();
     }
-
 }
