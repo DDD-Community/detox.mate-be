@@ -18,4 +18,8 @@ springdoc:
 
 app:
   storage:
-    public-base-url: https://cdn.example.com
+    image-read-base-url: https://detoxmate-media-dev.s3.ap-northeast-2.amazonaws.com
+    s3:
+      region: ap-northeast-2
+      bucket-name: detoxmate-media-dev
+      presigned-url-expires-in: 600

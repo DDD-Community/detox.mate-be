@@ -71,10 +71,11 @@ class UploadControllerTest {
         when(uploadService.issuePresignedUrl(1L, new PresignedUrlRequest(
                 "walk-photo.png",
                 "image/png",
+                1_048_576L,
                 UploadPurpose.ACTIVITY_RECORD_IMAGE
         ))).thenReturn(new PresignedUrlResponse(
-                "https://detoxmate-bucket.s3.ap-northeast-2.amazonaws.com/activity-records/mock-walk-photo.png?signature=mock-signature",
-                "activity-records/mock-walk-photo.png",
+                "https://detoxmate-media-dev.s3.ap-northeast-2.amazonaws.com/activity-records/1/2026/04/mock-walk-photo.png?signature=mock-signature",
+                "activity-records/1/2026/04/mock-walk-photo.png",
                 600
         ));
 
@@ -85,13 +86,14 @@ class UploadControllerTest {
                                 {
                                   "fileName": "walk-photo.png",
                                   "contentType": "image/png",
+                                  "fileSize": 1048576,
                                   "uploadPurpose": "ACTIVITY_RECORD_IMAGE"
                                 }
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.uploadUrl").value("https://detoxmate-bucket.s3.ap-northeast-2.amazonaws.com/activity-records/mock-walk-photo.png?signature=mock-signature"))
-                .andExpect(jsonPath("$.objectKey").value("activity-records/mock-walk-photo.png"))
+                .andExpect(jsonPath("$.uploadUrl").value("https://detoxmate-media-dev.s3.ap-northeast-2.amazonaws.com/activity-records/1/2026/04/mock-walk-photo.png?signature=mock-signature"))
+                .andExpect(jsonPath("$.objectKey").value("activity-records/1/2026/04/mock-walk-photo.png"))
                 .andExpect(jsonPath("$.expiresInSeconds").value(600))
                 .andDo(document("uploads/presigned-urls",
                         preprocessRequest(prettyPrint()),
@@ -120,6 +122,7 @@ class UploadControllerTest {
                                 {
                                   "fileName": "walk-photo.png",
                                   "contentType": "image/png",
+                                  "fileSize": 1048576,
                                   "uploadPurpose": "ACTIVITY_RECORD_IMAGE"
                                 }
                                 """))
@@ -144,6 +147,7 @@ class UploadControllerTest {
                                 {
                                   "fileName": " ",
                                   "contentType": "image/png",
+                                  "fileSize": 1048576,
                                   "uploadPurpose": "ACTIVITY_RECORD_IMAGE"
                                 }
                                 """))
@@ -170,6 +174,26 @@ class UploadControllerTest {
                         )));
     }
 
+    @Test
+    void fileSize가_없으면_400_에러를_반환한다() throws Exception {
+        mockMvc.perform(post("/uploads/presigned-urls")
+                        .header("Authorization", "Bearer access-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "fileName": "walk-photo.png",
+                                  "contentType": "image/png",
+                                  "uploadPurpose": "ACTIVITY_RECORD_IMAGE"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.status").value(400));
+
+        verifyNoInteractions(uploadService);
+    }
+
     private HeaderDescriptor[] authorizationHeaderDescriptors() {
         return new HeaderDescriptor[] {
                 headerWithName("Authorization").description("Bearer {accessToken} 형식의 서비스 access token")
@@ -183,7 +207,10 @@ class UploadControllerTest {
                         .description("업로드할 원본 파일명"),
                 fieldWithPath("contentType")
                         .type(JsonFieldType.STRING)
-                        .description("업로드 파일 content type"),
+                        .description("업로드 파일 content type. S3 PUT 요청에도 같은 canonical 값을 사용해야 한다."),
+                fieldWithPath("fileSize")
+                        .type(JsonFieldType.NUMBER)
+                        .description("업로드 파일 크기(byte)"),
                 fieldWithPath("uploadPurpose")
                         .type(JsonFieldType.STRING)
                         .description("업로드 목적 (`ACTIVITY_RECORD_IMAGE`, `PROFILE_IMAGE`)")

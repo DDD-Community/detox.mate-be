@@ -1,0 +1,42 @@
+package com.detoxmate.upload.service;
+
+import com.detoxmate.upload.dto.UploadPurpose;
+import org.springframework.stereotype.Component;
+
+import java.time.Clock;
+import java.time.LocalDate;
+import java.util.UUID;
+
+@Component
+class UploadObjectKeyFactory {
+
+    private final Clock clock;
+
+    UploadObjectKeyFactory(Clock clock) {
+        this.clock = clock;
+    }
+
+    String create(Long userId, UploadPurpose uploadPurpose, String fileName) {
+        String sanitizedFileName = sanitize(fileName);
+        String uuid = UUID.randomUUID().toString();
+
+        return switch (uploadPurpose) {
+            case ACTIVITY_RECORD_IMAGE -> activityRecordImageKey(userId, sanitizedFileName, uuid);
+            case PROFILE_IMAGE -> profileImageKey(userId, sanitizedFileName, uuid);
+        };
+    }
+
+    private String activityRecordImageKey(Long userId, String sanitizedFileName, String uuid) {
+        LocalDate now = LocalDate.now(clock);
+        return "activity-records/" + userId + "/" + now.getYear() + "/" +
+                String.format("%02d", now.getMonthValue()) + "/" + uuid + "-" + sanitizedFileName;
+    }
+
+    private String profileImageKey(Long userId, String sanitizedFileName, String uuid) {
+        return "profile-images/" + userId + "/" + uuid + "-" + sanitizedFileName;
+    }
+
+    private String sanitize(String fileName) {
+        return fileName.replaceAll("[^a-zA-Z0-9._-]", "-");
+    }
+}

@@ -48,6 +48,7 @@ asciidoctorj {
 
 dependencies {
     asciidoctorExt 'org.springframework.restdocs:spring-restdocs-asciidoctor:4.0.0'
+    implementation platform('software.amazon.awssdk:bom:2.42.41')
 
     // Web
     implementation 'org.springframework.boot:spring-boot-starter-web'
@@ -72,6 +73,7 @@ dependencies {
 
     //firebase
     implementation 'com.google.firebase:firebase-admin:9.8.0'
+    implementation 'software.amazon.awssdk:s3'
 
     // Test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
