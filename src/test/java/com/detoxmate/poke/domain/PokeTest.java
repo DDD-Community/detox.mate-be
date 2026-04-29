@@ -1,6 +1,7 @@
 package com.detoxmate.poke.domain;
 
 import com.detoxmate.common.exception.CustomException;
+import com.detoxmate.common.exception.poke.PokeErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
