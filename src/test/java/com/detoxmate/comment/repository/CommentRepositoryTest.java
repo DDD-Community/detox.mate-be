@@ -22,7 +22,10 @@ class CommentRepositoryTest {
 
     private static final Long ANY_ACTIVITY_RECORD_ID = 100L;
     private static final Long ANY_GROUP_CHALLENGE_ID = 10L;
+    private static final Long OTHER_ACTIVITY_RECORD_ID = 200L;
+    private static final Long OTHER_GROUP_CHALLENGE_ID = 20L;
     private static final Long ANY_USER_ID = 1L;
+    private static final Long OTHER_USER_ID = 2L;
     private static final String VALID_BODY = "오늘 인증 화이팅";
 
     @Test
@@ -56,19 +59,22 @@ class CommentRepositoryTest {
         assertThat(saved.getUpdatedAt()).isNull();
     }
 
-
     @Test
-    @DisplayName("첫 페이지 조회 시 같은 activity record의 댓글만 ID 오름차순으로 반환된다")
+    @DisplayName("첫 페이지 조회 시 같은 그룹 챌린지와 activity record의 댓글만 ID 오름차순으로 반환된다")
     void findFirstPage_returnsOnlyMatchingCommentsOrderedByIdAsc() {
         //given
-        Comment c1 = commentRepository.save(Comment.create(100L, 10L, 1L, "댓글1"));
-        Comment c2 = commentRepository.save(Comment.create(100L, 10L, 2L, "댓글2"));
-        commentRepository.save(Comment.create(200L, 10L, 1L, "다른 stamp 댓글"));
-        Comment c3 = commentRepository.save(Comment.create(100L, 10L, 1L, "댓글3"));
+        Comment c1 = commentRepository.save(Comment.create(ANY_ACTIVITY_RECORD_ID, ANY_GROUP_CHALLENGE_ID, ANY_USER_ID, "댓글1"));
+        Comment c2 = commentRepository.save(Comment.create(ANY_ACTIVITY_RECORD_ID, ANY_GROUP_CHALLENGE_ID, OTHER_USER_ID, "댓글2"));
+        commentRepository.save(Comment.create(OTHER_ACTIVITY_RECORD_ID, ANY_GROUP_CHALLENGE_ID, ANY_USER_ID, "다른 activity record 댓글"));
+        commentRepository.save(Comment.create(ANY_ACTIVITY_RECORD_ID, OTHER_GROUP_CHALLENGE_ID, ANY_USER_ID, "다른 group challenge 댓글"));
+        Comment c3 = commentRepository.save(Comment.create(ANY_ACTIVITY_RECORD_ID, ANY_GROUP_CHALLENGE_ID, ANY_USER_ID, "댓글3"));
 
         //when
-        List<Comment> result = commentRepository.findByActivityRecordIdOrderByIdAsc(
-                100L, Pageable.ofSize(20));
+        List<Comment> result = commentRepository.findByGroupChallengeIdAndActivityRecordIdOrderByIdAsc(
+                ANY_GROUP_CHALLENGE_ID,
+                ANY_ACTIVITY_RECORD_ID,
+                Pageable.ofSize(20)
+        );
 
         //then
         assertThat(result)
@@ -81,12 +87,15 @@ class CommentRepositoryTest {
     void findFirstPage_limitsBySize() {
         //given
         for (int i=0; i<5; i++) {
-            commentRepository.save(Comment.create(100L, 10L, 1L, "댓글" + i));
+            commentRepository.save(Comment.create(ANY_ACTIVITY_RECORD_ID, ANY_GROUP_CHALLENGE_ID, ANY_USER_ID, "댓글" + i));
         }
 
         //when
-        List<Comment> result = commentRepository.findByActivityRecordIdOrderByIdAsc(
-                100L, Pageable.ofSize(3));
+        List<Comment> result = commentRepository.findByGroupChallengeIdAndActivityRecordIdOrderByIdAsc(
+                ANY_GROUP_CHALLENGE_ID,
+                ANY_ACTIVITY_RECORD_ID,
+                Pageable.ofSize(3)
+        );
 
         //then
         assertThat(result).hasSize(3);
@@ -95,9 +104,12 @@ class CommentRepositoryTest {
     @Test
     @DisplayName("댓글이 없는 activity record는 첫 페이지가 빈 리스트로 반환된다")
     void findFirstPage_returnsEmptyListWhenNoComments() {
-        //when
-        List<Comment> result = commentRepository.findByActivityRecordIdOrderByIdAsc(
-                999L, Pageable.ofSize(20));
+        //given & when
+        List<Comment> result = commentRepository.findByGroupChallengeIdAndActivityRecordIdOrderByIdAsc(
+                ANY_GROUP_CHALLENGE_ID,
+                999L,
+                Pageable.ofSize(20)
+        );
 
         //then
         assertThat(result).isEmpty();
@@ -107,13 +119,17 @@ class CommentRepositoryTest {
     @DisplayName("cursor 이후의 댓글만 ID 오름차순으로 반환된다")
     void findAfterCursor_returnsOnlyCommentsAfterCursor() {
         //given
-        Comment c1 = commentRepository.save(Comment.create(100L, 10L, 1L, "댓글1"));
-        Comment c2 = commentRepository.save(Comment.create(100L, 10L, 1L, "댓글2"));
-        Comment c3 = commentRepository.save(Comment.create(100L, 10L, 1L, "댓글3"));
+        Comment c1 = commentRepository.save(Comment.create(ANY_ACTIVITY_RECORD_ID, ANY_GROUP_CHALLENGE_ID, ANY_USER_ID, "댓글1"));
+        Comment c2 = commentRepository.save(Comment.create(ANY_ACTIVITY_RECORD_ID, ANY_GROUP_CHALLENGE_ID, ANY_USER_ID, "댓글2"));
+        Comment c3 = commentRepository.save(Comment.create(ANY_ACTIVITY_RECORD_ID, ANY_GROUP_CHALLENGE_ID, ANY_USER_ID, "댓글3"));
 
         //when
-        List<Comment> result = commentRepository.findByActivityRecordIdAndIdGreaterThanOrderByIdAsc(
-                100L, c1.getId(), Pageable.ofSize(20));
+        List<Comment> result = commentRepository.findByGroupChallengeIdAndActivityRecordIdAndIdGreaterThanOrderByIdAsc(
+                ANY_GROUP_CHALLENGE_ID,
+                ANY_ACTIVITY_RECORD_ID,
+                c1.getId(),
+                Pageable.ofSize(20)
+        );
 
         //then
         assertThat(result)
@@ -125,14 +141,18 @@ class CommentRepositoryTest {
     @DisplayName("cursor 이후 조회 시에도 size만큼만 반환된다")
     void findAfterCursor_limitsBySize() {
         //given
-        Comment c1 = commentRepository.save(Comment.create(100L, 10L, 1L, "기준"));
+        Comment c1 = commentRepository.save(Comment.create(ANY_ACTIVITY_RECORD_ID, ANY_GROUP_CHALLENGE_ID, ANY_USER_ID, "기준"));
         for (int i=0; i<5; i++) {
-            commentRepository.save(Comment.create(100L, 10L, 1L, "댓글" + i));
+            commentRepository.save(Comment.create(ANY_ACTIVITY_RECORD_ID, ANY_GROUP_CHALLENGE_ID, ANY_USER_ID, "댓글" + i));
         }
 
         //when
-        List<Comment> result = commentRepository.findByActivityRecordIdAndIdGreaterThanOrderByIdAsc(
-                100L, c1.getId(), Pageable.ofSize(3));
+        List<Comment> result = commentRepository.findByGroupChallengeIdAndActivityRecordIdAndIdGreaterThanOrderByIdAsc(
+                ANY_GROUP_CHALLENGE_ID,
+                ANY_ACTIVITY_RECORD_ID,
+                c1.getId(),
+                Pageable.ofSize(3)
+        );
 
         //then
         assertThat(result).hasSize(3);
@@ -142,27 +162,36 @@ class CommentRepositoryTest {
     @DisplayName("cursor 이후 댓글이 없으면 빈 리스트가 반환된다")
     void findAfterCursor_returnsEmptyListWhenNoMoreComments() {
         //given
-        Comment last = commentRepository.save(Comment.create(100L, 10L, 1L, "마지막"));
+        Comment last = commentRepository.save(Comment.create(ANY_ACTIVITY_RECORD_ID, ANY_GROUP_CHALLENGE_ID, ANY_USER_ID, "마지막"));
 
         //when
-        List<Comment> result = commentRepository.findByActivityRecordIdAndIdGreaterThanOrderByIdAsc(
-                100L, last.getId(), Pageable.ofSize(20));
+        List<Comment> result = commentRepository.findByGroupChallengeIdAndActivityRecordIdAndIdGreaterThanOrderByIdAsc(
+                ANY_GROUP_CHALLENGE_ID,
+                ANY_ACTIVITY_RECORD_ID,
+                last.getId(),
+                Pageable.ofSize(20)
+        );
 
         //then
         assertThat(result).isEmpty();
     }
 
     @Test
-    @DisplayName("cursor 이후 조회 시 다른 activity record 댓글은 포함되지 않는다")
-    void findAfterCursor_excludesOtherActivityRecords() {
+    @DisplayName("cursor 이후 조회 시 다른 activity record나 group challenge 댓글은 포함되지 않는다")
+    void findAfterCursor_excludesOtherActivityRecordsAndGroupChallenges() {
         //given
-        Comment c1 = commentRepository.save(Comment.create(100L, 10L, 1L, "댓글1"));
-        commentRepository.save(Comment.create(200L, 10L, 1L, "다른 stamp"));
-        Comment c2 = commentRepository.save(Comment.create(100L, 10L, 1L, "댓글2"));
+        Comment c1 = commentRepository.save(Comment.create(ANY_ACTIVITY_RECORD_ID, ANY_GROUP_CHALLENGE_ID, ANY_USER_ID, "댓글1"));
+        commentRepository.save(Comment.create(OTHER_ACTIVITY_RECORD_ID, ANY_GROUP_CHALLENGE_ID, ANY_USER_ID, "다른 activity record"));
+        commentRepository.save(Comment.create(ANY_ACTIVITY_RECORD_ID, OTHER_GROUP_CHALLENGE_ID, ANY_USER_ID, "다른 group challenge"));
+        Comment c2 = commentRepository.save(Comment.create(ANY_ACTIVITY_RECORD_ID, ANY_GROUP_CHALLENGE_ID, ANY_USER_ID, "댓글2"));
 
         //when
-        List<Comment> result = commentRepository.findByActivityRecordIdAndIdGreaterThanOrderByIdAsc(
-                100L, c1.getId(), Pageable.ofSize(20));
+        List<Comment> result = commentRepository.findByGroupChallengeIdAndActivityRecordIdAndIdGreaterThanOrderByIdAsc(
+                ANY_GROUP_CHALLENGE_ID,
+                ANY_ACTIVITY_RECORD_ID,
+                c1.getId(),
+                Pageable.ofSize(20)
+        );
 
         //then
         assertThat(result)
@@ -171,29 +200,54 @@ class CommentRepositoryTest {
     }
 
     @Test
-    @DisplayName("activity record의 댓글 개수가 정확히 반환된다")
-    void countByActivityRecordId_returnsCorrectCount() {
+    @DisplayName("그룹 챌린지와 activity record의 댓글 개수가 정확히 반환된다")
+    void countByGroupChallengeIdAndActivityRecordId_returnsCorrectCount() {
         //given
-        commentRepository.save(Comment.create(100L, 10L, 1L, "댓글1"));
-        commentRepository.save(Comment.create(100L, 10L, 2L, "댓글2"));
-        commentRepository.save(Comment.create(100L, 10L, 3L, "댓글3"));
-        commentRepository.save(Comment.create(200L, 10L, 1L, "다른 stamp"));
+        commentRepository.save(Comment.create(ANY_ACTIVITY_RECORD_ID, ANY_GROUP_CHALLENGE_ID, 1L, "댓글1"));
+        commentRepository.save(Comment.create(ANY_ACTIVITY_RECORD_ID, ANY_GROUP_CHALLENGE_ID, 2L, "댓글2"));
+        commentRepository.save(Comment.create(ANY_ACTIVITY_RECORD_ID, ANY_GROUP_CHALLENGE_ID, 3L, "댓글3"));
+        commentRepository.save(Comment.create(OTHER_ACTIVITY_RECORD_ID, ANY_GROUP_CHALLENGE_ID, 1L, "다른 activity record"));
+        commentRepository.save(Comment.create(ANY_ACTIVITY_RECORD_ID, OTHER_GROUP_CHALLENGE_ID, 1L, "다른 group challenge"));
 
         //when
-        long count = commentRepository.countByActivityRecordId(100L);
+        long count = commentRepository.countByGroupChallengeIdAndActivityRecordId(
+                ANY_GROUP_CHALLENGE_ID,
+                ANY_ACTIVITY_RECORD_ID
+        );
 
         //then
         assertThat(count).isEqualTo(3);
     }
 
     @Test
-    @DisplayName("댓글이 없는 activity record의 댓글 개수는 0이다")
-    void countByActivityRecordId_returnsZeroWhenNoComments() {
-        //when
-        long count = commentRepository.countByActivityRecordId(999L);
+    @DisplayName("댓글이 없는 그룹 챌린지와 activity record의 댓글 개수는 0이다")
+    void countByGroupChallengeIdAndActivityRecordId_returnsZeroWhenNoComments() {
+        //given & when
+        long count = commentRepository.countByGroupChallengeIdAndActivityRecordId(
+                ANY_GROUP_CHALLENGE_ID,
+                999L
+        );
 
         //then
         assertThat(count).isZero();
+    }
+
+    @Test
+    @DisplayName("같은 activity record라도 다른 group challenge의 댓글은 분리되어 조회된다")
+    void findFirstPage_isolatesByGroupChallenge() {
+        //given
+        Comment a = commentRepository.save(Comment.create(ANY_ACTIVITY_RECORD_ID, ANY_GROUP_CHALLENGE_ID, 1L, "수능방"));
+        commentRepository.save(Comment.create(ANY_ACTIVITY_RECORD_ID, OTHER_GROUP_CHALLENGE_ID, 2L, "직장인방"));
+        Comment c = commentRepository.save(Comment.create(ANY_ACTIVITY_RECORD_ID, ANY_GROUP_CHALLENGE_ID, 3L, "수능방2"));
+
+        //when
+        List<Comment> result = commentRepository.findByGroupChallengeIdAndActivityRecordIdOrderByIdAsc(
+                ANY_GROUP_CHALLENGE_ID, ANY_ACTIVITY_RECORD_ID, Pageable.ofSize(20));
+
+        //then
+        assertThat(result)
+                .extracting(Comment::getId)
+                .containsExactly(a.getId(), c.getId());
     }
 
 }

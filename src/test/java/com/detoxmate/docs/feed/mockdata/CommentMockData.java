@@ -3,6 +3,7 @@ package com.detoxmate.docs.feed.mockdata;
 import com.detoxmate.comment.dto.response.*;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class CommentMockData {
@@ -18,7 +19,7 @@ public class CommentMockData {
                                         "https://cdn.detoxmate.co.kr/profile/3.png"
                                 ),
                                 "와 대박! 오늘도 성공하셨네 독하다 독해",
-                                Instant.parse("2026-04-26T10:00:00Z")
+                                LocalDateTime.parse("2026-04-26T10:00:00Z")
                         )
                 ),
                 "eyJpZCI6MX0="
@@ -32,7 +33,7 @@ public class CommentMockData {
                 101L,
                 3L,
                 "엘렐렐렐레 인증 안해? 안해? 안해?!!",
-                Instant.parse("2026-04-26T10:00:00Z")
+                LocalDateTime.parse("2026-04-26T10:00:00Z")
         );
     }
 }

@@ -130,7 +130,7 @@ public class CommentControllerDocsTest {
                         ),
                         pathParameters(
                                 parameterWithName("groupChallengeId").description("챌린지 ID"),
-                                parameterWithName("stampId").description("스탬프 ID")
+                                parameterWithName("activityRecordId").description("스탬프 ID")
                         ),
                         requestFields(
                                 fieldWithPath("commentBody").type(STRING).description("댓글 본문")
@@ -138,7 +138,7 @@ public class CommentControllerDocsTest {
                         responseFields(
                                 fieldWithPath("commentId").type(NUMBER).description("생성된 댓글 ID"),
                                 fieldWithPath("groupChallengeId").type(NUMBER).description("챌린지 ID"),
-                                fieldWithPath("stampId").type(NUMBER).description("스탬프 ID"),
+                                fieldWithPath("activityRecordId").type(NUMBER).description("스탬프 ID"),
                                 fieldWithPath("userId").type(NUMBER).description("작성자 유저 ID"),
                                 fieldWithPath("commentMessage").type(STRING).description("댓글 본문"),
                                 fieldWithPath("createdAt").type(STRING).description("생성 시각")

@@ -10,9 +10,12 @@ import java.util.List;
 
 @Repository
 public interface CommentRepository extends JpaRepository<Comment, Long> {
-    List<Comment> findByActivityRecordIdOrderByIdAsc(Long activityRecordId, Pageable pageable);
-    List<Comment> findByActivityRecordIdAndIdGreaterThanOrderByIdAsc(
-            Long activityRecordId, Long cursorId, Pageable pageable);
+    List<Comment> findByGroupChallengeIdAndActivityRecordIdOrderByIdAsc(
+            Long groupChallengeId, Long activityRecordId, Pageable pageable);
 
-    long countByActivityRecordId(Long activityRecordId);
+    List<Comment> findByGroupChallengeIdAndActivityRecordIdAndIdGreaterThanOrderByIdAsc(
+            Long groupChallengeId, Long activityRecordId, Long cursorId, Pageable pageable);
+
+    long countByGroupChallengeIdAndActivityRecordId(
+            Long groupChallengeId, Long activityRecordId);
 }
