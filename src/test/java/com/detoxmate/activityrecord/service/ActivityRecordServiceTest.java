@@ -14,6 +14,8 @@ import com.detoxmate.activityrecord.repository.ActivityRecordRepository;
 import com.detoxmate.activityrecord.repository.UserUsageGoalTimeRepository;
 import com.detoxmate.group.domain.GroupChallengeParticipant;
 import com.detoxmate.group.repository.GroupChallengeParticipantRepository;
+import com.detoxmate.upload.config.StorageProperties;
+import com.detoxmate.upload.service.ImageReadUrlBuilder;
 import com.detoxmate.user.domain.User;
 import com.detoxmate.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -40,17 +42,16 @@ class ActivityRecordServiceTest {
     private final UserRepository userRepository = mock(UserRepository.class);
     private final GroupChallengeParticipantRepository groupChallengeParticipantRepository =
             mock(GroupChallengeParticipantRepository.class);
+    private final ImageReadUrlBuilder imageReadUrlBuilder =
+            new ImageReadUrlBuilder(new StorageProperties("https://detoxmate-media-dev.s3.ap-northeast-2.amazonaws.com"));
     private final ActivityRecordService activityRecordService =
             new ActivityRecordService(
                     userUsageGoalTimeRepository,
                     activityRecordRepository,
                     userRepository,
-                    groupChallengeParticipantRepository
+                    groupChallengeParticipantRepository,
+                    imageReadUrlBuilder
             );
-
-    ActivityRecordServiceTest() {
-        ReflectionTestUtils.setField(activityRecordService, "storagePublicBaseUrl", "https://cdn.example.com");
-    }
 
     @Test
     void 사용시간이_목표시간_이하이면_detail은_달성이다() {
@@ -209,6 +210,8 @@ class ActivityRecordServiceTest {
 
         ActivityRecordCreateResponse response = activityRecordService.create(1L, request);
 
+        assertThat(response.activityImageUrl())
+                .isEqualTo("https://detoxmate-media-dev.s3.ap-northeast-2.amazonaws.com/activity-records/sample.png");
         assertThat(response.allAchieved()).isFalse();
     }
 

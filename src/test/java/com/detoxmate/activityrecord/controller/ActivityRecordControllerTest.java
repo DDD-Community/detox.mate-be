@@ -162,7 +162,7 @@ class ActivityRecordControllerTest {
         FieldDescriptor[] responseFieldDescriptors = createResponseFields();
 
         when(activityRecordService.create(1L, new ActivityRecordCreateRequest(
-                "activity-records/2026/04/26/sample.png",
+                "activity-records/1/2026/04/sample.png",
                 "오늘은 산책했다",
                 10L,
                 List.of(
@@ -173,7 +173,7 @@ class ActivityRecordControllerTest {
                 123L,
                 LocalDateTime.of(2026, 4, 26, 21, 30),
                 10L,
-                "https://cdn.example.com/activity-records/2026/04/26/sample.png",
+                "https://detoxmate-media-dev.s3.ap-northeast-2.amazonaws.com/activity-records/1/2026/04/sample.png",
                 "오늘은 산책했다",
                 List.of(
                         new ActivityRecordDetailResult(UsageGoalTypeCode.TOTAL_USAGE, 80, 60, false),
@@ -187,7 +187,7 @@ class ActivityRecordControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "activityImageObjectKey": "activity-records/2026/04/26/sample.png",
+                                  "activityImageObjectKey": "activity-records/1/2026/04/sample.png",
                                   "reflectionText": "오늘은 산책했다",
                                   "groupChallengeParticipantId": 10,
                                   "details": [
@@ -207,7 +207,7 @@ class ActivityRecordControllerTest {
                 .andExpect(jsonPath("$.id").value(123))
                 .andExpect(jsonPath("$.createdAt").value("2026-04-26T21:30:00"))
                 .andExpect(jsonPath("$.groupChallengeParticipantId").value(10))
-                .andExpect(jsonPath("$.activityImageUrl").value("https://cdn.example.com/activity-records/2026/04/26/sample.png"))
+                .andExpect(jsonPath("$.activityImageUrl").value("https://detoxmate-media-dev.s3.ap-northeast-2.amazonaws.com/activity-records/1/2026/04/sample.png"))
                 .andExpect(jsonPath("$.reflectionText").value("오늘은 산책했다"))
                 .andExpect(jsonPath("$.details[0].usageGoalType").value("TOTAL_USAGE"))
                 .andExpect(jsonPath("$.details[0].isAchieved").value(false))
@@ -367,7 +367,7 @@ class ActivityRecordControllerTest {
                         .description("활동 기록이 속한 그룹 챌린지 참여 ID"),
                 fieldWithPath("activityImageUrl")
                         .type(JsonFieldType.STRING)
-                        .description("활동 이미지 접근 URL")
+                        .description("활동 이미지 접근 URL. 초기에는 public S3 base URL과 object key를 조합한 값")
                         .optional(),
                 fieldWithPath("reflectionText")
                         .type(JsonFieldType.STRING)

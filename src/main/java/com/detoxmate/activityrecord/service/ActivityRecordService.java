@@ -13,10 +13,10 @@ import com.detoxmate.activityrecord.repository.ActivityRecordRepository;
 import com.detoxmate.activityrecord.repository.UserUsageGoalTimeRepository;
 import com.detoxmate.group.domain.GroupChallengeParticipant;
 import com.detoxmate.group.repository.GroupChallengeParticipantRepository;
+import com.detoxmate.upload.service.ImageReadUrlBuilder;
 import com.detoxmate.user.domain.User;
 import com.detoxmate.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,9 +38,7 @@ public class ActivityRecordService {
     private final ActivityRecordRepository activityRecordRepository;
     private final UserRepository userRepository;
     private final GroupChallengeParticipantRepository groupChallengeParticipantRepository;
-
-    @Value("${app.storage.public-base-url:https://cdn.example.com}")
-    private String storagePublicBaseUrl = "https://cdn.example.com";
+    private final ImageReadUrlBuilder imageReadUrlBuilder;
 
     public ActivityRecordAchievementCheckResponse checkAchievement(Long userId, ActivityRecordAchievementCheckRequest request) {
         List<ActivityRecordDetailRequest> details = request.details();
@@ -180,22 +178,10 @@ public class ActivityRecordService {
                 savedActivityRecord.getId(),
                 savedActivityRecord.getCreatedAt(),
                 savedActivityRecord.getGroupChallengeParticipant().getId(),
-                toActivityImageUrl(savedActivityRecord.getActivityImageObjectKey()),
+                imageReadUrlBuilder.build(savedActivityRecord.getActivityImageObjectKey()),
                 savedActivityRecord.getReflectionText(),
                 results,
                 allAchieved
         );
-    }
-
-    private String toActivityImageUrl(String activityImageObjectKey) {
-        if (activityImageObjectKey == null || activityImageObjectKey.isBlank()) {
-            return null;
-        }
-
-        String normalizedBaseUrl = storagePublicBaseUrl.endsWith("/")
-                ? storagePublicBaseUrl.substring(0, storagePublicBaseUrl.length() - 1)
-                : storagePublicBaseUrl;
-
-        return normalizedBaseUrl + "/" + activityImageObjectKey;
     }
 }
