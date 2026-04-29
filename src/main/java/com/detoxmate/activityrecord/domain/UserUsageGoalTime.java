@@ -73,7 +73,11 @@ public class UserUsageGoalTime {
         }
     }
 
-    private static void validateGoalMinutes(long goalMinutes) {
+    private static void validateGoalMinutes(Integer goalMinutes) {
+        if (goalMinutes == null) {
+            throw new IllegalArgumentException("goalMinutes 는 필수입니다.");
+        }
+
         if (goalMinutes < 0) {
             throw new IllegalArgumentException("goalMinutes 는 0 이상이어야 합니다.");
         }

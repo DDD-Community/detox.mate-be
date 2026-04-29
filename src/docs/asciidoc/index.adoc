@@ -70,6 +70,16 @@ operation::activity-records/achievement-check[snippets='http-request,request-hea
 operation::activity-records/create[snippets='http-request,request-headers,request-fields,http-response,response-fields']
 operation::activity-records/create-invalid-request[snippets='http-request,request-headers,request-fields,http-response,response-fields']
 
+== Usage Goal Time API
+
+=== Set My Usage Goal Times
+
+operation::usage-goal-times/set[snippets='http-request,request-headers,request-fields,http-response,response-fields']
+
+=== Get My Current Usage Goal Times
+
+operation::usage-goal-times/current[snippets='http-request,request-headers,http-response,response-fields']
+
 == Upload API
 
 === Issue Presigned URL
