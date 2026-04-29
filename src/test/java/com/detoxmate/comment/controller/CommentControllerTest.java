@@ -37,7 +37,9 @@ class CommentControllerTest {
     private static final Long STAMP_ID = 100L;
     private static final Long OTHER_STAMP_ID = 999L;
 
-    private static final String COMMENTS_URL = "/group-challenges/{gcId}/stamps/{sId}/comments";
+    private static final String COMMENTS_URL =
+            "/group-challenges/{gcId}/activity-records/{activityRecordId}/comments";
+
 
     @Autowired
     MockMvc mockMvc;
@@ -129,8 +131,6 @@ class CommentControllerTest {
         assertThat(commentRepository.count()).isZero();
     }
 
-    // ===== GET =====
-
     @Test
     @DisplayName("GET /comments — 댓글이 없으면 200과 빈 목록을 반환한다")
     void getComments_returnsEmptyWhenNoComments() throws Exception {
@@ -221,6 +221,5 @@ class CommentControllerTest {
     private String bearer(Long userId) {
         return "Bearer " + jwtTokenProvider.createAccessToken(userId);
     }
-
 
 }
