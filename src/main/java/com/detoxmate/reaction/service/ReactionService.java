@@ -1,18 +1,61 @@
 package com.detoxmate.reaction.service;
 
+import com.detoxmate.common.exception.CustomException;
+import com.detoxmate.common.exception.reaction.ReactionErrorCode;
+import com.detoxmate.reaction.domain.Reaction;
+import com.detoxmate.reaction.domain.ReactionBody;
 import com.detoxmate.reaction.dto.request.CreateReactionRequest;
 import com.detoxmate.reaction.dto.response.ReactionResponse;
+import com.detoxmate.reaction.repository.ReactionRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class ReactionService {
 
-    public ReactionResponse create(Long groupChallengeId, Long stampId,
-                                   CreateReactionRequest request, Long currentUserId) {
-        throw new UnsupportedOperationException("아직 미구현 - API 문서화 단계");
+    private final ReactionRepository reactionRepository;
+
+    @Transactional
+    public ReactionResponse create(Long groupChallengeId, Long activityRecordId, CreateReactionRequest request, Long currentUserId) {
+        ReactionBody body = ReactionBody.valueOf(request.reactionCode());
+
+        if (reactionRepository.existsActiveReaction(groupChallengeId, activityRecordId, currentUserId, body)) {
+            throw new CustomException(ReactionErrorCode.REACTION_ALREADY_EXISTS);
+        }
+
+        Reaction reaction = Reaction.create(activityRecordId, groupChallengeId, currentUserId, body);
+
+        Reaction saved = reactionRepository.save(reaction);
+
+        return toReactionResponse(saved);
     }
 
+    @Transactional
     public void delete(Long groupChallengeId, Long reactionId, Long currentUserId) {
-        throw new UnsupportedOperationException("아직 미구현 - API 문서화 단계");
+        Reaction reaction = reactionRepository.findById(reactionId)
+                .orElseThrow(() -> new CustomException(ReactionErrorCode.REACTION_NOT_FOUND));
+
+        validateChallengeRecord(groupChallengeId, reaction);
+
+        reaction.deleteBy(currentUserId);
+    }
+
+    private void validateChallengeRecord(Long groupChallengeId, Reaction reaction) {
+        if (!reaction.getGroupChallengeId().equals(groupChallengeId)) {
+            throw new CustomException(ReactionErrorCode.REACTION_CHALLENGE_RECORD_MISMATCH);
+        }
+    }
+
+    private ReactionResponse toReactionResponse(Reaction reaction) {
+        return new ReactionResponse(
+                reaction.getId(),
+                reaction.getGroupChallengeId(),
+                reaction.getActivityRecordId(),
+                reaction.getUserId(),
+                reaction.getBody().name(),
+                reaction.getCreatedAt()
+        );
     }
 }

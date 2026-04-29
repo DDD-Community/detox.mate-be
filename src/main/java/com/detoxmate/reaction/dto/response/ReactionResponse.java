@@ -1,6 +1,6 @@
 package com.detoxmate.reaction.dto.response;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 
 public record ReactionResponse(
@@ -9,6 +9,6 @@ public record ReactionResponse(
         Long stampId,
         Long userId,
         String reactionBody,
-        Instant createdAt
+        LocalDateTime createdAt
 ) {
 }

@@ -67,7 +67,7 @@ class ReactionServiceTest {
     @DisplayName("같은 인증글이라도 그룹이 다르면 리액션은 분리된다")
     void create_separatesReactionByGroupChallengeId() {
         // given
-        CreateReactionRequest request = new CreateReactionRequest("CHEER");
+        CreateReactionRequest request = new CreateReactionRequest("CLAP");
 
         // when
         ReactionResponse first = reactionService.create(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID, request, USER_ID);
