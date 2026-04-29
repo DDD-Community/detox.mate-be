@@ -1,5 +1,6 @@
 package com.detoxmate.reaction.service;
 
+import com.detoxmate.activityrecordchallengestatus.service.ActivityRecordChallengeStatusService;
 import com.detoxmate.common.exception.CustomException;
 import com.detoxmate.common.exception.reaction.ReactionErrorCode;
 import com.detoxmate.reaction.domain.Reaction;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ReactionService {
 
     private final ReactionRepository reactionRepository;
+    private final ActivityRecordChallengeStatusService statusService;
 
     @Transactional
     public ReactionResponse create(Long groupChallengeId, Long activityRecordId, CreateReactionRequest request, Long currentUserId) {
@@ -28,6 +30,7 @@ public class ReactionService {
         Reaction reaction = Reaction.create(activityRecordId, groupChallengeId, currentUserId, body);
 
         Reaction saved = reactionRepository.save(reaction);
+        statusService.increaseReactionCount(groupChallengeId, activityRecordId);
 
         return toReactionResponse(saved);
     }

@@ -1,5 +1,7 @@
 package com.detoxmate.reaction.service;
 
+import com.detoxmate.activityrecordchallengestatus.domain.ActivityRecordChallengeStatus;
+import com.detoxmate.activityrecordchallengestatus.repository.ActivityRecordChallengeStatusRepository;
 import com.detoxmate.common.exception.CustomException;
 import com.detoxmate.common.exception.reaction.ReactionErrorCode;
 import com.detoxmate.reaction.domain.Reaction;
@@ -28,6 +30,10 @@ class ReactionServiceTest {
 
     @Autowired
     ReactionRepository reactionRepository;
+
+    @Autowired
+    ActivityRecordChallengeStatusRepository statusRepository;
+
 
     private static final Long GROUP_CHALLENGE_ID = 10L;
     private static final Long OTHER_GROUP_CHALLENGE_ID = 20L;
@@ -230,6 +236,27 @@ class ReactionServiceTest {
                 .isInstanceOf(CustomException.class)
                 .extracting(e -> ((CustomException) e).getErrorCode())
                 .isEqualTo(ReactionErrorCode.REACTION_ALREADY_DELETED);
+    }
+
+    @Test
+    @DisplayName("리액션이 작성되면 해당 ChallengeRecord의 리액션 수가 1 증가한다")
+    void create_increasesReactionCount() {
+        // given
+        statusRepository.save(ActivityRecordChallengeStatus.create(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID));
+
+        CreateReactionRequest request = new CreateReactionRequest("CLAP");
+
+        // when
+        reactionService.create(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID, request, USER_ID);
+
+        // then
+        ActivityRecordChallengeStatus status = statusRepository
+                .findByChallengeRecord(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID)
+                .orElseThrow();
+
+        assertThat(status.getCommentCount()).isZero();
+        assertThat(status.getReactionCount()).isEqualTo(1);
+        assertThat(status.getPokeCount()).isZero();
     }
 
 }

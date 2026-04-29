@@ -56,9 +56,9 @@ public class PokeControllerDocsTest {
 
     @Test
     void 콕_찌르기() throws Exception {
-        willDoNothing().given(pokeService).poke(eq(1L), eq(11L), eq(1L));
+        willDoNothing().given(pokeService).poke(eq(1L), eq(101L), eq(11L), eq(1L));
 
-        mockMvc.perform(post("/group-challenges/{groupChallengeId}/members/{targetUserId}/poke", 1L, 11L)
+        mockMvc.perform(post("/group-challenges/{groupChallengeId}/activity-records/{activityRecordId}/members/{targetUserId}/poke", 1L, 101L, 11L)
                         .header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
                 .andExpect(status().isNoContent())
                 .andDo(document("group-challenges/poke-create",
@@ -68,6 +68,7 @@ public class PokeControllerDocsTest {
                         ),
                         pathParameters(
                                 parameterWithName("groupChallengeId").description("챌린지 ID"),
+                                parameterWithName("activityRecordId").description("인증글 ID"),
                                 parameterWithName("targetUserId").description("콕 찌를 대상 유저 ID")
                         ),
                         resource(builder()

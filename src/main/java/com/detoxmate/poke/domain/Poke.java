@@ -25,6 +25,9 @@ public class Poke {
     @Column(name = "group_challenge_id", nullable = false)
     private Long groupChallengeId;
 
+    @Column(name = "activity_record_id", nullable = false)
+    private Long activityRecordId;
+
     @Column(name = "sender_user_id", nullable = false)
     private Long senderUserId;
 
@@ -37,22 +40,27 @@ public class Poke {
     @Column(name = "poke_date", nullable = false)
     private LocalDate pokeDate;
 
-    private Poke(Long groupChallengeId, Long senderUserId, Long receiverUserId, LocalDate pokeDate) {
+    private Poke(Long groupChallengeId, Long activityRecordId, Long senderUserId, Long receiverUserId, LocalDate pokeDate) {
         this.groupChallengeId = groupChallengeId;
+        this.activityRecordId = activityRecordId;
         this.senderUserId = senderUserId;
         this.receiverUserId = receiverUserId;
         this.pokeDate = pokeDate;
         this.createdAt = LocalDateTime.now();
     }
 
-    public static Poke create(Long groupChallengeId, Long senderUserId, Long receiverUserId, LocalDate pokeDate) {
-        validate(groupChallengeId, senderUserId, receiverUserId, pokeDate);
-        return new Poke(groupChallengeId, senderUserId, receiverUserId, pokeDate);
+    public static Poke create(Long groupChallengeId, Long activityRecordId, Long senderUserId, Long receiverUserId, LocalDate pokeDate) {
+        validate(groupChallengeId, activityRecordId, senderUserId, receiverUserId, pokeDate);
+        return new Poke(groupChallengeId, activityRecordId, senderUserId, receiverUserId, pokeDate);
     }
 
-    private static void validate(Long groupChallengeId, Long senderUserId, Long receiverUserId, LocalDate pokeDate) {
+    private static void validate(Long groupChallengeId, Long activityRecordId, Long senderUserId, Long receiverUserId, LocalDate pokeDate) {
         if (groupChallengeId == null) {
             throw new CustomException(PokeErrorCode.POKE_GROUP_CHALLENGE_REQUIRED);
+        }
+
+        if (activityRecordId == null) {
+            throw new CustomException(PokeErrorCode.POKE_ACTIVITY_RECORD_REQUIRED);
         }
 
         if (senderUserId == null) {

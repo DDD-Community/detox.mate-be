@@ -18,13 +18,17 @@ public class PokeController {
 
     private final PokeService pokeService;
 
-    @PostMapping("/{groupChallengeId}/members/{targetUserId}/poke")
+    @PostMapping("/{groupChallengeId}/activity-records/{activityRecordId}/members/{targetUserId}/poke")
     public ResponseEntity<Void> pokeUser(@PathVariable Long groupChallengeId,
+                                         @PathVariable Long activityRecordId,
                                          @PathVariable Long targetUserId,
                                          CurrentUser currentUser) {
 
-        log.info("[Poke][create-poke] senderUserId={} poked receiverUserId={} in groupChallengeId={}", currentUser.id(), targetUserId, groupChallengeId);
-        pokeService.poke(groupChallengeId, targetUserId, currentUser.id());
+        log.info(
+                "[Poke][create-poke] senderUserId={} poked receiverUserId={} in groupChallengeId={}, activityRecordId={}",
+                currentUser.id(), targetUserId, groupChallengeId, activityRecordId
+        );
+        pokeService.poke(groupChallengeId, activityRecordId, targetUserId, currentUser.id());
         return ResponseEntity.noContent().build();
     }
 }

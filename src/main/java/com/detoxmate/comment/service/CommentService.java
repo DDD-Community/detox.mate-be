@@ -1,5 +1,6 @@
 package com.detoxmate.comment.service;
 
+import com.detoxmate.activityrecordchallengestatus.service.ActivityRecordChallengeStatusService;
 import com.detoxmate.comment.domain.Comment;
 import com.detoxmate.comment.dto.request.CreateCommentRequest;
 import com.detoxmate.comment.dto.response.CommentAuthorInfo;
@@ -27,6 +28,7 @@ public class CommentService {
 
     private final CommentRepository commentRepository;
     private final UserService userService;
+    private final ActivityRecordChallengeStatusService statusService;
 
     @Transactional(readOnly = true)
     public CommentListResponse list(Long groupChallengeId, Long activityRecordId, String cursor, int size) {
@@ -61,6 +63,8 @@ public class CommentService {
     public CommentResponse create(Long groupChallengeId, Long activityRecordId, CreateCommentRequest request, Long currentUserId) {
         Comment comment = Comment.create(activityRecordId, groupChallengeId, currentUserId, request.commentBody());
         Comment saved = commentRepository.save(comment);
+
+        statusService.increaseCommentCount(groupChallengeId, activityRecordId);
         return toCommentResponse(saved);
     }
 

@@ -1,5 +1,7 @@
 package com.detoxmate.comment.service;
 
+import com.detoxmate.activityrecordchallengestatus.domain.ActivityRecordChallengeStatus;
+import com.detoxmate.activityrecordchallengestatus.repository.ActivityRecordChallengeStatusRepository;
 import com.detoxmate.comment.domain.Comment;
 import com.detoxmate.comment.dto.request.CreateCommentRequest;
 import com.detoxmate.comment.dto.response.CommentListResponse;
@@ -45,6 +47,8 @@ class CommentServiceTest {
     CommentService commentService;
     @Autowired
     CommentRepository commentRepository;
+    @Autowired
+    ActivityRecordChallengeStatusRepository statusRepository;
 
     @MockitoBean
     UserService userService;
@@ -328,6 +332,27 @@ class CommentServiceTest {
 
         // then
         assertThat(response.totalCount()).isEqualTo(5L);
+    }
+
+    @Test
+    @DisplayName("댓글이 작성되면 해당 ChallengeRecord의 댓글 수가 1 증가한다")
+    void create_increasesCommentCount() {
+        // given
+        statusRepository.save(ActivityRecordChallengeStatus.create(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID));
+
+        CreateCommentRequest request = new CreateCommentRequest(VALID_BODY);
+
+        // when
+        commentService.create(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID, request, USER_ID);
+
+        // then
+        ActivityRecordChallengeStatus status = statusRepository
+                .findByChallengeRecord(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID)
+                .orElseThrow();
+
+        assertThat(status.getCommentCount()).isEqualTo(1);
+        assertThat(status.getReactionCount()).isZero();
+        assertThat(status.getPokeCount()).isZero();
     }
 
     private Comment saveCommentInDefault(Long userId, String body) {
