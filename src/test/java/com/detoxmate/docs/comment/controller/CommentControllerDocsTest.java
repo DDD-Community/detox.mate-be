@@ -70,7 +70,7 @@ public class CommentControllerDocsTest {
         given(commentService.list(eq(1L), eq(101L), any(), eq(20)))
                 .willReturn(CommentMockData.createCommentListResponse());
 
-        mockMvc.perform(get("/group-challenges/{groupChallengeId}/stamps/{stampId}/comments", 1L, 101L)
+        mockMvc.perform(get("/group-challenges/{groupChallengeId}/activity-records/{activityRecordId}/comments", 1L, 101L)
                         .param("cursor", "eyJpZCI6MH0=")
                         .param("size", "20")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
@@ -83,7 +83,7 @@ public class CommentControllerDocsTest {
                         ),
                         pathParameters(
                                 parameterWithName("groupChallengeId").description("챌린지 ID"),
-                                parameterWithName("activityRecordId").description("스탬프 ID")
+                                parameterWithName("activityRecordId").description("활동 인증 기록 ID")
                         ),
                         queryParameters(
                                 parameterWithName("cursor").optional().description("페이지 커서 (없으면 처음부터)"),
@@ -102,7 +102,7 @@ public class CommentControllerDocsTest {
                         resource(builder()
                                 .tag("Comment")
                                 .summary("댓글 목록 조회")
-                                .description("스탬프의 댓글 목록을 커서 기반으로 조회한다.")
+                                .description("활동 인증 기록의 댓글 목록을 커서 기반으로 조회한다.")
                                 .responseSchema(schema("CommentListResponse"))
                                 .build()
                         )));
@@ -113,7 +113,7 @@ public class CommentControllerDocsTest {
         given(commentService.create(eq(1L), eq(101L), any(CreateCommentRequest.class), eq(1L)))
                 .willReturn(CommentMockData.createCommentResponse());
 
-        mockMvc.perform(post("/group-challenges/{groupChallengeId}/stamps/{stampId}/comments", 1L, 101L)
+        mockMvc.perform(post("/group-challenges/{groupChallengeId}/activity-records/{activityRecordId}/comments", 1L, 101L)
                         .header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -130,7 +130,7 @@ public class CommentControllerDocsTest {
                         ),
                         pathParameters(
                                 parameterWithName("groupChallengeId").description("챌린지 ID"),
-                                parameterWithName("activityRecordId").description("스탬프 ID")
+                                parameterWithName("activityRecordId").description("활동 인증 기록 ID")
                         ),
                         requestFields(
                                 fieldWithPath("commentBody").type(STRING).description("댓글 본문")
@@ -138,15 +138,15 @@ public class CommentControllerDocsTest {
                         responseFields(
                                 fieldWithPath("commentId").type(NUMBER).description("생성된 댓글 ID"),
                                 fieldWithPath("groupChallengeId").type(NUMBER).description("챌린지 ID"),
-                                fieldWithPath("activityRecordId").type(NUMBER).description("스탬프 ID"),
+                                fieldWithPath("activityRecordId").type(NUMBER).description("활동 인증 기록 ID"),
                                 fieldWithPath("userId").type(NUMBER).description("작성자 유저 ID"),
-                                fieldWithPath("commentMessage").type(STRING).description("댓글 본문"),
+                                fieldWithPath("commentBody").type(STRING).description("댓글 본문"),
                                 fieldWithPath("createdAt").type(STRING).description("생성 시각")
                         ),
                         resource(builder()
                                 .tag("Comment")
                                 .summary("댓글 작성")
-                                .description("스탬프에 댓글을 작성한다.")
+                                .description("활동 인증 기록에 댓글을 작성한다.")
                                 .requestSchema(schema("CreateCommentRequest"))
                                 .responseSchema(schema("CommentResponse"))
                                 .build()
