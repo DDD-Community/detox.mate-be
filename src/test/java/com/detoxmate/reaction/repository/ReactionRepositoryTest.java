@@ -142,4 +142,53 @@ class ReactionRepositoryTest {
         //then
         assertThat(count).isZero();
     }
+
+    @Test
+    @DisplayName("같은 사용자가 같은 ChallengeRecord에 같은 body의 활성 리액션을 가지고 있으면 true를 반환한다")
+    void existsActiveReaction_returnsTrueWhenSameUserHasSameActiveBody() {
+        // given
+        reactionRepository.save(
+                Reaction.create(ACTIVITY_RECORD_ID, GROUP_CHALLENGE_ID, 1L, ReactionBody.CLAP)
+        );
+
+        // when
+        boolean exists = reactionRepository.existsActiveReaction(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID, 1L, ReactionBody.CLAP);
+
+        // then
+        assertThat(exists).isTrue();
+    }
+
+    @Test
+    @DisplayName("같은 사용자가 같은 ChallengeRecord에 다른 body만 가지고 있으면 false를 반환한다")
+    void existsActiveReaction_returnsFalseWhenBodyIsDifferent() {
+        // given
+        reactionRepository.save(
+                Reaction.create(ACTIVITY_RECORD_ID, GROUP_CHALLENGE_ID, 1L, ReactionBody.CLAP)
+        );
+
+        // when
+        boolean exists = reactionRepository.existsActiveReaction(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID, 1L, ReactionBody.HAMMER);
+
+        // then
+        assertThat(exists).isFalse();
+    }
+
+    @Test
+    @DisplayName("같은 body라도 삭제된 리액션이면 false를 반환한다")
+    void existsActiveReaction_returnsFalseWhenReactionIsDeleted() {
+        // given
+        Reaction reaction = reactionRepository.save(
+                Reaction.create(ACTIVITY_RECORD_ID, GROUP_CHALLENGE_ID, 1L, ReactionBody.CLAP)
+        );
+        reaction.deleteBy(1L);
+        reactionRepository.saveAndFlush(reaction);
+
+        // when
+        boolean exists = reactionRepository.existsActiveReaction(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID, 1L, ReactionBody.CLAP);
+
+        // then
+        assertThat(exists).isFalse();
+    }
+
+
 }
