@@ -10,6 +10,11 @@
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "3316239df2bdcb41e992857b8142e0239e6964564dd5d7224e470c2ab350a03c"
+    },
+    "database-schema-designer": {
+      "source": "softaworks/agent-toolkit",
+      "sourceType": "github",
+      "computedHash": "6a26ca15216bb4bfee66ebf813edcb1e31a8002f3f641f16f550df814b522217"
     }
   }
 }

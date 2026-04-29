@@ -125,6 +125,7 @@ tasks.named('bootJar') {
 }
 
 tasks.named('jar') {
+    dependsOn tasks.named('copyOpenapi3Spec')
     exclude 'firebase/**'
 }
 
