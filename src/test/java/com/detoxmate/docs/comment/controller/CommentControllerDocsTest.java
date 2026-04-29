@@ -83,7 +83,7 @@ public class CommentControllerDocsTest {
                         ),
                         pathParameters(
                                 parameterWithName("groupChallengeId").description("챌린지 ID"),
-                                parameterWithName("stampId").description("스탬프 ID")
+                                parameterWithName("activityRecordId").description("스탬프 ID")
                         ),
                         queryParameters(
                                 parameterWithName("cursor").optional().description("페이지 커서 (없으면 처음부터)"),
@@ -95,7 +95,7 @@ public class CommentControllerDocsTest {
                                 fieldWithPath("items[].author.userId").type(NUMBER).description("작성자 유저 ID"),
                                 fieldWithPath("items[].author.displayName").type(STRING).description("작성자 닉네임"),
                                 fieldWithPath("items[].author.profileImageUrl").type(STRING).description("작성자 프로필 URL"),
-                                fieldWithPath("items[].body").type(STRING).description("댓글 본문"),
+                                fieldWithPath("items[].commentBody").type(STRING).description("댓글 본문"),
                                 fieldWithPath("items[].createdAt").type(STRING).description("댓글 생성 시각"),
                                 fieldWithPath("nextCursor").type(STRING).optional().description("다음 페이지 커서 (없으면 null)")
                         ),
@@ -118,7 +118,7 @@ public class CommentControllerDocsTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                    "commentMessage": "와 대박!"
+                                    "commentBody": "와 대박!"
                                 }
                                 """))
                 .andExpect(status().isCreated())
@@ -133,7 +133,7 @@ public class CommentControllerDocsTest {
                                 parameterWithName("stampId").description("스탬프 ID")
                         ),
                         requestFields(
-                                fieldWithPath("commentMessage").type(STRING).description("댓글 본문")
+                                fieldWithPath("commentBody").type(STRING).description("댓글 본문")
                         ),
                         responseFields(
                                 fieldWithPath("commentId").type(NUMBER).description("생성된 댓글 ID"),

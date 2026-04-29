@@ -8,11 +8,11 @@ import org.springframework.stereotype.Service;
 @Service
 public class CommentService {
 
-    public CommentListResponse list(Long groupChallengeId, Long stampId, String cursor, int size) {
+    public CommentListResponse list(Long groupChallengeId, Long activityRecordId, String cursor, int size) {
         throw new UnsupportedOperationException("아직 미구현 - API 문서화 단계");
     }
 
-    public CommentResponse create(Long groupChallengeId, Long stampId,
+    public CommentResponse create(Long groupChallengeId, Long activityRecordId,
                                   CreateCommentRequest request, Long currentUserId) {
         throw new UnsupportedOperationException("아직 미구현 - API 문서화 단계");
     }

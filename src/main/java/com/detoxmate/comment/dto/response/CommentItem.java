@@ -8,7 +8,7 @@ import java.time.Instant;
 public record CommentItem(
         Long commentId,
         CommentAuthorInfo author,
-        String body,
+        String commentBody,
         Instant createdAt
 ) {
 }
