@@ -45,6 +45,7 @@ jobs:
   deploy:
     name: Deploy on EC2
     needs: build
+    environment: dev
     runs-on: [self-hosted, linux, ARM64]
 
     steps:
@@ -74,7 +75,11 @@ jobs:
           DEV_DB_USERNAME=${{ secrets.DEV_DB_USERNAME }}
           DEV_DB_PASSWORD=${{ secrets.DEV_DB_PASSWORD }}
           JWT_SECRET=${{ secrets.JWT_SECRET }}
-          JWT_ACCESS_TOKEN_EXPIRES_IN=${{ secrets.JWT_ACCESS_TOKEN_EXPIRES_IN }}
+          JWT_ACCESS_TOKEN_EXPIRES_IN=${{ vars.JWT_ACCESS_TOKEN_EXPIRES_IN }}
+          STORAGE_IMAGE_READ_BASE_URL=${{ vars.STORAGE_IMAGE_READ_BASE_URL }}
+          S3_BUCKET_NAME=${{ vars.S3_BUCKET_NAME }}
+          AWS_REGION=${{ vars.AWS_REGION }}
+          S3_PRESIGNED_URL_EXPIRES_IN=${{ vars.S3_PRESIGNED_URL_EXPIRES_IN }}
           EOF
 
       - name: Create Dockerfile

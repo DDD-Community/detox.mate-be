@@ -8,6 +8,7 @@ import java.util.List;
 public record ActivityRecordCreateRequest(
         String activityImageObjectKey,
         String reflectionText,
+        Long groupChallengeParticipantId,
 
         @NotEmpty
         List<@Valid ActivityRecordDetailRequest> details

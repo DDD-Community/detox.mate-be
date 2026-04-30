@@ -9,7 +9,7 @@ description: |
   - 문서화 대상 API별 Swagger UI 스크린샷을 남기고 PR까지 업데이트
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git:*), Bash(rg:*), Bash(./gradlew:*), Bash(find:*), Bash(sed:*), Bash(nl:*)
 model: sonnet
-version: 1.2.0
+version: 1.3.0
 ---
 
 # Controller API Docs
@@ -30,6 +30,10 @@ version: 1.2.0
 - 스크린샷은 검증과 PR 공유용으로만 사용하고, 저장소 파일로 커밋하지 않는다.
 - PR에 스크린샷을 올릴 때는 GitHub PR editor/comment box에 직접 업로드해서 GitHub hosted attachment URL을 사용한다.
 - 문서화 작업이 끝나면 결과를 PR까지 반영한다.
+- 문서화 편의를 위해 production code에 `Mock...Service` 같은 임시 bean을 추가하지 않는다.
+- Controller 테스트를 통과시키려고 service 내부에 하드코딩 mock 데이터, 임시 분기, fake 로직을 넣지 않는다.
+- mock/stub/fake가 필요하면 Controller 테스트 안에서 의존성을 mock 하거나 test fixture로만 둔다.
+- production service는 실제 의존성 또는 명시적인 port(interface)만 의존하게 유지한다.
 
 ## Existing Project Pattern
 
@@ -104,6 +108,32 @@ PR 생성/업데이트 규칙은 아래 스킬을 따른다.
 10. 스크린샷은 저장소에 추가하지 않고 PR 공유 수단에만 사용한다.
 11. 작업 완료 후 `create-pr` 스킬 기준으로 PR을 생성하거나 갱신한다.
 
+### Mocking Boundary
+
+문서화 단계에서 mock을 써야 할 때는 경계를 아래처럼 고정한다.
+
+- 허용:
+  - Controller 테스트에서 service mock 사용
+  - service 테스트에서 repository/port mock 사용
+  - 테스트 전용 fixture / helper / dummy response 작성
+- 금지:
+  - `MockUploadService`, `MockActivityRecordService` 같은 production bean 추가
+  - 아직 구현 안 된 로직을 가리기 위해 service 클래스 안에 하드코딩 mock 데이터 추가
+  - 테스트를 통과시키기 위해 controller/service wiring을 임시 구조로 바꾸기
+
+판단 기준:
+
+- "이 mock이 `src/main` 에 들어가나?" -> 들어가면 거의 항상 잘못이다.
+- "이 fake 데이터가 실제 서비스 로직 안에 남나?" -> 남으면 잘못이다.
+- "이 문서화 작업이 끝난 뒤에도 production runtime에 영향이 있나?" -> 영향이 있으면 잘못이다.
+
+권장 패턴:
+
+- 문서화만 먼저 필요하면 Controller 테스트에서 service를 mock 해서 request/response contract만 고정한다.
+- 이후 실제 구현이 예상되면 service는 repository를 직접 들고 시작하기보다 port/interface를 통해 의존성을 감싸기 쉽게 둔다.
+- 실제 구현에 들어가면 service는 repository 또는 finder/loader 같은 실제 의존성 기반으로 TDD 한다.
+- 미구현 endpoint는 production code에 fake 구현을 넣지 말고, 필요하면 테스트에서만 응답을 stub 하거나 미구현 상태를 명시한다.
+
 ## Screenshot Rules
 
 - 스크린샷은 endpoint별로 1장 이상 남긴다.
@@ -131,6 +161,9 @@ PR 생성/업데이트 규칙은 아래 스킬을 따른다.
 - 오래된 snippet 때문에 생성물이 오염될 수 있으니 `test.doFirst { delete snippetsDir }` 전제를 깨지 않게 한다.
 - Swagger UI 스크린샷은 테스트/생성 산출물과 실제로 일치해야 한다.
 - PR 본문에 첨부하는 스크린샷은 현재 브랜치 기준 최신 화면이어야 한다.
+- 문서화용 임시 구현이 production 설계를 오염시키지 않게 한다.
+- "문서화가 먼저"여도 bean 구조와 service 책임은 실제 설계 방향을 유지한다.
+- 이후 프로덕션 코드와 테스트 코드가 쉽게 이어지도록, service는 mock-friendly한 port 기반 구조를 우선 고려한다.
 
 ## Verification
 

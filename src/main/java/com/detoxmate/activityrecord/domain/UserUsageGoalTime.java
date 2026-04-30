@@ -1,10 +1,14 @@
 package com.detoxmate.activityrecord.domain;
 
+import com.detoxmate.user.domain.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -25,37 +29,57 @@ public class UserUsageGoalTime {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "usage_goal_type_id", nullable = false)
-    private Long usageGoalTypeId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "usage_goal_type_id", nullable = false)
+    private UsageGoalType usageGoalType;
 
     @Column(name = "goal_minutes", nullable = false)
-    private Long goalMinutes;
-
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    private Integer goalMinutes;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    private UserUsageGoalTime(Long usageGoalTypeId, Long goalMinutes, Long userId) {
+    private UserUsageGoalTime(User user, UsageGoalType usageGoalType, Integer goalMinutes) {
+        validateUser(user);
+        validateUsageGoalType(usageGoalType);
         validateGoalMinutes(goalMinutes);
-        this.usageGoalTypeId = usageGoalTypeId;
+        this.user = user;
+        this.usageGoalType = usageGoalType;
         this.goalMinutes = goalMinutes;
-        this.userId = userId;
     }
 
-    public static UserUsageGoalTime create(Long usageGoalTypeId, Long goalMinutes, Long userId) {
-        return new UserUsageGoalTime(usageGoalTypeId, goalMinutes, userId);
+    public static UserUsageGoalTime create(User user, UsageGoalType usageGoalType, Integer goalMinutes) {
+        return new UserUsageGoalTime(user, usageGoalType, goalMinutes);
     }
 
-    private static void validateGoalMinutes(Long goalMinutes) {
-        if (goalMinutes == null || goalMinutes < 0) {
-            throw new IllegalArgumentException("목표 시간은 0 이상이어야 합니다.");
+    private static void validateUser(User user) {
+        if (user == null) {
+            throw new IllegalArgumentException("user 는 필수입니다.");
+        }
+    }
+
+    private static void validateUsageGoalType(UsageGoalType usageGoalType) {
+        if (usageGoalType == null) {
+            throw new IllegalArgumentException("usageGoalType 는 필수입니다.");
+        }
+    }
+
+    private static void validateGoalMinutes(Integer goalMinutes) {
+        if (goalMinutes == null) {
+            throw new IllegalArgumentException("goalMinutes 는 필수입니다.");
+        }
+
+        if (goalMinutes < 0) {
+            throw new IllegalArgumentException("goalMinutes 는 0 이상이어야 합니다.");
         }
     }
 }
