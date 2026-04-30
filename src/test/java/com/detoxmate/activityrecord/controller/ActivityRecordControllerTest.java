@@ -53,6 +53,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ExtendWith(RestDocumentationExtension.class)
 class ActivityRecordControllerTest {
 
+    private static final String TEST_IMAGE_BASE_URL = "https://example.com/media";
+
     private ActivityRecordService activityRecordService;
     private UserService userService;
     private MockMvc mockMvc;
@@ -173,7 +175,7 @@ class ActivityRecordControllerTest {
                 123L,
                 LocalDateTime.of(2026, 4, 26, 21, 30),
                 10L,
-                "https://detoxmate-media-dev.s3.ap-northeast-2.amazonaws.com/activity-records/1/2026/04/sample.png",
+                TEST_IMAGE_BASE_URL + "/activity-records/1/2026/04/sample.png",
                 "오늘은 산책했다",
                 List.of(
                         new ActivityRecordDetailResult(UsageGoalTypeCode.TOTAL_USAGE, 80, 60, false),
@@ -207,7 +209,7 @@ class ActivityRecordControllerTest {
                 .andExpect(jsonPath("$.id").value(123))
                 .andExpect(jsonPath("$.createdAt").value("2026-04-26T21:30:00"))
                 .andExpect(jsonPath("$.groupChallengeParticipantId").value(10))
-                .andExpect(jsonPath("$.activityImageUrl").value("https://detoxmate-media-dev.s3.ap-northeast-2.amazonaws.com/activity-records/1/2026/04/sample.png"))
+                .andExpect(jsonPath("$.activityImageUrl").value(TEST_IMAGE_BASE_URL + "/activity-records/1/2026/04/sample.png"))
                 .andExpect(jsonPath("$.reflectionText").value("오늘은 산책했다"))
                 .andExpect(jsonPath("$.details[0].usageGoalType").value("TOTAL_USAGE"))
                 .andExpect(jsonPath("$.details[0].isAchieved").value(false))

@@ -44,6 +44,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ExtendWith(RestDocumentationExtension.class)
 class UploadControllerTest {
 
+    private static final String TEST_UPLOAD_URL = "https://example.com/uploads/activity-records/1/2026/04/mock-walk-photo.png?signature=mock-signature";
+
     private UploadService uploadService;
     private UserService userService;
     private MockMvc mockMvc;
@@ -74,7 +76,7 @@ class UploadControllerTest {
                 1_048_576L,
                 UploadPurpose.ACTIVITY_RECORD_IMAGE
         ))).thenReturn(new PresignedUrlResponse(
-                "https://detoxmate-media-dev.s3.ap-northeast-2.amazonaws.com/activity-records/1/2026/04/mock-walk-photo.png?signature=mock-signature",
+                TEST_UPLOAD_URL,
                 "activity-records/1/2026/04/mock-walk-photo.png",
                 600
         ));
@@ -92,7 +94,7 @@ class UploadControllerTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.uploadUrl").value("https://detoxmate-media-dev.s3.ap-northeast-2.amazonaws.com/activity-records/1/2026/04/mock-walk-photo.png?signature=mock-signature"))
+                .andExpect(jsonPath("$.uploadUrl").value(TEST_UPLOAD_URL))
                 .andExpect(jsonPath("$.objectKey").value("activity-records/1/2026/04/mock-walk-photo.png"))
                 .andExpect(jsonPath("$.expiresInSeconds").value(600))
                 .andDo(document("uploads/presigned-urls",

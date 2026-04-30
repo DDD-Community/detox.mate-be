@@ -24,3 +24,7 @@ auth:
 
 firebase:
   service-account-path: classpath:firebase/not-found.json
+
+app:
+  storage:
+    image-read-base-url: https://example.com/media

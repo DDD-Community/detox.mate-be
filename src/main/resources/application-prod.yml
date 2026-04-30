@@ -51,11 +51,3 @@ auth:
     access-token-expires-in: ${JWT_ACCESS_TOKEN_EXPIRES_IN:3600}
   refresh-token:
     expires-in: ${REFRESH_TOKEN_EXPIRES_IN:15552000}
-
-app:
-  storage:
-    image-read-base-url: ${STORAGE_IMAGE_READ_BASE_URL:}
-    s3:
-      region: ${AWS_REGION:ap-northeast-2}
-      bucket-name: ${S3_BUCKET_NAME}
-      presigned-url-expires-in: ${S3_PRESIGNED_URL_EXPIRES_IN:600}

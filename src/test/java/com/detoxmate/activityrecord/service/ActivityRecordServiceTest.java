@@ -37,13 +37,15 @@ import org.mockito.ArgumentCaptor;
 
 class ActivityRecordServiceTest {
 
+    private static final String TEST_IMAGE_BASE_URL = "https://example.com/media";
+
     private final UserUsageGoalTimeRepository userUsageGoalTimeRepository = mock(UserUsageGoalTimeRepository.class);
     private final ActivityRecordRepository activityRecordRepository = mock(ActivityRecordRepository.class);
     private final UserRepository userRepository = mock(UserRepository.class);
     private final GroupChallengeParticipantRepository groupChallengeParticipantRepository =
             mock(GroupChallengeParticipantRepository.class);
     private final ImageReadUrlBuilder imageReadUrlBuilder =
-            new ImageReadUrlBuilder(new StorageProperties("https://detoxmate-media-dev.s3.ap-northeast-2.amazonaws.com"));
+            new ImageReadUrlBuilder(new StorageProperties(TEST_IMAGE_BASE_URL));
     private final ActivityRecordService activityRecordService =
             new ActivityRecordService(
                     userUsageGoalTimeRepository,
@@ -211,7 +213,7 @@ class ActivityRecordServiceTest {
         ActivityRecordCreateResponse response = activityRecordService.create(1L, request);
 
         assertThat(response.activityImageUrl())
-                .isEqualTo("https://detoxmate-media-dev.s3.ap-northeast-2.amazonaws.com/activity-records/sample.png");
+                .isEqualTo(TEST_IMAGE_BASE_URL + "/activity-records/sample.png");
         assertThat(response.allAchieved()).isFalse();
     }
 

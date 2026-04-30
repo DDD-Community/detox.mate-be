@@ -29,6 +29,8 @@ import static org.mockito.Mockito.when;
 
 class S3UploadServiceTest {
 
+    private static final String TEST_UPLOAD_BASE_URL = "https://example.com/uploads";
+
     private final S3Presigner s3Presigner = mock(S3Presigner.class);
     private final StorageS3Properties storageS3Properties =
             new StorageS3Properties("ap-northeast-2", "detoxmate-media-dev", 600);
@@ -52,7 +54,7 @@ class S3UploadServiceTest {
     void activity_record_image용_presigned_url을_발급한다() throws MalformedURLException {
         PresignedPutObjectRequest presignedRequest = mock(PresignedPutObjectRequest.class);
         when(presignedRequest.url()).thenReturn(URI.create(
-                "https://detoxmate-media-dev.s3.ap-northeast-2.amazonaws.com/activity-records/7/2026/04/mock.png?signature=test"
+                TEST_UPLOAD_BASE_URL + "/activity-records/7/2026/04/mock.png?signature=test"
         ).toURL());
         when(s3Presigner.presignPutObject(any(PutObjectPresignRequest.class))).thenReturn(presignedRequest);
 
@@ -62,7 +64,7 @@ class S3UploadServiceTest {
         );
 
         assertThat(response.uploadUrl())
-                .isEqualTo("https://detoxmate-media-dev.s3.ap-northeast-2.amazonaws.com/activity-records/7/2026/04/mock.png?signature=test");
+                .isEqualTo(TEST_UPLOAD_BASE_URL + "/activity-records/7/2026/04/mock.png?signature=test");
         assertThat(response.objectKey())
                 .startsWith("activity-records/7/2026/04/")
                 .endsWith("-walk-photo.png");
@@ -75,7 +77,7 @@ class S3UploadServiceTest {
     void 아이폰_heic_이미지에_대해서도_presigned_url을_발급한다() throws MalformedURLException {
         PresignedPutObjectRequest presignedRequest = mock(PresignedPutObjectRequest.class);
         when(presignedRequest.url()).thenReturn(URI.create(
-                "https://detoxmate-media-dev.s3.ap-northeast-2.amazonaws.com/activity-records/7/2026/04/mock.heic?signature=test"
+                TEST_UPLOAD_BASE_URL + "/activity-records/7/2026/04/mock.heic?signature=test"
         ).toURL());
         when(s3Presigner.presignPutObject(any(PutObjectPresignRequest.class))).thenReturn(presignedRequest);
 
@@ -133,7 +135,7 @@ class S3UploadServiceTest {
     void presigned_url_발급시_bucket_key_contentType과_만료시간을_함께_서명한다() throws MalformedURLException {
         PresignedPutObjectRequest presignedRequest = mock(PresignedPutObjectRequest.class);
         when(presignedRequest.url()).thenReturn(URI.create(
-                "https://detoxmate-media-dev.s3.ap-northeast-2.amazonaws.com/activity-records/7/2026/04/mock.png?signature=test"
+                TEST_UPLOAD_BASE_URL + "/activity-records/7/2026/04/mock.png?signature=test"
         ).toURL());
         PutObjectPresignRequest[] capturedRequest = new PutObjectPresignRequest[1];
         when(s3Presigner.presignPutObject(any(PutObjectPresignRequest.class))).thenAnswer(invocation -> {
