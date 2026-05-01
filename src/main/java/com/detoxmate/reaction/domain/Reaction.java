@@ -21,11 +21,8 @@ public class Reaction {
     @Column(name = "reaction_id")
     private Long id;
 
-    @Column(name = "activity_record_id", nullable = false)
-    private Long activityRecordId;
-
-    @Column(name = "group_challenge_id", nullable = false)
-    private Long groupChallengeId;
+    @Column(name = "challenge_record_id", nullable = false)
+    private Long challengeRecordId;
 
     @Column(name = "user_id", nullable = false)
     private Long userId;
@@ -43,36 +40,52 @@ public class Reaction {
     @Column(name = "is_deleted", nullable = false)
     private boolean deleted;
 
-    private Reaction(Long activityRecordId, Long groupChallengeId, Long userId, ReactionBody body) {
-        this.activityRecordId = activityRecordId;
-        this.groupChallengeId = groupChallengeId;
+    private Reaction(Long challengeRecordId, Long userId, ReactionBody body) {
+        validateCreate(challengeRecordId, userId, body);
+
+        this.challengeRecordId = challengeRecordId;
         this.userId = userId;
         this.body = body;
         this.createdAt = LocalDateTime.now();
+        this.updatedAt = null;
         this.deleted = false;
     }
 
-    public static Reaction create(Long activityRecordId, Long groupChallengeId, Long userId, ReactionBody body) {
-        validateBody(body);
-        return new Reaction(activityRecordId, groupChallengeId, userId, body);
+    public static Reaction create(Long challengeRecordId, Long userId, ReactionBody body) {
+        return new Reaction(challengeRecordId, userId, body);
     }
 
     public void deleteBy(Long currentUserId) {
-        if (deleted) {
-            throw new CustomException(ReactionErrorCode.REACTION_ALREADY_DELETED);
-        }
-
-        if (!Objects.equals(userId, currentUserId)) {
-            throw new CustomException(ReactionErrorCode.REACTION_DELETE_FORBIDDEN);
-        }
+        validateNotDeleted();
+        validateAuthor(currentUserId);
 
         this.deleted = true;
         this.updatedAt = LocalDateTime.now();
     }
 
-    private static void validateBody(ReactionBody body) {
+    private static void validateCreate(Long challengeRecordId, Long userId, ReactionBody body) {
+        if (challengeRecordId == null) {
+            throw new CustomException(ReactionErrorCode.REACTION_CHALLENGE_RECORD_REQUIRED);
+        }
+
+        if (userId == null) {
+            throw new CustomException(ReactionErrorCode.REACTION_USER_REQUIRED);
+        }
+
         if (body == null) {
             throw new CustomException(ReactionErrorCode.REACTION_BODY_REQUIRED);
+        }
+    }
+
+    private void validateNotDeleted() {
+        if (deleted) {
+            throw new CustomException(ReactionErrorCode.REACTION_ALREADY_DELETED);
+        }
+    }
+
+    private void validateAuthor(Long currentUserId) {
+        if (!userId.equals(currentUserId)) {
+            throw new CustomException(ReactionErrorCode.REACTION_DELETE_FORBIDDEN);
         }
     }
 }

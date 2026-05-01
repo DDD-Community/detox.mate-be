@@ -7,8 +7,7 @@ import java.time.LocalDateTime;
  */
 public record CommentResponse(
         Long commentId,
-        Long groupChallengeId,
-        Long activityRecordId,
+        Long challengeRecordId,
         Long userId,
         String commentBody,
         LocalDateTime createdAt

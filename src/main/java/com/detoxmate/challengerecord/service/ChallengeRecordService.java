@@ -17,6 +17,14 @@ public class ChallengeRecordService {
 
     private final ChallengeRecordRepository challengeRecordRepository;
 
+    @Transactional(readOnly = true)
+    public ChallengeRecord get(Long challengeRecordId) {
+        return challengeRecordRepository.findById(challengeRecordId)
+                .orElseThrow(() -> new CustomException(
+                        ChallengeRecordErrorCode.CHALLENGE_RECORD_NOT_FOUND
+                ));
+    }
+
     @Transactional
     public ChallengeRecord create(Long groupChallengeId, Long groupChallengeParticipantId, LocalDate recordDate) {
         return challengeRecordRepository

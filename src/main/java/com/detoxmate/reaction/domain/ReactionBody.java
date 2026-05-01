@@ -4,7 +4,7 @@ public enum ReactionBody {
     CLAP,
     LIKED,
     FIRE,
-    STRENGTH,
+    MUSCLE,
     HAMMER,
     SURPRISED
 }

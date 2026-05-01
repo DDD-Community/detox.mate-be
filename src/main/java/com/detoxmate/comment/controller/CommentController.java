@@ -14,30 +14,34 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/group-challenges")
+@RequestMapping("/challenge-records")
 @Slf4j
 public class CommentController {
 
     private final CommentService commentService;
 
-    @GetMapping("/{groupChallengeId}/activity-records/{activityRecordId}/comments")
-    public ResponseEntity<CommentListResponse> getComments(@PathVariable Long groupChallengeId,
-                                                           @PathVariable Long activityRecordId,
+    @GetMapping("/{challengeRecordId}/comments")
+    public ResponseEntity<CommentListResponse> getComments(@PathVariable Long challengeRecordId,
                                                            @RequestParam(required = false) String cursor,
                                                            @RequestParam(defaultValue = "20") int size,
                                                            CurrentUser currentUser) {
-        log.info("[Comment][get-comments] groupChallengeId={}, activityRecordId={}, size={}, userId = {}",groupChallengeId, activityRecordId,size,currentUser.id());
+        log.info("[Comment][get-comments] challengeRecordId={}, size={}, userId={}",
+                challengeRecordId, size, currentUser.id());
 
-        return ResponseEntity.ok(commentService.list(groupChallengeId, activityRecordId, cursor, size));
+        CommentListResponse response = commentService.list(challengeRecordId, cursor, size);
+
+        return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/{groupChallengeId}/activity-records/{activityRecordId}/comments")
-    public ResponseEntity<CommentResponse> createComment(@PathVariable Long groupChallengeId,
-                                                         @PathVariable Long activityRecordId,
+    @PostMapping("/{challengeRecordId}/comments")
+    public ResponseEntity<CommentResponse> createComment(@PathVariable Long challengeRecordId,
                                                          @Valid @RequestBody CreateCommentRequest request,
                                                          CurrentUser currentUser) {
-        log.info("[Comment][create-comment] groupChallengeId={}, activityRecordId={}, userId ={}", groupChallengeId, activityRecordId, currentUser.id());
-        CommentResponse response = commentService.create(groupChallengeId, activityRecordId, request, currentUser.id());
+        log.info("[Comment][create-comment] challengeRecordId={}, userId={}",
+                challengeRecordId, currentUser.id());
+
+        CommentResponse response = commentService.create(challengeRecordId, request, currentUser.id());
+
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }

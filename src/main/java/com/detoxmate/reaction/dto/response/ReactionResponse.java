@@ -5,8 +5,7 @@ import java.time.LocalDateTime;
 
 public record ReactionResponse(
         Long reactionId,
-        Long groupChallengeId,
-        Long stampId,
+        Long challengeRecordId,
         Long userId,
         String reactionBody,
         LocalDateTime createdAt

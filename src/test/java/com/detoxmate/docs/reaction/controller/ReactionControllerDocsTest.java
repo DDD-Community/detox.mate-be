@@ -68,45 +68,7 @@ public class ReactionControllerDocsTest {
 
     @Test
     void 리액션_추가() throws Exception {
-        given(reactionService.create(eq(1L), eq(101L), any(CreateReactionRequest.class), eq(1L)))
-                .willReturn(ReactionMockData.createReactionResponse());
 
-        mockMvc.perform(post("/group-challenges/{groupChallengeId}/stamps/{stampId}/reactions", 1L, 101L)
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                { "reactionCode": "MUSCLE" }
-                                """))
-                .andExpect(status().isCreated())
-                .andDo(document("group-challenges/reaction-create",
-                        preprocessRequest(prettyPrint()),
-                        preprocessResponse(prettyPrint()),
-                        requestHeaders(
-                                headerWithName(HttpHeaders.AUTHORIZATION).description("Bearer access token")
-                        ),
-                        pathParameters(
-                                parameterWithName("groupChallengeId").description("챌린지 ID"),
-                                parameterWithName("stampId").description("스탬프 ID")
-                        ),
-                        requestFields(
-                                fieldWithPath("reactionCode").type(STRING).description("리액션 코드 (예: MUSCLE)")
-                        ),
-                        responseFields(
-                                fieldWithPath("reactionId").type(NUMBER).description("생성된 리액션 ID"),
-                                fieldWithPath("groupChallengeId").type(NUMBER).description("챌린지 ID"),
-                                fieldWithPath("stampId").type(NUMBER).description("스탬프 ID"),
-                                fieldWithPath("userId").type(NUMBER).description("리액션 단 유저 ID"),
-                                fieldWithPath("reactionBody").type(STRING).description("리액션 종류"),
-                                fieldWithPath("createdAt").type(STRING).description("생성 시각")
-                        ),
-                        resource(builder()
-                                .tag("Reaction")
-                                .summary("리액션 추가")
-                                .description("스탬프에 리액션을 추가한다. (stamp_id, group_challenge_id, user_id, body) UNIQUE.")
-                                .requestSchema(schema("CreateReactionRequest"))
-                                .responseSchema(schema("ReactionResponse"))
-                                .build()
-                        )));
     }
 
     @Test

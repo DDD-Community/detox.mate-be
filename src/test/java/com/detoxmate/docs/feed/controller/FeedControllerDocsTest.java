@@ -100,8 +100,8 @@ public class FeedControllerDocsTest {
                                 fieldWithPath("members[].totalUsedMinutes").type(NUMBER).optional()
                                         .description("누적 사용 시간(분)"),
                                 fieldWithPath("members[].goalMinutes").type(STRING).description("목표 시간 (예: 8H 30M)"),
-                                fieldWithPath("members[].stampId").type(NUMBER).optional()
-                                        .description("스탬프 ID (미인증 시 null)"),
+                                fieldWithPath("members[].activityRecordId").type(NUMBER).optional()
+                                        .description("활동 인증 기록 ID (미인증 시 null)"),
                                 fieldWithPath("members[].reactionCount").type(NUMBER).description("리액션 수"),
                                 fieldWithPath("members[].commentCount").type(NUMBER).description("댓글 수"),
                                 fieldWithPath("members[].pokeCount").type(NUMBER).description("받은 콕 수"),

@@ -4,7 +4,6 @@ import com.detoxmate.feed.dto.response.HomeFeedChallengeInfo;
 import com.detoxmate.feed.dto.response.HomeFeedMemberCard;
 import com.detoxmate.feed.dto.response.HomeFeedResponse;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -15,7 +14,7 @@ public class HomeFeedMockData {
                 new HomeFeedChallengeInfo(
                         1L,
                         "수능 100일 전 모임",
-                        LocalDateTime.parse("2026-04-20T00:00:00Z"),
+                        LocalDateTime.parse("2026-04-20T00:00:00"),
                         7
                 ),
                 List.of(

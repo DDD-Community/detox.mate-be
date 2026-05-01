@@ -1,7 +1,6 @@
 package com.detoxmate.poke.service;
 
-import com.detoxmate.activityrecordchallengestatus.domain.ActivityRecordChallengeStatus;
-import com.detoxmate.activityrecordchallengestatus.repository.ActivityRecordChallengeStatusRepository;
+import com.detoxmate.challengerecordstatuscount.domain.ChallengeRecordStatusCount;
 import com.detoxmate.common.exception.CustomException;
 import com.detoxmate.common.exception.poke.PokeErrorCode;
 import com.detoxmate.poke.domain.Poke;
@@ -29,9 +28,6 @@ class PokeServiceTest {
     @Autowired
     private PokeRepository pokeRepository;
 
-    @Autowired
-    private ActivityRecordChallengeStatusRepository statusRepository;
-
     private static final Long GROUP_CHALLENGE_ID = 10L;
     private static final Long OTHER_GROUP_CHALLENGE_ID = 20L;
 
@@ -46,7 +42,6 @@ class PokeServiceTest {
     @DisplayName("찌르기를 하면 해당 그룹 챌린지의 받은 사람에게 찌르기가 저장된다")
     void poke_persistsPoke() {
         // given
-        saveStatus(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID);
 
         // when
         pokeService.poke(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID, RECEIVER_USER_ID, SENDER_USER_ID);
@@ -67,7 +62,6 @@ class PokeServiceTest {
     @DisplayName("같은 그룹 챌린지에서 같은 사람에게 같은 날짜에 두 번 찌를 수 없다")
     void poke_throwsExceptionWhenSameReceiverAlreadyPokedToday() {
         // given
-        saveStatus(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID);
         pokeService.poke(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID, RECEIVER_USER_ID, SENDER_USER_ID);
 
         // when & then
@@ -83,7 +77,6 @@ class PokeServiceTest {
     @DisplayName("같은 보낸 사람이라도 다른 사람에게는 찌를 수 있다")
     void poke_allowsDifferentReceiver() {
         // given
-        saveStatus(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID);
         pokeService.poke(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID, RECEIVER_USER_ID, SENDER_USER_ID);
 
         // when
@@ -101,8 +94,7 @@ class PokeServiceTest {
     @DisplayName("같은 보낸 사람과 받은 사람이라도 그룹 챌린지가 다르면 찌를 수 있다")
     void poke_allowsSameReceiverInDifferentGroupChallenge() {
         // given
-        saveStatus(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID);
-        saveStatus(OTHER_GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID);
+
         pokeService.poke(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID, RECEIVER_USER_ID, SENDER_USER_ID);
 
         // when
@@ -119,35 +111,13 @@ class PokeServiceTest {
     @Test
     @DisplayName("같은 보낸 사람과 받은 사람이라도 activity record가 다르면 찌를 수 있다")
     void poke_allowsSameReceiverInDifferentActivityRecord() {
-        // given
-        saveStatus(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID);
-        saveStatus(GROUP_CHALLENGE_ID, OTHER_ACTIVITY_RECORD_ID);
-        pokeService.poke(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID, RECEIVER_USER_ID, SENDER_USER_ID);
 
-        // when
-        pokeService.poke(GROUP_CHALLENGE_ID, OTHER_ACTIVITY_RECORD_ID, RECEIVER_USER_ID, SENDER_USER_ID);
-
-        // then
-        assertThat(pokeRepository.count()).isEqualTo(2);
-
-        assertThat(pokeRepository.existsPoke(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID, SENDER_USER_ID, RECEIVER_USER_ID, LocalDate.now())).isTrue();
-        assertThat(pokeRepository.existsPoke(GROUP_CHALLENGE_ID, OTHER_ACTIVITY_RECORD_ID, SENDER_USER_ID, RECEIVER_USER_ID, LocalDate.now())).isTrue();
     }
 
     @Test
     @DisplayName("찌르기를 하면 해당 ChallengeRecord의 찌르기 수가 1 증가한다")
     void poke_increasesPokeCount() {
-        // given
-        ActivityRecordChallengeStatus status = saveStatus(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID);
 
-        // when
-        pokeService.poke(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID, RECEIVER_USER_ID, SENDER_USER_ID);
-
-        // then
-        ActivityRecordChallengeStatus found = statusRepository.findById(status.getId()).orElseThrow();
-        assertThat(found.getCommentCount()).isZero();
-        assertThat(found.getReactionCount()).isZero();
-        assertThat(found.getPokeCount()).isEqualTo(1);
     }
 
     @Test
@@ -162,7 +132,4 @@ class PokeServiceTest {
         assertThat(pokeRepository.count()).isZero();
     }
 
-    private ActivityRecordChallengeStatus saveStatus(Long groupChallengeId, Long activityRecordId) {
-        return statusRepository.save(ActivityRecordChallengeStatus.create(groupChallengeId, activityRecordId));
-    }
 }

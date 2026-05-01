@@ -13,31 +13,34 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/group-challenges")
+@RequestMapping("/challenge-records")
 @Slf4j
 public class ReactionController {
 
     private final ReactionService reactionService;
 
-    @PostMapping("/{groupChallengeId}/activity-records/{activityRecordId}/reactions")
-    public ResponseEntity<ReactionResponse> createReaction(@PathVariable Long groupChallengeId,
-                                                           @PathVariable Long activityRecordId,
+    @PostMapping("/{challengeRecordId}/reactions")
+    public ResponseEntity<ReactionResponse> createReaction(@PathVariable Long challengeRecordId,
                                                            @Valid @RequestBody CreateReactionRequest request,
                                                            CurrentUser currentUser) {
+        log.info(
+                "[Reaction][create-reaction] userId={}, challengeRecordId={}, request={}",
+                currentUser.id(), challengeRecordId, request);
 
-        log.info("[Reaction][create-reaction] userId={}, groupChallengeId={}, activityRecordId={}, request={}", currentUser.id(), groupChallengeId, activityRecordId, request);
-        ReactionResponse response = reactionService.create(
-                groupChallengeId, activityRecordId, request, currentUser.id()
-        );
+        ReactionResponse response = reactionService.create(challengeRecordId, request, currentUser.id());
+
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @DeleteMapping("/{groupChallengeId}/reactions/{reactionId}")
-    public ResponseEntity<Void> deleteReaction(@PathVariable Long groupChallengeId,
+    @DeleteMapping("/{challengeRecordId}/reactions/{reactionId}")
+    public ResponseEntity<Void> deleteReaction(@PathVariable Long challengeRecordId,
                                                @PathVariable Long reactionId,
                                                CurrentUser currentUser) {
-        log.info("[Reaction][delete-reaction] userId = {}, groupChallengeId={}, reactionId={}",currentUser.id(), groupChallengeId, reactionId);
-        reactionService.delete(groupChallengeId, reactionId, currentUser.id());
+        log.info(
+                "[Reaction][delete-reaction] userId={}, challengeRecordId={}, reactionId={}",
+                currentUser.id(), challengeRecordId, reactionId);
+
+        reactionService.delete(challengeRecordId, reactionId, currentUser.id());
 
         return ResponseEntity.noContent().build();
     }

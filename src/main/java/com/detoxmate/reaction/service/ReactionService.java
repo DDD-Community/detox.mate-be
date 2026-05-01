@@ -1,6 +1,8 @@
 package com.detoxmate.reaction.service;
 
-import com.detoxmate.activityrecordchallengestatus.service.ActivityRecordChallengeStatusService;
+import com.detoxmate.challengerecord.domain.ChallengeRecord;
+import com.detoxmate.challengerecord.service.ChallengeRecordService;
+import com.detoxmate.challengerecordstatuscount.service.ChallengeRecordStatusCountService;
 import com.detoxmate.common.exception.CustomException;
 import com.detoxmate.common.exception.reaction.ReactionErrorCode;
 import com.detoxmate.reaction.domain.Reaction;
@@ -17,36 +19,46 @@ import org.springframework.transaction.annotation.Transactional;
 public class ReactionService {
 
     private final ReactionRepository reactionRepository;
-    private final ActivityRecordChallengeStatusService statusService;
+    private final ChallengeRecordService challengeRecordService;
+    private final ChallengeRecordStatusCountService statusCountService;
 
     @Transactional
-    public ReactionResponse create(Long groupChallengeId, Long activityRecordId, CreateReactionRequest request, Long currentUserId) {
+    public ReactionResponse create(Long challengeRecordId, CreateReactionRequest request, Long currentUserId) {
+        ChallengeRecord challengeRecord = challengeRecordService.get(challengeRecordId);
+        validateReactionAllowed(challengeRecord);
+
         ReactionBody body = ReactionBody.valueOf(request.reactionCode());
 
-        if (reactionRepository.existsActiveReaction(groupChallengeId, activityRecordId, currentUserId, body)) {
+        if (reactionRepository.existsActiveReaction(challengeRecordId, currentUserId, body)) {
             throw new CustomException(ReactionErrorCode.REACTION_ALREADY_EXISTS);
         }
 
-        Reaction reaction = Reaction.create(activityRecordId, groupChallengeId, currentUserId, body);
-
+        Reaction reaction = Reaction.create(challengeRecordId, currentUserId, body);
         Reaction saved = reactionRepository.save(reaction);
-        statusService.increaseReactionCount(groupChallengeId, activityRecordId);
+
+        statusCountService.increaseReactionCount(challengeRecordId);
 
         return toReactionResponse(saved);
     }
 
     @Transactional
-    public void delete(Long groupChallengeId, Long reactionId, Long currentUserId) {
+    public void delete(Long challengeRecordId, Long reactionId, Long currentUserId) {
         Reaction reaction = reactionRepository.findById(reactionId)
                 .orElseThrow(() -> new CustomException(ReactionErrorCode.REACTION_NOT_FOUND));
 
-        validateChallengeRecord(groupChallengeId, reaction);
+        validateChallengeRecord(challengeRecordId, reaction);
 
         reaction.deleteBy(currentUserId);
     }
 
-    private void validateChallengeRecord(Long groupChallengeId, Reaction reaction) {
-        if (!reaction.getGroupChallengeId().equals(groupChallengeId)) {
+    private void validateReactionAllowed(ChallengeRecord challengeRecord) {
+        if (!challengeRecord.isCertified()) {
+            throw new CustomException(ReactionErrorCode.REACTION_NOT_ALLOWED_BEFORE_RECORD);
+        }
+    }
+
+    private void validateChallengeRecord(Long challengeRecordId, Reaction reaction) {
+        if (!reaction.getChallengeRecordId().equals(challengeRecordId)) {
             throw new CustomException(ReactionErrorCode.REACTION_CHALLENGE_RECORD_MISMATCH);
         }
     }
@@ -54,8 +66,7 @@ public class ReactionService {
     private ReactionResponse toReactionResponse(Reaction reaction) {
         return new ReactionResponse(
                 reaction.getId(),
-                reaction.getGroupChallengeId(),
-                reaction.getActivityRecordId(),
+                reaction.getChallengeRecordId(),
                 reaction.getUserId(),
                 reaction.getBody().name(),
                 reaction.getCreatedAt()

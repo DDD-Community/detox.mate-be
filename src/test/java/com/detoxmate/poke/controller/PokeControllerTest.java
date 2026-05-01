@@ -1,7 +1,6 @@
 package com.detoxmate.poke.controller;
 
-import com.detoxmate.activityrecordchallengestatus.domain.ActivityRecordChallengeStatus;
-import com.detoxmate.activityrecordchallengestatus.repository.ActivityRecordChallengeStatusRepository;
+import com.detoxmate.challengerecordstatuscount.domain.ChallengeRecordStatusCount;
 import com.detoxmate.auth.JwtTokenProvider;
 import com.detoxmate.poke.domain.Poke;
 import com.detoxmate.poke.repository.PokeRepository;
@@ -42,9 +41,6 @@ class PokeControllerTest {
     PokeRepository pokeRepository;
 
     @Autowired
-    ActivityRecordChallengeStatusRepository statusRepository;
-
-    @Autowired
     UserRepository userRepository;
 
     @Autowired
@@ -65,7 +61,6 @@ class PokeControllerTest {
     @DisplayName("POST /poke — 찌르기가 DB에 저장되고 204를 반환한다")
     void poke_persistsPokeAndReturns204() throws Exception {
         // given
-        saveStatus();
 
         // when & then
         mockMvc.perform(post(POKE_URL, GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID, targetUserId)
@@ -81,18 +76,12 @@ class PokeControllerTest {
         assertThat(saved.getReceiverUserId()).isEqualTo(targetUserId);
         assertThat(saved.getPokeDate()).isEqualTo(LocalDate.now());
         assertThat(saved.getCreatedAt()).isNotNull();
-
-        ActivityRecordChallengeStatus status = statusRepository
-                .findByChallengeRecord(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID)
-                .orElseThrow();
-        assertThat(status.getPokeCount()).isEqualTo(1);
     }
 
     @Test
     @DisplayName("POST /poke — 같은 사용자가 같은 대상에게 같은 날짜에 중복으로 찌르면 400을 반환한다")
     void poke_duplicateToday_returns400() throws Exception {
         // given
-        saveStatus();
         pokeRepository.save(Poke.create(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID, currentUserId, targetUserId, LocalDate.now()));
 
         // when & then
@@ -107,7 +96,6 @@ class PokeControllerTest {
     @DisplayName("POST /poke — 같은 사용자가 다른 대상에게는 찌를 수 있다")
     void poke_allowsDifferentTargetUser() throws Exception {
         // given
-        saveStatus();
         pokeRepository.save(Poke.create(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID, currentUserId, targetUserId, LocalDate.now()));
 
         // when & then
@@ -148,7 +136,5 @@ class PokeControllerTest {
         return "Bearer " + jwtTokenProvider.createAccessToken(userId);
     }
 
-    private ActivityRecordChallengeStatus saveStatus() {
-        return statusRepository.save(ActivityRecordChallengeStatus.create(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID));
-    }
+
 }

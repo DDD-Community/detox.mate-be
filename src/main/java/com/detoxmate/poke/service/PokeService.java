@@ -1,6 +1,5 @@
 package com.detoxmate.poke.service;
 
-import com.detoxmate.activityrecordchallengestatus.service.ActivityRecordChallengeStatusService;
 import com.detoxmate.common.exception.CustomException;
 import com.detoxmate.common.exception.poke.PokeErrorCode;
 import com.detoxmate.poke.domain.Poke;
@@ -16,7 +15,6 @@ import java.time.LocalDate;
 public class PokeService {
 
     private final PokeRepository pokeRepository;
-    private final ActivityRecordChallengeStatusService statusService;
 
     @Transactional
     public void poke(Long groupChallengeId, Long activityRecordId, Long targetUserId, Long currentUserId) {
@@ -29,6 +27,5 @@ public class PokeService {
         Poke poke = Poke.create(groupChallengeId, activityRecordId, currentUserId, targetUserId, today);
 
         pokeRepository.save(poke);
-        statusService.increasePokeCount(groupChallengeId, activityRecordId);
     }
 }
