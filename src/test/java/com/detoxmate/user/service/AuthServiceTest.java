@@ -2,7 +2,7 @@ package com.detoxmate.user.service;
 
 import com.detoxmate.auth.JwtTokenProvider;
 import com.detoxmate.auth.domain.RefreshTokenSession;
-import com.detoxmate.auth.dto.KakaoSocialLoginResponse;
+import com.detoxmate.auth.dto.AuthLoginResponse;
 import com.detoxmate.auth.dto.RefreshTokenResponse;
 import com.detoxmate.auth.service.RefreshTokenSessionService;
 import com.detoxmate.user.domain.SocialLoginUser;
@@ -53,7 +53,7 @@ class AuthServiceTest {
         when(refreshTokenSessionService.issueRefreshToken(existingUser)).thenReturn("service-refresh-token");
 
         // when
-        KakaoSocialLoginResponse response = authService.loginWithKakao("kakao-access-token");
+        AuthLoginResponse response = authService.loginWithKakao("kakao-access-token");
 
         // then
         assertThat(kakaoRestApiClient.lastProviderAccessToken()).isEqualTo("kakao-access-token");
@@ -93,7 +93,7 @@ class AuthServiceTest {
         when(refreshTokenSessionService.issueRefreshToken(any(User.class))).thenReturn("service-refresh-token");
 
         // when
-        KakaoSocialLoginResponse response = authService.loginWithKakao("kakao-access-token");
+        AuthLoginResponse response = authService.loginWithKakao("kakao-access-token");
 
         // then
         assertThat(kakaoRestApiClient.lastProviderAccessToken()).isEqualTo("kakao-access-token");

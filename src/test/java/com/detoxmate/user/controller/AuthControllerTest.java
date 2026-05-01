@@ -1,7 +1,7 @@
 package com.detoxmate.user.controller;
 
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
-import com.detoxmate.auth.dto.KakaoSocialLoginResponse;
+import com.detoxmate.auth.dto.AuthLoginResponse;
 import com.detoxmate.auth.dto.RefreshTokenResponse;
 import com.detoxmate.user.service.AuthService;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,7 +66,7 @@ class AuthControllerTest {
     @Test
     void providerAccessToken이_있으면_로그인_응답을_반환한다() throws Exception {
         // given
-        when(authService.loginWithKakao("kakao-access-token")).thenReturn(new KakaoSocialLoginResponse(
+        when(authService.loginWithKakao("kakao-access-token")).thenReturn(new AuthLoginResponse(
                 1L,
                 "카카오닉네임",
                 null,
@@ -99,7 +99,7 @@ class AuthControllerTest {
                                 .summary("Kakao social login")
                                 .description("카카오 access token으로 서비스 access token과 refresh token을 발급한다.")
                                 .requestSchema(schema("KakaoSocialLoginRequest"))
-                                .responseSchema(schema("KakaoSocialLoginResponse"))
+                                .responseSchema(schema("AuthLoginResponse"))
                                 .requestFields(requestFieldDescriptors)
                                 .responseFields(responseFieldDescriptors)
                                 .build()

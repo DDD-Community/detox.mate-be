@@ -1,7 +1,7 @@
 package com.detoxmate.user.controller;
 
 import com.detoxmate.auth.dto.KakaoSocialLoginRequest;
-import com.detoxmate.auth.dto.KakaoSocialLoginResponse;
+import com.detoxmate.auth.dto.AuthLoginResponse;
 import com.detoxmate.auth.dto.RefreshTokenRequest;
 import com.detoxmate.auth.dto.RefreshTokenResponse;
 import com.detoxmate.user.service.AuthService;
@@ -18,7 +18,7 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/social/kakao")
-    public KakaoSocialLoginResponse kakaoAuth(@Valid @RequestBody KakaoSocialLoginRequest request) {
+    public AuthLoginResponse kakaoAuth(@Valid @RequestBody KakaoSocialLoginRequest request) {
         return authService.loginWithKakao(request.providerAccessToken());
     }
 
