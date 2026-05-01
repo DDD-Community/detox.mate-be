@@ -2,7 +2,7 @@ package com.detoxmate.user.service;
 
 import com.detoxmate.auth.JwtTokenProvider;
 import com.detoxmate.auth.domain.RefreshTokenSession;
-import com.detoxmate.auth.dto.KakaoSocialLoginResponse;
+import com.detoxmate.auth.dto.AuthLoginResponse;
 import com.detoxmate.auth.dto.RefreshTokenResponse;
 import com.detoxmate.auth.service.RefreshTokenSessionService;
 import com.detoxmate.user.domain.SocialLoginUser;
@@ -27,19 +27,35 @@ public class AuthService {
     private final RefreshTokenSessionService refreshTokenSessionService;
 
     @Transactional
-    public KakaoSocialLoginResponse loginWithKakao(String providerAccessToken) {
+    public AuthLoginResponse loginWithKakao(String providerAccessToken) {
         KakaoUserInfo kakaoUserInfo = kakaoRestApiClient.getUserInfo(providerAccessToken);
-        Optional<SocialLoginUser> existingSocialLoginUser = socialLoginUserRepository.findByProviderAndProviderUserId(
+        return loginWithSocialUser(
                 SocialProvider.KAKAO,
-                kakaoUserInfo.providerUserId()
+                kakaoUserInfo.providerUserId(),
+                kakaoUserInfo.nickname(),
+                null
+        );
+    }
+
+    AuthLoginResponse loginWithSocialUser(
+            SocialProvider provider,
+            String providerUserId,
+            String displayName,
+            String profileImageUrl
+    ) {
+        Optional<SocialLoginUser> existingSocialLoginUser = socialLoginUserRepository.findByProviderAndProviderUserId(
+                provider,
+                providerUserId
         );
         boolean isNewUser = existingSocialLoginUser.isEmpty();
-        SocialLoginUser socialLoginUser = existingSocialLoginUser.orElseGet(() -> createNewSocialLoginUser(kakaoUserInfo));
+        SocialLoginUser socialLoginUser = existingSocialLoginUser.orElseGet(
+                () -> createNewSocialLoginUser(provider, providerUserId, displayName, profileImageUrl)
+        );
         User user = socialLoginUser.getUser();
         String accessToken = jwtTokenProvider.createAccessToken(user.getId());
         String refreshToken = refreshTokenSessionService.issueRefreshToken(user);
 
-        return new KakaoSocialLoginResponse(
+        return new AuthLoginResponse(
                 user.getId(),
                 user.getDisplayName(),
                 user.getProfileImageUrl(),
@@ -49,9 +65,14 @@ public class AuthService {
         );
     }
 
-    private SocialLoginUser createNewSocialLoginUser(KakaoUserInfo kakaoUserInfo) {
-        User newUser = userRepository.save(User.createNew(kakaoUserInfo.nickname()));
-        SocialLoginUser socialLoginUser = SocialLoginUser.link(newUser, SocialProvider.KAKAO, kakaoUserInfo.providerUserId());
+    private SocialLoginUser createNewSocialLoginUser(
+            SocialProvider provider,
+            String providerUserId,
+            String displayName,
+            String profileImageUrl
+    ) {
+        User newUser = userRepository.save(User.createNew(displayName, profileImageUrl));
+        SocialLoginUser socialLoginUser = SocialLoginUser.link(newUser, provider, providerUserId);
         return socialLoginUserRepository.save(socialLoginUser);
     }
 

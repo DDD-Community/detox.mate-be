@@ -1,6 +1,6 @@
 package com.detoxmate.auth.dto;
 
-public record KakaoSocialLoginResponse(
+public record AuthLoginResponse(
         Long id,
         String displayName,
         String profileImageUrl,
