@@ -20,4 +20,14 @@ public interface PokeRepository extends JpaRepository<Poke, Long> {
           and p.pokeDate = :pokeDate
         """)
     boolean existsPoke(Long groupChallengeId, Long activityRecordId, Long senderUserId, Long receiverUserId, LocalDate pokeDate);
+
+    @Query("""
+        select count(p)
+        from Poke p
+        where p.groupChallengeId = :groupChallengeId
+          and p.receiverUserId = :receiverUserId
+          and p.pokeDate = :pokeDate
+        """)
+    int countPokes(Long groupChallengeId, Long receiverUserId, LocalDate pokeDate);
+
 }

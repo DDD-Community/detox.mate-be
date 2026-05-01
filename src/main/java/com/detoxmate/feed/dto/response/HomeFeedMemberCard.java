@@ -11,7 +11,7 @@ public record HomeFeedMemberCard(
         String oneLineReview,
         Integer totalUsedMinutes,
         String goalMinutes,
-        Long stampId,
+        Long activityRecordId,
         Integer reactionCount,
         Integer commentCount,
         Integer pokeCount,
