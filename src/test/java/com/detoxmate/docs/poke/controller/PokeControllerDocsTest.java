@@ -56,25 +56,24 @@ public class PokeControllerDocsTest {
 
     @Test
     void 콕_찌르기() throws Exception {
-        willDoNothing().given(pokeService).poke(eq(1L), eq(101L), eq(11L), eq(1L));
+        willDoNothing().given(pokeService).poke(eq(1L), eq(11L), eq(1L));
 
-        mockMvc.perform(post("/group-challenges/{groupChallengeId}/activity-records/{activityRecordId}/members/{targetUserId}/poke", 1L, 101L, 11L)
+        mockMvc.perform(post("/challenge-records/{challengeRecordId}/pokes/{receiverUserId}", 1L, 11L)
                         .header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
                 .andExpect(status().isNoContent())
-                .andDo(document("group-challenges/poke-create",
+                .andDo(document("challenge-records/poke-create",
                         preprocessRequest(prettyPrint()),
                         requestHeaders(
                                 headerWithName(HttpHeaders.AUTHORIZATION).description("Bearer access token")
                         ),
                         pathParameters(
-                                parameterWithName("groupChallengeId").description("챌린지 ID"),
-                                parameterWithName("activityRecordId").description("인증글 ID"),
-                                parameterWithName("targetUserId").description("콕 찌를 대상 유저 ID")
+                                parameterWithName("challengeRecordId").description("챌린지 기록 ID"),
+                                parameterWithName("receiverUserId").description("콕 찌르기 대상 유저 ID")
                         ),
                         resource(builder()
                                 .tag("Poke")
                                 .summary("콕 찌르기")
-                                .description("같은 챌린지의 NOT_YET 상태 멤버에게 콕 알림을 보낸다. 동일 대상 일 1회 제한.")
+                                .description("오늘 인증 전 챌린지 기록에서 대상 유저를 콕 찌른다. 같은 대상에게는 한 번만 콕 찌르기 가능하다.")
                                 .build()
                         )));
     }

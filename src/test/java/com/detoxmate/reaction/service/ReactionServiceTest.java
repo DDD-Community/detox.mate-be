@@ -20,6 +20,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -150,9 +151,9 @@ class ReactionServiceTest {
         );
 
         // then
-        assertThat(reactionRepository.findActiveByChallengeRecord(challengeRecord.getId()))
+        assertThat(reactionRepository.findActiveByChallengeRecordOrderByLatest(challengeRecord.getId()))
                 .extracting(Reaction::getId)
-                .containsExactly(first.reactionId(), second.reactionId());
+                .containsExactlyInAnyOrder(first.reactionId(), second.reactionId());
 
         ChallengeRecordStatusCount statusCount = statusCountRepository
                 .findByChallengeRecordId(challengeRecord.getId())
@@ -186,7 +187,7 @@ class ReactionServiceTest {
         // then
         assertThat(second.reactionId()).isNotEqualTo(first.reactionId());
 
-        assertThat(reactionRepository.findActiveByChallengeRecord(challengeRecord.getId()))
+        assertThat(reactionRepository.findActiveByChallengeRecordOrderByLatest(challengeRecord.getId()))
                 .extracting(Reaction::getId)
                 .containsExactly(second.reactionId());
     }
@@ -211,7 +212,7 @@ class ReactionServiceTest {
         Reaction found = reactionRepository.findById(response.reactionId()).orElseThrow();
 
         assertThat(found.isDeleted()).isTrue();
-        assertThat(reactionRepository.findActiveByChallengeRecord(challengeRecord.getId()))
+        assertThat(reactionRepository.findActiveByChallengeRecordOrderByLatest(challengeRecord.getId()))
                 .isEmpty();
     }
 
@@ -275,6 +276,54 @@ class ReactionServiceTest {
                 .isInstanceOf(CustomException.class)
                 .extracting(e -> ((CustomException) e).getErrorCode())
                 .isEqualTo(ReactionErrorCode.REACTION_CHALLENGE_RECORD_MISMATCH);
+    }
+
+    @Test
+    @DisplayName("챌린지 기록의 활성 리액션 목록을 최신순으로 조회한다")
+    void getReactionsForChallengeRecord_returnsActiveReactionsOrderByLatest() {
+        // given
+        ChallengeRecord challengeRecord = saveCertifiedRecord();
+
+        Reaction first = reactionRepository.save(
+                Reaction.create(challengeRecord.getId(), USER_ID, ReactionBody.CLAP)
+        );
+        Reaction second = reactionRepository.save(
+                Reaction.create(challengeRecord.getId(), OTHER_USER_ID, ReactionBody.MUSCLE)
+        );
+
+        Reaction deleted = reactionRepository.save(
+                Reaction.create(challengeRecord.getId(), 30L, ReactionBody.CLAP)
+        );
+        deleted.deleteBy(30L);
+
+        ChallengeRecord otherChallengeRecord = saveCertifiedRecord(99L, 200L);
+        reactionRepository.save(
+                Reaction.create(otherChallengeRecord.getId(), USER_ID, ReactionBody.CLAP)
+        );
+
+        // when
+        List<Reaction> reactions = reactionService.getReactionsForChallengeRecord(challengeRecord.getId());
+
+        // then
+        assertThat(reactions)
+                .extracting(Reaction::getId)
+                .containsExactly(second.getId(), first.getId());
+    }
+
+    private ChallengeRecord saveCertifiedRecord(Long participantId, Long activityRecordId) {
+        ChallengeRecord challengeRecord = ChallengeRecord.create(
+                GROUP_CHALLENGE_ID,
+                participantId,
+                RECORD_DATE
+        );
+
+        challengeRecord.certify(
+                activityRecordId,
+                participantId,
+                ChallengeRecordCertificationResult.SUCCESS
+        );
+
+        return challengeRecordRepository.save(challengeRecord);
     }
 
     private ChallengeRecord saveBeforeRecord() {

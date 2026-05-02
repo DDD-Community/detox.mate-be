@@ -12,91 +12,75 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class PokeTest {
 
-    private static final Long GROUP_CHALLENGE_ID = 10L;
-    private static final Long ACTIVITY_RECORD_ID = 100L;
-    private static final Long SENDER_USER_ID = 1L;
-    private static final Long RECEIVER_USER_ID = 2L;
-    private static final LocalDate TODAY = LocalDate.of(2026, 4, 29);
+    private static final Long CHALLENGE_RECORD_ID = 1L;
+    private static final Long SENDER_USER_ID = 10L;
+    private static final Long RECEIVER_USER_ID = 20L;
+    private static final LocalDate POKE_DATE = LocalDate.of(2026, 5, 1);
 
     @Test
-    @DisplayName("찌르기를 생성하면 그룹 챌린지, 보낸 사람, 받은 사람, 찌른 날짜가 저장된다")
-    void createPoke_savesSenderReceiverAndDate() {
+    @DisplayName("콕 찌르기를 생성하면 챌린지 기록, 보낸 사람, 받은 사람, 날짜가 저장된다")
+    void create_initializesPoke() {
         // when
-        Poke poke = Poke.create(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID, SENDER_USER_ID, RECEIVER_USER_ID, TODAY);
+        Poke poke = Poke.create(
+                CHALLENGE_RECORD_ID,
+                SENDER_USER_ID,
+                RECEIVER_USER_ID,
+                POKE_DATE
+        );
 
         // then
-        assertThat(poke.getGroupChallengeId()).isEqualTo(GROUP_CHALLENGE_ID);
-        assertThat(poke.getActivityRecordId()).isEqualTo(ACTIVITY_RECORD_ID);
+        assertThat(poke.getChallengeRecordId()).isEqualTo(CHALLENGE_RECORD_ID);
         assertThat(poke.getSenderUserId()).isEqualTo(SENDER_USER_ID);
         assertThat(poke.getReceiverUserId()).isEqualTo(RECEIVER_USER_ID);
-        assertThat(poke.getPokeDate()).isEqualTo(TODAY);
-    }
-
-    @Test
-    @DisplayName("찌르기를 생성하면 생성 시간이 설정된다")
-    void createPoke_setsCreatedAt() {
-        // when
-        Poke poke = Poke.create(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID, SENDER_USER_ID, RECEIVER_USER_ID, TODAY);
-
-        // then
+        assertThat(poke.getPokeDate()).isEqualTo(POKE_DATE);
         assertThat(poke.getCreatedAt()).isNotNull();
     }
 
     @Test
-    @DisplayName("받은 사람이 없으면 찌르기를 생성할 수 없다")
-    void createPoke_failsWhenReceiverIsNull() {
-        assertThatThrownBy(() -> Poke.create(
-                GROUP_CHALLENGE_ID,
-                ACTIVITY_RECORD_ID,
-                SENDER_USER_ID,
-                null,
-                TODAY
-        ))
+    @DisplayName("챌린지 기록 ID 없이 콕 찌르기를 생성할 수 없다")
+    void create_throwsExceptionWhenChallengeRecordIdIsNull() {
+        // when & then
+        assertThatThrownBy(() -> Poke.create(null, SENDER_USER_ID, RECEIVER_USER_ID, POKE_DATE))
                 .isInstanceOf(CustomException.class)
                 .extracting(e -> ((CustomException) e).getErrorCode())
-                .isEqualTo(PokeErrorCode.POKE_RECEIVER_REQUIRED);
+                .isEqualTo(PokeErrorCode.POKE_CHALLENGE_RECORD_REQUIRED);
     }
 
     @Test
-    @DisplayName("보낸 사람이 없으면 찌르기를 생성할 수 없다")
-    void createPoke_failsWhenSenderIsNull() {
-        assertThatThrownBy(() -> Poke.create(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID, null, RECEIVER_USER_ID, TODAY))
+    @DisplayName("보낸 사람 없이 콕 찌르기를 생성할 수 없다")
+    void create_throwsExceptionWhenSenderUserIdIsNull() {
+        // when & then
+        assertThatThrownBy(() -> Poke.create(CHALLENGE_RECORD_ID, null, RECEIVER_USER_ID, POKE_DATE))
                 .isInstanceOf(CustomException.class)
                 .extracting(e -> ((CustomException) e).getErrorCode())
                 .isEqualTo(PokeErrorCode.POKE_SENDER_REQUIRED);
     }
 
     @Test
-    @DisplayName("그룹 챌린지가 없으면 찌르기를 생성할 수 없다")
-    void createPoke_failsWhenGroupChallengeIsNull() {
-        assertThatThrownBy(() -> Poke.create(null, ACTIVITY_RECORD_ID, SENDER_USER_ID, RECEIVER_USER_ID, TODAY))
+    @DisplayName("받은 사람 없이 콕 찌르기를 생성할 수 없다")
+    void create_throwsExceptionWhenReceiverUserIdIsNull() {
+        // when & then
+        assertThatThrownBy(() -> Poke.create(CHALLENGE_RECORD_ID, SENDER_USER_ID, null, POKE_DATE))
                 .isInstanceOf(CustomException.class)
                 .extracting(e -> ((CustomException) e).getErrorCode())
-                .isEqualTo(PokeErrorCode.POKE_GROUP_CHALLENGE_REQUIRED);
+                .isEqualTo(PokeErrorCode.POKE_RECEIVER_REQUIRED);
     }
 
     @Test
-    @DisplayName("인증글이 없으면 찌르기를 생성할 수 없다")
-    void createPoke_failsWhenActivityRecordIsNull() {
-        assertThatThrownBy(() -> Poke.create(GROUP_CHALLENGE_ID, null, SENDER_USER_ID, RECEIVER_USER_ID, TODAY))
-                .isInstanceOf(CustomException.class)
-                .extracting(e -> ((CustomException) e).getErrorCode())
-                .isEqualTo(PokeErrorCode.POKE_ACTIVITY_RECORD_REQUIRED);
-    }
-
-    @Test
-    @DisplayName("찌른 날짜가 없으면 찌르기를 생성할 수 없다")
-    void createPoke_failsWhenPokeDateIsNull() {
-        assertThatThrownBy(() -> Poke.create(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID, SENDER_USER_ID, RECEIVER_USER_ID, null))
+    @DisplayName("날짜 없이 콕 찌르기를 생성할 수 없다")
+    void create_throwsExceptionWhenPokeDateIsNull() {
+        // when & then
+        assertThatThrownBy(() -> Poke.create(CHALLENGE_RECORD_ID, SENDER_USER_ID, RECEIVER_USER_ID, null))
                 .isInstanceOf(CustomException.class)
                 .extracting(e -> ((CustomException) e).getErrorCode())
                 .isEqualTo(PokeErrorCode.POKE_DATE_REQUIRED);
     }
 
     @Test
-    @DisplayName("자기 자신은 찌를 수 없다")
-    void createPoke_failsWhenSenderAndReceiverAreSame() {
-        assertThatThrownBy(() -> Poke.create(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID, SENDER_USER_ID, SENDER_USER_ID, TODAY))
+    @DisplayName("자기 자신을 콕 찌를 수 없다")
+    void create_throwsExceptionWhenSenderAndReceiverAreSame() {
+        // when & then
+        assertThatThrownBy(() -> Poke.create(CHALLENGE_RECORD_ID, SENDER_USER_ID, SENDER_USER_ID, POKE_DATE))
                 .isInstanceOf(CustomException.class)
                 .extracting(e -> ((CustomException) e).getErrorCode())
                 .isEqualTo(PokeErrorCode.POKE_SELF_NOT_ALLOWED);

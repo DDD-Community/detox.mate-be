@@ -22,11 +22,8 @@ public class Poke {
     @Column(name = "poke_id")
     private Long id;
 
-    @Column(name = "group_challenge_id", nullable = false)
-    private Long groupChallengeId;
-
-    @Column(name = "activity_record_id", nullable = false)
-    private Long activityRecordId;
+    @Column(name = "challenge_record_id", nullable = false)
+    private Long challengeRecordId;
 
     @Column(name = "sender_user_id", nullable = false)
     private Long senderUserId;
@@ -34,33 +31,37 @@ public class Poke {
     @Column(name = "receiver_user_id", nullable = false)
     private Long receiverUserId;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
     @Column(name = "poke_date", nullable = false)
     private LocalDate pokeDate;
 
-    private Poke(Long groupChallengeId, Long activityRecordId, Long senderUserId, Long receiverUserId, LocalDate pokeDate) {
-        this.groupChallengeId = groupChallengeId;
-        this.activityRecordId = activityRecordId;
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    private Poke(Long challengeRecordId, Long senderUserId, Long receiverUserId, LocalDate pokeDate) {
+        validateCreate(challengeRecordId, senderUserId, receiverUserId, pokeDate);
+
+        this.challengeRecordId = challengeRecordId;
         this.senderUserId = senderUserId;
         this.receiverUserId = receiverUserId;
         this.pokeDate = pokeDate;
         this.createdAt = LocalDateTime.now();
     }
 
-    public static Poke create(Long groupChallengeId, Long activityRecordId, Long senderUserId, Long receiverUserId, LocalDate pokeDate) {
-        validate(groupChallengeId, activityRecordId, senderUserId, receiverUserId, pokeDate);
-        return new Poke(groupChallengeId, activityRecordId, senderUserId, receiverUserId, pokeDate);
+    public static Poke create(Long challengeRecordId,
+                              Long senderUserId,
+                              Long receiverUserId,
+                              LocalDate pokeDate) {
+
+        return new Poke(challengeRecordId, senderUserId, receiverUserId, pokeDate);
     }
 
-    private static void validate(Long groupChallengeId, Long activityRecordId, Long senderUserId, Long receiverUserId, LocalDate pokeDate) {
-        if (groupChallengeId == null) {
-            throw new CustomException(PokeErrorCode.POKE_GROUP_CHALLENGE_REQUIRED);
-        }
+    private static void validateCreate(Long challengeRecordId,
+                                       Long senderUserId,
+                                       Long receiverUserId,
+                                       LocalDate pokeDate) {
 
-        if (activityRecordId == null) {
-            throw new CustomException(PokeErrorCode.POKE_ACTIVITY_RECORD_REQUIRED);
+        if (challengeRecordId == null) {
+            throw new CustomException(PokeErrorCode.POKE_CHALLENGE_RECORD_REQUIRED);
         }
 
         if (senderUserId == null) {
@@ -75,7 +76,7 @@ public class Poke {
             throw new CustomException(PokeErrorCode.POKE_DATE_REQUIRED);
         }
 
-        if (Objects.equals(senderUserId, receiverUserId)) {
+        if (senderUserId.equals(receiverUserId)) {
             throw new CustomException(PokeErrorCode.POKE_SELF_NOT_ALLOWED);
         }
     }

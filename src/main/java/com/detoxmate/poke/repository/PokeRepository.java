@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Repository
 public interface PokeRepository extends JpaRepository<Poke, Long> {
@@ -13,21 +14,19 @@ public interface PokeRepository extends JpaRepository<Poke, Long> {
     @Query("""
         select count(p) > 0
         from Poke p
-        where p.groupChallengeId = :groupChallengeId
-          and p.activityRecordId = :activityRecordId
+        where p.challengeRecordId = :challengeRecordId
           and p.senderUserId = :senderUserId
           and p.receiverUserId = :receiverUserId
-          and p.pokeDate = :pokeDate
         """)
-    boolean existsPoke(Long groupChallengeId, Long activityRecordId, Long senderUserId, Long receiverUserId, LocalDate pokeDate);
+    boolean existsPoke(Long challengeRecordId, Long senderUserId, Long receiverUserId);
 
     @Query("""
-        select count(p)
-        from Poke p
-        where p.groupChallengeId = :groupChallengeId
-          and p.receiverUserId = :receiverUserId
-          and p.pokeDate = :pokeDate
-        """)
-    int countPokes(Long groupChallengeId, Long receiverUserId, LocalDate pokeDate);
+    select p
+    from Poke p
+    where p.challengeRecordId = :challengeRecordId
+    order by p.pokeDate desc, p.id desc
+    """)
+    List<Poke> findAllByChallengeRecordOrderByLatest(Long challengeRecordId);
+
 
 }

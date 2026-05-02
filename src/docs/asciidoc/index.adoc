@@ -109,11 +109,11 @@ operation::uploads/presigned-urls-invalid-request[snippets='http-request,request
 
   === Create Reaction
 
-  operation::group-challenges/reaction-create[snippets='http-request,request-headers,path-parameters,request-fields,http-response,response-fields']
+  operation::challenge-records/reaction-create[snippets='http-request,request-headers,path-parameters,request-fields,http-response,response-fields']
 
   === Delete Reaction
 
-  operation::group-challenges/reaction-delete[snippets='http-request,request-headers,path-parameters,http-response']
+  operation::challenge-records/reaction-delete[snippets='http-request,request-headers,path-parameters,http-response']
 
   == Comment API
 
@@ -129,4 +129,4 @@ operation::uploads/presigned-urls-invalid-request[snippets='http-request,request
 
   === Poke Member
 
-  operation::group-challenges/poke-create[snippets='http-request,request-headers,path-parameters,http-response']
+  operation::challenge-records/poke-create[snippets='http-request,request-headers,path-parameters,http-response']

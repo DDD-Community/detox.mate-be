@@ -29,8 +29,8 @@ class ReactionRepositoryTest {
     private static final Long OTHER_USER_ID = 20L;
 
     @Test
-    @DisplayName("챌린지 기록의 삭제되지 않은 리액션만 ID 오름차순으로 조회한다")
-    void findActiveByChallengeRecord_returnsOnlyActiveReactionsOrderByIdAsc() {
+    @DisplayName("챌린지 기록의 삭제되지 않은 리액션만 최신순으로 조회한다")
+    void findActiveByChallengeRecordOrderByLatest_returnsOnlyActiveReactionsOrderByLatest() {
         // given
         Reaction first = reactionRepository.save(
                 Reaction.create(CHALLENGE_RECORD_ID, USER_ID, ReactionBody.CLAP)
@@ -49,12 +49,12 @@ class ReactionRepositoryTest {
         );
 
         // when
-        var reactions = reactionRepository.findActiveByChallengeRecord(CHALLENGE_RECORD_ID);
+        List<Reaction> reactions = reactionRepository.findActiveByChallengeRecordOrderByLatest(CHALLENGE_RECORD_ID);
 
         // then
         assertThat(reactions)
                 .extracting(Reaction::getId)
-                .containsExactly(first.getId(), second.getId());
+                .containsExactly(second.getId(), first.getId());
     }
 
     @Test

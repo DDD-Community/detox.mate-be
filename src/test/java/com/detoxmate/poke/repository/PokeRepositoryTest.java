@@ -8,6 +8,7 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -16,97 +17,87 @@ import static org.assertj.core.api.Assertions.assertThat;
 class PokeRepositoryTest {
 
     @Autowired
-    private PokeRepository pokeRepository;
+    PokeRepository pokeRepository;
 
-    private static final Long GROUP_CHALLENGE_ID = 10L;
-    private static final Long OTHER_GROUP_CHALLENGE_ID = 20L;
+    private static final Long CHALLENGE_RECORD_ID = 1L;
+    private static final Long OTHER_CHALLENGE_RECORD_ID = 2L;
 
-    private static final Long ACTIVITY_RECORD_ID = 100L;
-    private static final Long OTHER_ACTIVITY_RECORD_ID = 200L;
+    private static final Long SENDER_USER_ID = 10L;
+    private static final Long RECEIVER_USER_ID = 20L;
+    private static final Long OTHER_RECEIVER_USER_ID = 30L;
 
-    private static final Long SENDER_USER_ID = 1L;
-    private static final Long RECEIVER_USER_ID = 2L;
-    private static final Long OTHER_RECEIVER_USER_ID = 3L;
-
-
-    private static final LocalDate POKE_DATE = LocalDate.of(2026, 4, 30);
+    private static final LocalDate POKE_DATE = LocalDate.of(2026, 5, 1);
 
     @Test
-    @DisplayName("찌르기를 저장하면 ID가 부여된다")
-    void savePoke_assignsId() {
+    @DisplayName("같은 챌린지 기록에서 같은 sender가 같은 receiver를 이미 찔렀는지 확인한다")
+    void existsPoke_returnsTrueWhenSameSenderPokedSameReceiverInChallengeRecord() {
         // given
-        Poke poke = Poke.create(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID, SENDER_USER_ID, RECEIVER_USER_ID, POKE_DATE);
+        pokeRepository.save(
+                Poke.create(CHALLENGE_RECORD_ID, SENDER_USER_ID, RECEIVER_USER_ID, POKE_DATE)
+        );
 
         // when
-        Poke saved = pokeRepository.save(poke);
-
-        // then
-        assertThat(saved.getId()).isNotNull();
-    }
-
-    @Test
-    @DisplayName("같은 그룹 챌린지에서 같은 보낸 사람, 받은 사람, 날짜의 찌르기가 있으면 true를 반환한다")
-    void existsPoke_returnsTrueWhenSameReceiverWasPokedOnDate() {
-        // given
-        pokeRepository.save(Poke.create(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID, SENDER_USER_ID, RECEIVER_USER_ID, POKE_DATE));
-
-        // when
-        boolean exists = pokeRepository.existsPoke(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID, SENDER_USER_ID, RECEIVER_USER_ID, POKE_DATE);
+        boolean exists = pokeRepository.existsPoke(CHALLENGE_RECORD_ID, SENDER_USER_ID, RECEIVER_USER_ID);
 
         // then
         assertThat(exists).isTrue();
     }
 
     @Test
-    @DisplayName("같은 보낸 사람이라도 받은 사람이 다르면 false를 반환한다")
+    @DisplayName("같은 sender라도 receiver가 다르면 중복 찌르기가 아니다")
     void existsPoke_returnsFalseWhenReceiverIsDifferent() {
         // given
-        pokeRepository.save(Poke.create(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID, SENDER_USER_ID, RECEIVER_USER_ID, POKE_DATE));
+        pokeRepository.save(
+                Poke.create(CHALLENGE_RECORD_ID, SENDER_USER_ID, RECEIVER_USER_ID, POKE_DATE)
+        );
 
         // when
-        boolean exists = pokeRepository.existsPoke(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID, SENDER_USER_ID, OTHER_RECEIVER_USER_ID, POKE_DATE);
+        boolean exists = pokeRepository.existsPoke(CHALLENGE_RECORD_ID, SENDER_USER_ID, OTHER_RECEIVER_USER_ID);
 
         // then
         assertThat(exists).isFalse();
     }
 
     @Test
-    @DisplayName("같은 보낸 사람과 받은 사람이라도 그룹 챌린지가 다르면 false를 반환한다")
-    void existsPoke_returnsFalseWhenGroupChallengeIsDifferent() {
+    @DisplayName("같은 sender와 receiver라도 챌린지 기록이 다르면 중복 찌르기가 아니다")
+    void existsPoke_returnsFalseWhenChallengeRecordIsDifferent() {
         // given
-        pokeRepository.save(Poke.create(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID, SENDER_USER_ID, RECEIVER_USER_ID, POKE_DATE));
+        pokeRepository.save(
+                Poke.create(CHALLENGE_RECORD_ID, SENDER_USER_ID, RECEIVER_USER_ID, POKE_DATE)
+        );
 
         // when
-        boolean exists = pokeRepository.existsPoke(OTHER_GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID, SENDER_USER_ID, RECEIVER_USER_ID, POKE_DATE);
+        boolean exists = pokeRepository.existsPoke(OTHER_CHALLENGE_RECORD_ID, SENDER_USER_ID, RECEIVER_USER_ID);
 
         // then
         assertThat(exists).isFalse();
     }
 
     @Test
-    @DisplayName("같은 보낸 사람과 받은 사람이라도 activity record가 다르면 false를 반환한다")
-    void existsPoke_returnsFalseWhenActivityRecordIsDifferent() {
+    @DisplayName("챌린지 기록의 콕 찌르기 목록을 최신순으로 조회한다")
+    void findAllByChallengeRecordOrderByLatest_returnsPokesOrderByPokeDateDescAndIdDesc() {
         // given
-        pokeRepository.save(Poke.create(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID, SENDER_USER_ID, RECEIVER_USER_ID, POKE_DATE));
+        Poke old = pokeRepository.save(
+                Poke.create(CHALLENGE_RECORD_ID, SENDER_USER_ID, RECEIVER_USER_ID, POKE_DATE.minusDays(1))
+        );
+        Poke firstToday = pokeRepository.save(
+                Poke.create(CHALLENGE_RECORD_ID, 40L, RECEIVER_USER_ID, POKE_DATE)
+        );
+        Poke secondToday = pokeRepository.save(
+                Poke.create(CHALLENGE_RECORD_ID, 50L, RECEIVER_USER_ID, POKE_DATE)
+        );
+        pokeRepository.save(
+                Poke.create(OTHER_CHALLENGE_RECORD_ID, SENDER_USER_ID, RECEIVER_USER_ID, POKE_DATE.plusDays(1))
+        );
 
         // when
-        boolean exists = pokeRepository.existsPoke(GROUP_CHALLENGE_ID, OTHER_ACTIVITY_RECORD_ID, SENDER_USER_ID, RECEIVER_USER_ID, POKE_DATE);
+        List<Poke> pokes = pokeRepository.findAllByChallengeRecordOrderByLatest(CHALLENGE_RECORD_ID);
 
         // then
-        assertThat(exists).isFalse();
+        assertThat(pokes)
+                .extracting(Poke::getId)
+                .containsExactly(secondToday.getId(), firstToday.getId(), old.getId());
     }
 
-    @Test
-    @DisplayName("같은 보낸 사람과 받은 사람이라도 날짜가 다르면 false를 반환한다")
-    void existsPoke_returnsFalseWhenDateIsDifferent() {
-        // given
-        pokeRepository.save(Poke.create(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID, SENDER_USER_ID, RECEIVER_USER_ID, POKE_DATE));
-
-        // when
-        boolean exists = pokeRepository.existsPoke(GROUP_CHALLENGE_ID, ACTIVITY_RECORD_ID, SENDER_USER_ID, RECEIVER_USER_ID, POKE_DATE.plusDays(1));
-
-        // then
-        assertThat(exists).isFalse();
-    }
 
 }

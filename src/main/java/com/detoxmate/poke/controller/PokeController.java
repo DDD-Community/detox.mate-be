@@ -12,23 +12,22 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/group-challenges")
+@RequestMapping("/challenge-records")
 @Slf4j
 public class PokeController {
 
     private final PokeService pokeService;
 
-    @PostMapping("/{groupChallengeId}/activity-records/{activityRecordId}/members/{targetUserId}/poke")
-    public ResponseEntity<Void> pokeUser(@PathVariable Long groupChallengeId,
-                                         @PathVariable Long activityRecordId,
-                                         @PathVariable Long targetUserId,
+    @PostMapping("/{challengeRecordId}/pokes/{receiverUserId}")
+    public ResponseEntity<Void> pokeUser(@PathVariable Long challengeRecordId,
+                                         @PathVariable Long receiverUserId,
                                          CurrentUser currentUser) {
-
         log.info(
-                "[Poke][create-poke] senderUserId={} poked receiverUserId={} in groupChallengeId={}, activityRecordId={}",
-                currentUser.id(), targetUserId, groupChallengeId, activityRecordId
-        );
-        pokeService.poke(groupChallengeId, activityRecordId, targetUserId, currentUser.id());
+                "[Poke][create-poke] senderUserId={} poked receiverUserId={} in challengeRecordId={}",
+                currentUser.id(), receiverUserId, challengeRecordId);
+
+        pokeService.poke(challengeRecordId, receiverUserId, currentUser.id());
+
         return ResponseEntity.noContent().build();
     }
 }

@@ -68,23 +68,59 @@ public class ReactionControllerDocsTest {
 
     @Test
     void 리액션_추가() throws Exception {
+        given(reactionService.create(eq(1L), any(CreateReactionRequest.class), eq(1L)))
+                .willReturn(ReactionMockData.createReactionResponse());
 
+        mockMvc.perform(post("/challenge-records/{challengeRecordId}/reactions", 1L)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "reactionCode": "CLAP" }
+                                """))
+                .andExpect(status().isCreated())
+                .andDo(document("challenge-records/reaction-create",
+                        preprocessRequest(prettyPrint()),
+                        preprocessResponse(prettyPrint()),
+                        requestHeaders(
+                                headerWithName(HttpHeaders.AUTHORIZATION).description("Bearer access token")
+                        ),
+                        pathParameters(
+                                parameterWithName("challengeRecordId").description("챌린지 기록 ID")
+                        ),
+                        requestFields(
+                                fieldWithPath("reactionCode").type(STRING).description("리액션 코드 (예: CLAP)")
+                        ),
+                        responseFields(
+                                fieldWithPath("reactionId").type(NUMBER).description("생성된 리액션 ID"),
+                                fieldWithPath("challengeRecordId").type(NUMBER).description("챌린지 기록 ID"),
+                                fieldWithPath("userId").type(NUMBER).description("리액션 작성자 유저 ID"),
+                                fieldWithPath("reactionBody").type(STRING).description("리액션 종류"),
+                                fieldWithPath("createdAt").type(STRING).description("리액션 생성 시각")
+                        ),
+                        resource(builder()
+                                .tag("Reaction")
+                                .summary("리액션 추가")
+                                .description("인증 후 챌린지 기록에 리액션을 추가한다. 인증 전 챌린지 기록에는 리액션을 남길 수 없다.")
+                                .requestSchema(schema("CreateReactionRequest"))
+                                .responseSchema(schema("ReactionResponse"))
+                                .build()
+                        )));
     }
 
     @Test
     void 리액션_삭제() throws Exception {
         willDoNothing().given(reactionService).delete(eq(1L), eq(9001L), eq(1L));
 
-        mockMvc.perform(delete("/group-challenges/{groupChallengeId}/reactions/{reactionId}", 1L, 9001L)
+        mockMvc.perform(delete("/challenge-records/{challengeRecordId}/reactions/{reactionId}", 1L, 9001L)
                         .header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
                 .andExpect(status().isNoContent())
-                .andDo(document("group-challenges/reaction-delete",
+                .andDo(document("challenge-records/reaction-delete",
                         preprocessRequest(prettyPrint()),
                         requestHeaders(
                                 headerWithName(HttpHeaders.AUTHORIZATION).description("Bearer access token")
                         ),
                         pathParameters(
-                                parameterWithName("groupChallengeId").description("챌린지 ID"),
+                                parameterWithName("challengeRecordId").description("챌린지 기록 ID"),
                                 parameterWithName("reactionId").description("리액션 ID")
                         ),
                         resource(builder()

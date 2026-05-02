@@ -16,18 +16,18 @@ public interface ReactionRepository extends JpaRepository<Reaction, Long> {
         from Reaction r
         where r.challengeRecordId = :challengeRecordId
           and r.deleted = false
-        order by r.id asc
+        order by r.createdAt desc, r.id desc
         """)
-    List<Reaction> findActiveByChallengeRecord(Long challengeRecordId);
+    List<Reaction> findActiveByChallengeRecordOrderByLatest(Long challengeRecordId);
 
     @Query("""
         select r
         from Reaction r
         where r.challengeRecordId = :challengeRecordId
           and r.deleted = false
-        order by r.id asc
+        order by r.createdAt desc, r.id desc
         """)
-    List<Reaction> findActiveByChallengeRecord(Long challengeRecordId, Pageable pageable);
+    List<Reaction> findActiveByChallengeRecordOrderByLatest(Long challengeRecordId, Pageable pageable);
 
     @Query("""
         select count(r) > 0

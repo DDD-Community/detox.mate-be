@@ -14,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class ReactionService {
@@ -39,6 +41,11 @@ public class ReactionService {
         statusCountService.increaseReactionCount(challengeRecordId);
 
         return toReactionResponse(saved);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Reaction> getReactionsForChallengeRecord(Long challengeRecordId) {
+        return reactionRepository.findActiveByChallengeRecordOrderByLatest(challengeRecordId);
     }
 
     @Transactional
