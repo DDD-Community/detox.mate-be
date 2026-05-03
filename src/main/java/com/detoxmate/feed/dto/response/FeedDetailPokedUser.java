@@ -1,8 +1,6 @@
 package com.detoxmate.feed.dto.response;
 
-
-public record FeedDetailReactionItem(
-        String reactionBody,
+public record FeedDetailPokedUser(
         Long userId,
         String displayName,
         String profileImageUrl

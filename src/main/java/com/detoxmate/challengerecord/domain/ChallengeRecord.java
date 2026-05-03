@@ -54,20 +54,16 @@ public class ChallengeRecord {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public static ChallengeRecord create(
-            Long groupChallengeId,
-            Long groupChallengeParticipantId,
-            LocalDate recordDate
-    ) {
+    public static ChallengeRecord create(Long groupChallengeId,
+                                         Long groupChallengeParticipantId,
+                                         LocalDate recordDate) {
         validateCreate(groupChallengeId, groupChallengeParticipantId, recordDate);
         return new ChallengeRecord(groupChallengeId, groupChallengeParticipantId, recordDate);
     }
 
-    public void certify(
-            Long activityRecordId,
-            Long activityRecordParticipantId,
-            ChallengeRecordCertificationResult result
-    ) {
+    public void certify(Long activityRecordId,
+                        Long activityRecordParticipantId,
+                        ChallengeRecordCertificationResult result) {
         validateCertification(activityRecordId, activityRecordParticipantId, result);
 
         this.activityRecordId = activityRecordId;
@@ -97,11 +93,9 @@ public class ChallengeRecord {
         return Objects.equals(recordDate, today);
     }
 
-    private static void validateCreate(
-            Long groupChallengeId,
-            Long groupChallengeParticipantId,
-            LocalDate recordDate
-    ) {
+    private static void validateCreate(Long groupChallengeId,
+                                       Long groupChallengeParticipantId,
+                                       LocalDate recordDate) {
         if (groupChallengeId == null) {
             throw new CustomException(ChallengeRecordErrorCode.GROUP_CHALLENGE_REQUIRED);
         }
@@ -115,11 +109,10 @@ public class ChallengeRecord {
         }
     }
 
-    private void validateCertification(
-            Long activityRecordId,
-            Long activityRecordParticipantId,
-            ChallengeRecordCertificationResult result
-    ) {
+    private void validateCertification(Long activityRecordId,
+                                       Long activityRecordParticipantId,
+                                       ChallengeRecordCertificationResult result) {
+
         if (activityRecordId == null) {
             throw new CustomException(ChallengeRecordErrorCode.ACTIVITY_RECORD_REQUIRED);
         }
@@ -136,4 +129,17 @@ public class ChallengeRecord {
             throw new CustomException(ChallengeRecordErrorCode.CHALLENGE_RECORD_ALREADY_CERTIFIED);
         }
     }
+
+    public ChallengeRecordCertificationResult getCertificationResult() {
+        if (status == ChallengeRecordStatus.AFTER_RECORD_SUCCESS) {
+            return ChallengeRecordCertificationResult.SUCCESS;
+        }
+
+        if (status == ChallengeRecordStatus.AFTER_RECORD_FAIL) {
+            return ChallengeRecordCertificationResult.FAIL;
+        }
+
+        return null;
+    }
+
 }

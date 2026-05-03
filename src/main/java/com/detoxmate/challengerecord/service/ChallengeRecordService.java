@@ -3,6 +3,7 @@ package com.detoxmate.challengerecord.service;
 import com.detoxmate.challengerecord.domain.ChallengeRecord;
 import com.detoxmate.challengerecord.domain.ChallengeRecordCertificationResult;
 import com.detoxmate.challengerecord.repository.ChallengeRecordRepository;
+import com.detoxmate.challengerecordstatuscount.service.ChallengeRecordStatusCountService;
 import com.detoxmate.common.exception.CustomException;
 import com.detoxmate.common.exception.challengerecord.ChallengeRecordErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,8 @@ public class ChallengeRecordService {
 
     private final ChallengeRecordRepository challengeRecordRepository;
 
+    private final ChallengeRecordStatusCountService statusCountService;
+
     @Transactional(readOnly = true)
     public ChallengeRecord get(Long challengeRecordId) {
         return challengeRecordRepository.findById(challengeRecordId)
@@ -27,11 +30,15 @@ public class ChallengeRecordService {
 
     @Transactional
     public ChallengeRecord create(Long groupChallengeId, Long groupChallengeParticipantId, LocalDate recordDate) {
-        return challengeRecordRepository
+        ChallengeRecord challengeRecord = challengeRecordRepository
                 .findByParticipantDate(groupChallengeId, groupChallengeParticipantId, recordDate)
                 .orElseGet(() -> challengeRecordRepository.save(
                         ChallengeRecord.create(groupChallengeId, groupChallengeParticipantId, recordDate)
                 ));
+
+        statusCountService.getOrCreate(challengeRecord.getId());
+
+        return challengeRecord;
     }
 
     @Transactional

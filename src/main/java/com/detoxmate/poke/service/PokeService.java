@@ -45,6 +45,11 @@ public class PokeService {
     }
 
     @Transactional(readOnly = true)
+    public boolean existsPoke(Long challengeRecordId, Long senderUserId, Long receiverUserId) {
+        return pokeRepository.existsPoke(challengeRecordId, senderUserId, receiverUserId);
+    }
+
+    @Transactional(readOnly = true)
     public List<Poke> getPokesForChallengeRecord(Long challengeRecordId) {
         return pokeRepository.findAllByChallengeRecordOrderByLatest(challengeRecordId);
     }

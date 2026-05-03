@@ -23,6 +23,14 @@ public class ChallengeRecordStatusCountService {
     }
 
     @Transactional
+    public ChallengeRecordStatusCount getOrCreate(Long challengeRecordId) {
+        return statusCountRepository.findByChallengeRecordId(challengeRecordId)
+                .orElseGet(() -> statusCountRepository.save(
+                        ChallengeRecordStatusCount.create(challengeRecordId)
+                ));
+    }
+
+    @Transactional
     public void increaseBeforeCommentCount(Long challengeRecordId) {
         ChallengeRecordStatusCount statusCount = getStatusCount(challengeRecordId);
 

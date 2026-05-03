@@ -4,6 +4,8 @@ import com.detoxmate.challengerecord.domain.ChallengeRecord;
 import com.detoxmate.challengerecord.domain.ChallengeRecordCertificationResult;
 import com.detoxmate.challengerecord.domain.ChallengeRecordStatus;
 import com.detoxmate.challengerecord.repository.ChallengeRecordRepository;
+import com.detoxmate.challengerecordstatuscount.domain.ChallengeRecordStatusCount;
+import com.detoxmate.challengerecordstatuscount.repository.ChallengeRecordStatusCountRepository;
 import com.detoxmate.common.exception.CustomException;
 import com.detoxmate.common.exception.challengerecord.ChallengeRecordErrorCode;
 import org.junit.jupiter.api.DisplayName;
@@ -29,6 +31,9 @@ class ChallengeRecordServiceTest {
 
     @Autowired
     ChallengeRecordRepository challengeRecordRepository;
+
+    @Autowired
+    ChallengeRecordStatusCountRepository statusCountRepository;
 
     private static final Long GROUP_CHALLENGE_ID = 10L;
     private static final Long GROUP_CHALLENGE_PARTICIPANT_ID = 20L;
@@ -185,6 +190,28 @@ class ChallengeRecordServiceTest {
                 .isInstanceOf(CustomException.class)
                 .extracting(e -> ((CustomException) e).getErrorCode())
                 .isEqualTo(ChallengeRecordErrorCode.ACTIVITY_RECORD_PARTICIPANT_MISMATCH);
+    }
+
+    @Test
+    @DisplayName("챌린지 기록을 새로 생성하면 상태 카운트도 함께 생성된다")
+    void create_createsStatusCountWhenChallengeRecordIsNew() {
+        // when
+        ChallengeRecord challengeRecord = challengeRecordService.create(
+                GROUP_CHALLENGE_ID,
+                GROUP_CHALLENGE_PARTICIPANT_ID,
+                RECORD_DATE
+        );
+
+        // then
+        ChallengeRecordStatusCount statusCount = statusCountRepository
+                .findByChallengeRecordId(challengeRecord.getId())
+                .orElseThrow();
+
+        assertThat(statusCount.getChallengeRecordId()).isEqualTo(challengeRecord.getId());
+        assertThat(statusCount.getBeforeCommentCount()).isZero();
+        assertThat(statusCount.getAfterCommentCount()).isZero();
+        assertThat(statusCount.getReactionCount()).isZero();
+        assertThat(statusCount.getPokeCount()).isZero();
     }
 
 }

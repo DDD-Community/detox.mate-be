@@ -103,7 +103,7 @@ operation::uploads/presigned-urls-invalid-request[snippets='http-request,request
 
   === Get Feed Detail
 
-  operation::group-challenges/feed-detail-get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+  operation::challenge-records/feed-detail-get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
 
   == Reaction API
 
