@@ -2,14 +2,19 @@ package com.detoxmate.user.service;
 
 import com.detoxmate.auth.JwtTokenProvider;
 import com.detoxmate.auth.service.RefreshTokenSessionService;
+import com.detoxmate.upload.dto.UploadPurpose;
+import com.detoxmate.upload.service.ImageReadUrlBuilder;
+import com.detoxmate.upload.service.UploadObjectKeyValidator;
 import com.detoxmate.user.dto.MyProfileResponse;
 import com.detoxmate.user.domain.User;
 import com.detoxmate.user.dto.UpdateMyProfileRequest;
 import com.detoxmate.user.repository.SocialLoginUserRepository;
 import com.detoxmate.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -18,6 +23,8 @@ public class UserService {
     private final SocialLoginUserRepository socialLoginUserRepository;
     private final RefreshTokenSessionService refreshTokenSessionService;
     private final JwtTokenProvider jwtTokenProvider;
+    private final ImageReadUrlBuilder imageReadUrlBuilder;
+    private final UploadObjectKeyValidator uploadObjectKeyValidator;
 
     @Transactional(readOnly = true)
     public MyProfileResponse getMe(String accessToken) {
@@ -33,8 +40,19 @@ public class UserService {
         return toMyProfileResponse(user);
     }
 
+    @Transactional
     public MyProfileResponse updateMe(Long userId, UpdateMyProfileRequest request) {
-        throw new UnsupportedOperationException("아직 미구현 - API 문서화 단계");
+        User user = getUser(userId);
+
+        if (request.displayName() != null) {
+            user.changeDisplayName(request.displayName());
+        }
+        if (request.profileImageObjectKey() != null) {
+            validateProfileImageObjectKey(userId, request.profileImageObjectKey());
+            user.changeProfileImageObjectKey(request.profileImageObjectKey());
+        }
+
+        return toMyProfileResponse(user);
     }
 
     public void withdrawMe(Long userId) {
@@ -64,7 +82,13 @@ public class UserService {
         return new MyProfileResponse(
                 user.getId(),
                 user.getDisplayName(),
-                user.getProfileImageUrl()
+                imageReadUrlBuilder.build(user.getProfileImageObjectKey())
         );
+    }
+
+    private void validateProfileImageObjectKey(Long userId, String profileImageObjectKey) {
+        if (!uploadObjectKeyValidator.isOwnedBy(userId, UploadPurpose.PROFILE_IMAGE, profileImageObjectKey)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "프로필 이미지 object key 경로가 올바르지 않습니다.");
+        }
     }
 }

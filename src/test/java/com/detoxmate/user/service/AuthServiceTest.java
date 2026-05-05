@@ -5,6 +5,8 @@ import com.detoxmate.auth.domain.RefreshTokenSession;
 import com.detoxmate.auth.dto.AuthLoginResponse;
 import com.detoxmate.auth.dto.RefreshTokenResponse;
 import com.detoxmate.auth.service.RefreshTokenSessionService;
+import com.detoxmate.upload.config.StorageProperties;
+import com.detoxmate.upload.service.ImageReadUrlBuilder;
 import com.detoxmate.user.domain.SocialLoginUser;
 import com.detoxmate.user.domain.SocialProvider;
 import com.detoxmate.user.domain.User;
@@ -26,6 +28,7 @@ class AuthServiceTest {
 
     private static final String JWT_SECRET = "this-is-a-very-long-secret-key-for-temp-auth";
     private static final long ACCESS_TOKEN_EXPIRES_IN = 3600L;
+    private static final String TEST_IMAGE_BASE_URL = "https://media.detoxmate.co.kr";
 
     @Test
     void 기존_카카오_계정이면_기존_유저로_로그인한다() {
@@ -42,10 +45,11 @@ class AuthServiceTest {
                 userRepository,
                 socialLoginUserRepository,
                 jwtTokenProvider,
-                refreshTokenSessionService
+                refreshTokenSessionService,
+                imageReadUrlBuilder()
         );
 
-        User existingUser = User.createNew("기존유저", "https://example.com/existing.png");
+        User existingUser = User.createNew("기존유저", "profile-images/7/existing.png");
         ReflectionTestUtils.setField(existingUser, "id", 7L);
         SocialLoginUser existingSocialLoginUser = SocialLoginUser.link(existingUser, SocialProvider.KAKAO, "123456789");
         when(socialLoginUserRepository.findByProviderAndProviderUserId(SocialProvider.KAKAO, "123456789"))
@@ -58,6 +62,7 @@ class AuthServiceTest {
         // then
         assertThat(kakaoRestApiClient.lastProviderAccessToken()).isEqualTo("kakao-access-token");
         assertThat(response.isNewUser()).isFalse();
+        assertThat(response.profileImageUrl()).isEqualTo(TEST_IMAGE_BASE_URL + "/profile-images/7/existing.png");
         assertThat(response.refreshToken()).isEqualTo("service-refresh-token");
         verify(socialLoginUserRepository).findByProviderAndProviderUserId(SocialProvider.KAKAO, "123456789");
         verify(userRepository, never()).save(any(User.class));
@@ -79,13 +84,15 @@ class AuthServiceTest {
                 userRepository,
                 socialLoginUserRepository,
                 jwtTokenProvider,
-                refreshTokenSessionService
+                refreshTokenSessionService,
+                imageReadUrlBuilder()
         );
 
         when(socialLoginUserRepository.findByProviderAndProviderUserId(SocialProvider.KAKAO, "123456789"))
                 .thenReturn(Optional.empty());
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
             User savedUser = invocation.getArgument(0);
+            assertThat(savedUser.getProfileImageObjectKey()).isNull();
             ReflectionTestUtils.setField(savedUser, "id", 1L);
             return savedUser;
         });
@@ -98,6 +105,7 @@ class AuthServiceTest {
         // then
         assertThat(kakaoRestApiClient.lastProviderAccessToken()).isEqualTo("kakao-access-token");
         assertThat(response.isNewUser()).isTrue();
+        assertThat(response.profileImageUrl()).isNull();
         assertThat(response.refreshToken()).isEqualTo("service-refresh-token");
         verify(socialLoginUserRepository).findByProviderAndProviderUserId(SocialProvider.KAKAO, "123456789");
         verify(userRepository).save(any(User.class));
@@ -116,7 +124,8 @@ class AuthServiceTest {
                 userRepository,
                 socialLoginUserRepository,
                 jwtTokenProvider,
-                refreshTokenSessionService
+                refreshTokenSessionService,
+                imageReadUrlBuilder()
         );
         User user = User.createNew("카카오닉네임");
         ReflectionTestUtils.setField(user, "id", 1L);
@@ -154,7 +163,8 @@ class AuthServiceTest {
                 userRepository,
                 socialLoginUserRepository,
                 jwtTokenProvider,
-                refreshTokenSessionService
+                refreshTokenSessionService,
+                imageReadUrlBuilder()
         );
 
         // when
@@ -182,5 +192,9 @@ class AuthServiceTest {
         private String lastProviderAccessToken() {
             return lastProviderAccessToken;
         }
+    }
+
+    private ImageReadUrlBuilder imageReadUrlBuilder() {
+        return new ImageReadUrlBuilder(new StorageProperties(TEST_IMAGE_BASE_URL));
     }
 }

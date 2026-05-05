@@ -150,6 +150,26 @@ class UserControllerTest {
     }
 
     @Test
+    void 내_프로필_수정_요청의_필드가_공백이면_400_에러를_반환한다() throws Exception {
+        when(userService.getMe("access-token"))
+                .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png"));
+
+        mockMvc.perform(patch("/users/me")
+                        .header("Authorization", "Bearer access-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "displayName": " ",
+                          "profileImageObjectKey": " "
+                        }
+                        """))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
     void 회원_탈퇴를_요청하면_204_응답을_반환한다() throws Exception {
         when(userService.getMe("access-token"))
                 .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png"));
@@ -271,7 +291,7 @@ class UserControllerTest {
                         .description("사용자 닉네임"),
                 fieldWithPath("profileImageUrl")
                         .type(JsonFieldType.STRING)
-                        .description("프로필 이미지 URL")
+                        .description("저장된 프로필 이미지 object key를 읽기 URL로 변환한 값")
                         .optional()
         };
     }
