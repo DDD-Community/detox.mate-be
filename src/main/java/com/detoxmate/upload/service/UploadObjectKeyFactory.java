@@ -28,12 +28,11 @@ class UploadObjectKeyFactory {
 
     private String activityRecordImageKey(Long userId, String sanitizedFileName, String uuid) {
         LocalDate now = LocalDate.now(clock);
-        return "activity-records/" + userId + "/" + now.getYear() + "/" +
-                String.format("%02d", now.getMonthValue()) + "/" + uuid + "-" + sanitizedFileName;
+        return UploadObjectKeyPath.activityRecordImageDirectory(userId, now) + uuid + "-" + sanitizedFileName;
     }
 
     private String profileImageKey(Long userId, String sanitizedFileName, String uuid) {
-        return "profile-images/" + userId + "/" + uuid + "-" + sanitizedFileName;
+        return UploadObjectKeyPath.userPrefix(userId, UploadPurpose.PROFILE_IMAGE) + uuid + "-" + sanitizedFileName;
     }
 
     private String sanitize(String fileName) {
