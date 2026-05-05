@@ -40,6 +40,8 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
             FROM GroupMember gm
             LEFT JOIN User u ON gm.userId = u.id
             WHERE gm.groupId = :groupId
+              AND gm.status = 'ACTIVE'
+            ORDER BY gm.joinedAt ASC
             """)
     List<GroupMemberResponse> findMembersWithUserByGroupId(@Param("groupId") Long groupId);
 }

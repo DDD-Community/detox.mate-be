@@ -10,6 +10,7 @@ public record GroupMemberProfileResponse(
         String displayName,
         String profileImageUrl,
         String role,
+        String status,
         LocalDateTime joinedAt,
         int dayCount,
         List<GroupMemberUsageGoalResponse> currentGoals,

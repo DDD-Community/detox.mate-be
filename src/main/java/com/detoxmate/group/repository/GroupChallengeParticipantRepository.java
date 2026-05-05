@@ -43,6 +43,8 @@ public interface GroupChallengeParticipantRepository extends JpaRepository<Group
             JOIN GroupMember gm ON gm.id = gcp.groupMemberId
             LEFT JOIN User u ON u.id = gm.userId
             WHERE gcp.groupChallengeId = :groupChallengeId
+              AND gcp.status = 'JOINED'
+              AND gm.status = 'ACTIVE'
             ORDER BY gcp.joinedAt ASC
             """)
     List<GroupChallengeParticipantResponse> findParticipantResponsesByGroupChallengeId(
@@ -65,6 +67,8 @@ public interface GroupChallengeParticipantRepository extends JpaRepository<Group
             JOIN GroupMember gm ON gm.id = gcp.groupMemberId
             LEFT JOIN User u ON u.id = gm.userId
             WHERE gcp.groupChallengeId IN :groupChallengeIds
+              AND gcp.status = 'JOINED'
+              AND gm.status = 'ACTIVE'
             ORDER BY gcp.groupChallengeId ASC, gcp.joinedAt ASC
             """)
     List<GroupChallengeParticipantRow> findParticipantRowsByGroupChallengeIds(

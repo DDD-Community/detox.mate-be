@@ -22,6 +22,8 @@ public interface GroupChallengeRepository extends JpaRepository<GroupChallenge, 
             JOIN GroupChallengeParticipant gcp ON gcp.groupChallengeId = gc.id
             JOIN GroupMember gm ON gm.id = gcp.groupMemberId
             WHERE gm.userId = :userId
+              AND gcp.status = 'JOINED'
+              AND gm.status = 'ACTIVE'
               AND (:status IS NULL OR gc.status = :status)
             ORDER BY gc.createdAt DESC
             """)
