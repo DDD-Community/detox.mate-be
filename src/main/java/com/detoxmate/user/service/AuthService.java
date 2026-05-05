@@ -5,6 +5,7 @@ import com.detoxmate.auth.domain.RefreshTokenSession;
 import com.detoxmate.auth.dto.AuthLoginResponse;
 import com.detoxmate.auth.dto.RefreshTokenResponse;
 import com.detoxmate.auth.service.RefreshTokenSessionService;
+import com.detoxmate.upload.service.ImageReadUrlBuilder;
 import com.detoxmate.user.domain.SocialLoginUser;
 import com.detoxmate.user.domain.SocialProvider;
 import com.detoxmate.user.domain.User;
@@ -25,6 +26,7 @@ public class AuthService {
     private final SocialLoginUserRepository socialLoginUserRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenSessionService refreshTokenSessionService;
+    private final ImageReadUrlBuilder imageReadUrlBuilder;
 
     @Transactional
     public AuthLoginResponse loginWithKakao(String providerAccessToken) {
@@ -41,7 +43,7 @@ public class AuthService {
             SocialProvider provider,
             String providerUserId,
             String displayName,
-            String profileImageUrl
+            String profileImageObjectKey
     ) {
         Optional<SocialLoginUser> existingSocialLoginUser = socialLoginUserRepository.findByProviderAndProviderUserId(
                 provider,
@@ -49,7 +51,7 @@ public class AuthService {
         );
         boolean isNewUser = existingSocialLoginUser.isEmpty();
         SocialLoginUser socialLoginUser = existingSocialLoginUser.orElseGet(
-                () -> createNewSocialLoginUser(provider, providerUserId, displayName, profileImageUrl)
+                () -> createNewSocialLoginUser(provider, providerUserId, displayName, profileImageObjectKey)
         );
         User user = socialLoginUser.getUser();
         String accessToken = jwtTokenProvider.createAccessToken(user.getId());
@@ -58,7 +60,7 @@ public class AuthService {
         return new AuthLoginResponse(
                 user.getId(),
                 user.getDisplayName(),
-                user.getProfileImageUrl(),
+                imageReadUrlBuilder.build(user.getProfileImageObjectKey()),
                 accessToken,
                 refreshToken,
                 isNewUser
@@ -69,9 +71,9 @@ public class AuthService {
             SocialProvider provider,
             String providerUserId,
             String displayName,
-            String profileImageUrl
+            String profileImageObjectKey
     ) {
-        User newUser = userRepository.save(User.createNew(displayName, profileImageUrl));
+        User newUser = userRepository.save(User.createNew(displayName, profileImageObjectKey));
         SocialLoginUser socialLoginUser = SocialLoginUser.link(newUser, provider, providerUserId);
         return socialLoginUserRepository.save(socialLoginUser);
     }

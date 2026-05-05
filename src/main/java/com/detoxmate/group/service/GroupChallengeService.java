@@ -9,6 +9,7 @@ import com.detoxmate.group.dto.GroupChallengeResponse;
 import com.detoxmate.group.repository.GroupChallengeParticipantRepository;
 import com.detoxmate.group.repository.GroupChallengeRepository;
 import com.detoxmate.group.repository.GroupRepository;
+import com.detoxmate.upload.service.ImageReadUrlBuilder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,7 @@ public class GroupChallengeService {
     private final GroupChallengeRepository groupChallengeRepository;
     private final GroupChallengeParticipantRepository groupChallengeParticipantRepository;
     private final GroupRepository groupRepository;
+    private final ImageReadUrlBuilder imageReadUrlBuilder;
 
     public GroupChallenge saveGroupChallenge(Long groupId) {
         return groupChallengeRepository.save(GroupChallenge.createFirst(groupId));
@@ -140,8 +142,8 @@ public class GroupChallengeService {
     }
 
     private List<GroupChallengeParticipantResponse> getParticipants(Long groupChallengeId) {
-        return groupChallengeParticipantRepository.findParticipantResponsesByGroupChallengeId(groupChallengeId).stream()
-                .map(this::withEmptyGoalTimes)
+        return groupChallengeParticipantRepository.findParticipantRowsByGroupChallengeId(groupChallengeId).stream()
+                .map(this::toParticipantResponse)
                 .toList();
     }
 
@@ -151,24 +153,10 @@ public class GroupChallengeService {
                 participantRow.groupMemberId(),
                 participantRow.userId(),
                 participantRow.displayName(),
-                participantRow.profileImageUrl(),
+                imageReadUrlBuilder.build(participantRow.profileImageObjectKey()),
                 participantRow.status(),
                 participantRow.joinedAt(),
                 participantRow.withdrawnAt(),
-                List.of()
-        );
-    }
-
-    private GroupChallengeParticipantResponse withEmptyGoalTimes(GroupChallengeParticipantResponse participant) {
-        return new GroupChallengeParticipantResponse(
-                participant.id(),
-                participant.groupMemberId(),
-                participant.userId(),
-                participant.displayName(),
-                participant.profileImageUrl(),
-                participant.status(),
-                participant.joinedAt(),
-                participant.withdrawnAt(),
                 List.of()
         );
     }

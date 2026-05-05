@@ -4,11 +4,12 @@ import com.detoxmate.group.domain.Group;
 import com.detoxmate.group.domain.GroupChallenge;
 import com.detoxmate.group.domain.GroupChallengeStatus;
 import com.detoxmate.group.dto.GroupChallengeParticipantRow;
-import com.detoxmate.group.dto.GroupChallengeParticipantResponse;
 import com.detoxmate.group.dto.GroupChallengeResponse;
 import com.detoxmate.group.repository.GroupChallengeParticipantRepository;
 import com.detoxmate.group.repository.GroupChallengeRepository;
 import com.detoxmate.group.repository.GroupRepository;
+import com.detoxmate.upload.config.StorageProperties;
+import com.detoxmate.upload.service.ImageReadUrlBuilder;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
@@ -28,6 +29,7 @@ class GroupChallengeServiceTest {
     private static final Long GROUP_ID = 1L;
     private static final Long OWNER_USER_ID = 1L;
     private static final Long OTHER_USER_ID = 3L;
+    private static final String TEST_IMAGE_BASE_URL = "https://media.detoxmate.co.kr";
     private static final LocalDateTime CREATED_AT = LocalDateTime.of(2026, 4, 19, 10, 0);
     private static final LocalDateTime UPDATED_AT = LocalDateTime.of(2026, 4, 20, 9, 0);
 
@@ -38,7 +40,8 @@ class GroupChallengeServiceTest {
     private final GroupChallengeService groupChallengeService = new GroupChallengeService(
             groupChallengeRepository,
             groupChallengeParticipantRepository,
-            groupRepository
+            groupRepository,
+            new ImageReadUrlBuilder(new StorageProperties(TEST_IMAGE_BASE_URL))
     );
 
     @Test
@@ -55,6 +58,8 @@ class GroupChallengeServiceTest {
         assertThat(responses.getFirst().id()).isEqualTo(CHALLENGE_ID);
         assertThat(responses.getFirst().status()).isEqualTo("ACTIVE");
         assertThat(responses.getFirst().participants()).hasSize(2);
+        assertThat(responses.getFirst().participants().getFirst().profileImageUrl())
+                .isEqualTo(TEST_IMAGE_BASE_URL + "/profile-images/1/profile.png");
         assertThat(responses.getFirst().participants().getFirst().goalTimes()).isEmpty();
     }
 
@@ -85,7 +90,7 @@ class GroupChallengeServiceTest {
         when(groupChallengeParticipantRepository.existsByGroupChallengeIdAndUserId(CHALLENGE_ID, OWNER_USER_ID))
                 .thenReturn(true);
         when(groupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group()));
-        when(groupChallengeParticipantRepository.findParticipantResponsesByGroupChallengeId(CHALLENGE_ID))
+        when(groupChallengeParticipantRepository.findParticipantRowsByGroupChallengeId(CHALLENGE_ID))
                 .thenReturn(List.of(ownerParticipant(), memberParticipant()));
 
         GroupChallengeResponse response = groupChallengeService.getGroupChallenge(CHALLENGE_ID, OWNER_USER_ID);
@@ -93,6 +98,8 @@ class GroupChallengeServiceTest {
         assertThat(response.id()).isEqualTo(CHALLENGE_ID);
         assertThat(response.groupId()).isEqualTo(GROUP_ID);
         assertThat(response.participants()).hasSize(2);
+        assertThat(response.participants().getFirst().profileImageUrl())
+                .isEqualTo(TEST_IMAGE_BASE_URL + "/profile-images/1/profile.png");
         assertThat(response.participants().getFirst().goalTimes()).isEmpty();
     }
 
@@ -133,16 +140,16 @@ class GroupChallengeServiceTest {
         return challenge;
     }
 
-    private GroupChallengeParticipantResponse ownerParticipant() {
-        return new GroupChallengeParticipantResponse(
+    private GroupChallengeParticipantRow ownerParticipant() {
+        return new GroupChallengeParticipantRow(
+                CHALLENGE_ID,
                 1000L,
                 100L,
                 OWNER_USER_ID,
                 "지민",
-                "https://...",
+                "profile-images/1/profile.png",
                 "JOINED",
                 CREATED_AT,
-                null,
                 null
         );
     }
@@ -154,15 +161,16 @@ class GroupChallengeServiceTest {
                 100L,
                 OWNER_USER_ID,
                 "지민",
-                "https://...",
+                "profile-images/1/profile.png",
                 "JOINED",
                 CREATED_AT,
                 null
         );
     }
 
-    private GroupChallengeParticipantResponse memberParticipant() {
-        return new GroupChallengeParticipantResponse(
+    private GroupChallengeParticipantRow memberParticipant() {
+        return new GroupChallengeParticipantRow(
+                CHALLENGE_ID,
                 1001L,
                 101L,
                 2L,
@@ -170,7 +178,6 @@ class GroupChallengeServiceTest {
                 null,
                 "JOINED",
                 LocalDateTime.of(2026, 4, 19, 10, 30),
-                null,
                 null
         );
     }

@@ -38,10 +38,10 @@ public class DevAuthService {
                 SocialProvider.TEST,
                 testUserKey,
                 testUser.displayName(),
-                testUser.profileImageUrl()
+                testUser.profileImageObjectKey()
         );
     }
 
-    private record TestUser(String displayName, String profileImageUrl) {
+    private record TestUser(String displayName, String profileImageObjectKey) {
     }
 }

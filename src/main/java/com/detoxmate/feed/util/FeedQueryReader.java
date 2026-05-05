@@ -8,10 +8,12 @@ import com.detoxmate.common.exception.CustomException;
 import com.detoxmate.common.exception.feed.FeedErrorCode;
 import com.detoxmate.group.domain.Group;
 import com.detoxmate.group.domain.GroupChallenge;
+import com.detoxmate.group.dto.GroupChallengeParticipantRow;
 import com.detoxmate.group.dto.GroupChallengeParticipantResponse;
 import com.detoxmate.group.repository.GroupChallengeParticipantRepository;
 import com.detoxmate.group.repository.GroupChallengeRepository;
 import com.detoxmate.group.repository.GroupRepository;
+import com.detoxmate.upload.service.ImageReadUrlBuilder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +30,7 @@ public class FeedQueryReader {
     private final GroupChallengeParticipantRepository participantRepository;
     private final ActivityRecordRepository activityRecordRepository;
     private final ChallengeRecordStatusCountRepository statusCountRepository;
+    private final ImageReadUrlBuilder imageReadUrlBuilder;
 
     public GroupChallengeFeedSource getHomeFeedSource(Long groupChallengeId) {
         GroupChallenge challenge = groupChallengeRepository.findById(groupChallengeId)
@@ -37,13 +40,16 @@ public class FeedQueryReader {
                 .orElseThrow(() -> new CustomException(FeedErrorCode.FEED_GROUP_NOT_FOUND));
 
         List<GroupChallengeParticipantResponse> participants =
-                participantRepository.findFeedParticipantResponsesByGroupChallengeId(groupChallengeId);
+                participantRepository.findFeedParticipantRowsByGroupChallengeId(groupChallengeId).stream()
+                        .map(this::toParticipantResponse)
+                        .toList();
 
         return new GroupChallengeFeedSource(challenge, group, participants);
     }
 
     public GroupChallengeParticipantResponse getParticipantForFeedDetail(Long participantId) {
-        return participantRepository.findParticipantResponseForFeedDetail(participantId)
+        return participantRepository.findParticipantRowForFeedDetail(participantId)
+                .map(this::toParticipantResponse)
                 .orElseThrow(() -> new CustomException(FeedErrorCode.FEED_PARTICIPANT_NOT_FOUND));
     }
 
@@ -59,5 +65,19 @@ public class FeedQueryReader {
     public ChallengeRecordStatusCount findStatusCount(Long challengeRecordId) {
         return statusCountRepository.findByChallengeRecordId(challengeRecordId)
                 .orElse(null);
+    }
+
+    private GroupChallengeParticipantResponse toParticipantResponse(GroupChallengeParticipantRow row) {
+        return new GroupChallengeParticipantResponse(
+                row.id(),
+                row.groupMemberId(),
+                row.userId(),
+                row.displayName(),
+                imageReadUrlBuilder.build(row.profileImageObjectKey()),
+                row.status(),
+                row.joinedAt(),
+                row.withdrawnAt(),
+                List.of()
+        );
     }
 }

@@ -2,7 +2,6 @@ package com.detoxmate.group.repository;
 
 import com.detoxmate.group.domain.GroupChallengeParticipant;
 import com.detoxmate.group.dto.GroupChallengeParticipantRow;
-import com.detoxmate.group.dto.GroupChallengeParticipantResponse;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -28,16 +27,16 @@ public interface GroupChallengeParticipantRepository extends JpaRepository<Group
                                               @Param("userId") Long userId);
 
     @Query("""
-            SELECT new com.detoxmate.group.dto.GroupChallengeParticipantResponse(
+            SELECT new com.detoxmate.group.dto.GroupChallengeParticipantRow(
+                gcp.groupChallengeId,
                 gcp.id,
                 gm.id,
                 gm.userId,
                 u.displayName,
-                u.profileImageUrl,
+                u.profileImageObjectKey,
                 gcp.status,
                 gcp.joinedAt,
-                gcp.withdrawnAt,
-                null
+                gcp.withdrawnAt
             )
             FROM GroupChallengeParticipant gcp
             JOIN GroupMember gm ON gm.id = gcp.groupMemberId
@@ -45,7 +44,7 @@ public interface GroupChallengeParticipantRepository extends JpaRepository<Group
             WHERE gcp.groupChallengeId = :groupChallengeId
             ORDER BY gcp.joinedAt ASC
             """)
-    List<GroupChallengeParticipantResponse> findParticipantResponsesByGroupChallengeId(
+    List<GroupChallengeParticipantRow> findParticipantRowsByGroupChallengeId(
             @Param("groupChallengeId") Long groupChallengeId
     );
 
@@ -56,7 +55,7 @@ public interface GroupChallengeParticipantRepository extends JpaRepository<Group
                 gm.id,
                 gm.userId,
                 u.displayName,
-                u.profileImageUrl,
+                u.profileImageObjectKey,
                 gcp.status,
                 gcp.joinedAt,
                 gcp.withdrawnAt
@@ -72,16 +71,16 @@ public interface GroupChallengeParticipantRepository extends JpaRepository<Group
     );
 
     @Query("""
-        SELECT new com.detoxmate.group.dto.GroupChallengeParticipantResponse(
+        SELECT new com.detoxmate.group.dto.GroupChallengeParticipantRow(
+            gcp.groupChallengeId,
             gcp.id,
             gm.id,
             gm.userId,
             u.displayName,
-            u.profileImageUrl,
+            u.profileImageObjectKey,
             gcp.status,
             gcp.joinedAt,
-            gcp.withdrawnAt,
-            null
+            gcp.withdrawnAt
         )
         FROM GroupChallengeParticipant gcp
         JOIN GroupMember gm ON gm.id = gcp.groupMemberId
@@ -91,21 +90,21 @@ public interface GroupChallengeParticipantRepository extends JpaRepository<Group
                 AND gm.status = 'ACTIVE'
         ORDER BY u.displayName ASC, gcp.id ASC
         """)
-    List<GroupChallengeParticipantResponse> findFeedParticipantResponsesByGroupChallengeId(
+    List<GroupChallengeParticipantRow> findFeedParticipantRowsByGroupChallengeId(
             @Param("groupChallengeId") Long groupChallengeId
     );
 
     @Query("""
-        SELECT new com.detoxmate.group.dto.GroupChallengeParticipantResponse(
+        SELECT new com.detoxmate.group.dto.GroupChallengeParticipantRow(
+            gcp.groupChallengeId,
             gcp.id,
             gm.id,
             gm.userId,
             u.displayName,
-            u.profileImageUrl,
+            u.profileImageObjectKey,
             gcp.status,
             gcp.joinedAt,
-            gcp.withdrawnAt,
-            null
+            gcp.withdrawnAt
         )
         FROM GroupChallengeParticipant gcp
         JOIN GroupMember gm ON gm.id = gcp.groupMemberId
@@ -114,7 +113,7 @@ public interface GroupChallengeParticipantRepository extends JpaRepository<Group
                 AND gcp.status = 'JOINED'
                 AND gm.status = 'ACTIVE'
         """)
-    Optional<GroupChallengeParticipantResponse> findParticipantResponseForFeedDetail(
+    Optional<GroupChallengeParticipantRow> findParticipantRowForFeedDetail(
             @Param("participantId") Long participantId
     );
 }
