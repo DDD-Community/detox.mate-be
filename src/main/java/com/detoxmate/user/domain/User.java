@@ -36,19 +36,27 @@ public class User {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    @Column(name = "profile_image_url", nullable = true)
-    private String profileImageUrl;
+    @Column(name = "profile_image_object_key", length = 1024)
+    private String profileImageObjectKey;
 
-    private User(String displayName, String profileImageUrl) {
+    private User(String displayName, String profileImageObjectKey) {
         this.displayName = displayName;
-        this.profileImageUrl = profileImageUrl;
+        this.profileImageObjectKey = profileImageObjectKey;
     }
 
     public static User createNew(String displayName) {
         return createNew(displayName, null);
     }
 
-    public static User createNew(String displayName, String profileImageUrl) {
-        return new User(displayName, profileImageUrl);
+    public static User createNew(String displayName, String profileImageObjectKey) {
+        return new User(displayName, profileImageObjectKey);
+    }
+
+    public void changeDisplayName(String displayName) {
+        this.displayName = displayName;
+    }
+
+    public void changeProfileImageObjectKey(String profileImageObjectKey) {
+        this.profileImageObjectKey = profileImageObjectKey;
     }
 }

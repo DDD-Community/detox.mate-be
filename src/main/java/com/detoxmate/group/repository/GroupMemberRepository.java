@@ -1,7 +1,7 @@
 package com.detoxmate.group.repository;
 
 import com.detoxmate.group.domain.GroupMember;
-import com.detoxmate.group.dto.GroupMemberResponse;
+import com.detoxmate.group.dto.GroupMemberUserQueryResult;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.repository.query.Param;
@@ -27,11 +27,11 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
     boolean existsByUserIdAndStatus(Long userId, String status);
 
     @Query("""
-            SELECT new com.detoxmate.group.dto.GroupMemberResponse(
+            SELECT new com.detoxmate.group.dto.GroupMemberUserQueryResult(
                 gm.id,
                 gm.userId,
                 u.displayName,
-                u.profileImageUrl,
+                u.profileImageObjectKey,
                 gm.role,
                 gm.status,
                 gm.joinedAt,
@@ -43,5 +43,5 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
               AND gm.status = 'ACTIVE'
             ORDER BY gm.joinedAt ASC
             """)
-    List<GroupMemberResponse> findMembersWithUserByGroupId(@Param("groupId") Long groupId);
+    List<GroupMemberUserQueryResult> findMemberUserQueryResultsByGroupId(@Param("groupId") Long groupId);
 }

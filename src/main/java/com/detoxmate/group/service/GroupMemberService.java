@@ -2,7 +2,9 @@ package com.detoxmate.group.service;
 
 import com.detoxmate.group.domain.GroupMember;
 import com.detoxmate.group.dto.GroupMemberResponse;
+import com.detoxmate.group.dto.GroupMemberUserQueryResult;
 import com.detoxmate.group.repository.GroupMemberRepository;
+import com.detoxmate.upload.service.ImageReadUrlBuilder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +15,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class GroupMemberService {
     private final GroupMemberRepository groupMemberRepository;
+    private final ImageReadUrlBuilder imageReadUrlBuilder;
 
     public GroupMember saveGroupMember(Long userId, Long groupId) {
         return groupMemberRepository.save(GroupMember.createMember(userId, groupId));
@@ -23,7 +26,9 @@ public class GroupMemberService {
     }
 
     public List<GroupMemberResponse> getGroupMembers(Long groupId) {
-        return groupMemberRepository.findMembersWithUserByGroupId(groupId);
+        return groupMemberRepository.findMemberUserQueryResultsByGroupId(groupId).stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     public List<GroupMember> getActiveGroupMembers(Long userId) {
@@ -57,6 +62,19 @@ public class GroupMemberService {
 
     public void leaveGroupMember(GroupMember groupMember) {
         groupMember.leave();
+    }
+
+    private GroupMemberResponse toResponse(GroupMemberUserQueryResult row) {
+        return new GroupMemberResponse(
+                row.id(),
+                row.userId(),
+                row.displayName(),
+                imageReadUrlBuilder.build(row.profileImageObjectKey()),
+                row.role(),
+                row.status(),
+                row.joinedAt(),
+                row.leftAt()
+        );
     }
 
     public void promoteToOwner(GroupMember groupMember) {

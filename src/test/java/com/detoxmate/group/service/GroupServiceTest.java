@@ -6,12 +6,14 @@ import com.detoxmate.group.domain.GroupChallengeParticipantStatus;
 import com.detoxmate.group.domain.GroupChallengeStatus;
 import com.detoxmate.group.domain.GroupChallengeParticipant;
 import com.detoxmate.group.domain.GroupMember;
-import com.detoxmate.group.dto.GroupMemberResponse;
 import com.detoxmate.group.dto.GroupResponse;
+import com.detoxmate.group.dto.GroupMemberUserQueryResult;
 import com.detoxmate.group.repository.GroupChallengeParticipantRepository;
 import com.detoxmate.group.repository.GroupChallengeRepository;
 import com.detoxmate.group.repository.GroupMemberRepository;
 import com.detoxmate.group.repository.GroupRepository;
+import com.detoxmate.upload.config.StorageProperties;
+import com.detoxmate.upload.service.ImageReadUrlBuilder;
 import com.detoxmate.user.domain.User;
 import com.detoxmate.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,6 +47,7 @@ public class GroupServiceTest {
     private static final Long RECRUITING_CHALLENGE_ID = 10L;
     private static final Long ACTIVE_CHALLENGE_ID = 11L;
     private static final Long JOINED_GROUP_MEMBER_ID = 101L;
+    private static final String TEST_IMAGE_BASE_URL = "https://media.detoxmate.co.kr";
     private static final LocalDateTime GROUP_CREATED_AT = LocalDateTime.of(2026, 4, 19, 10, 0);
     private static final LocalDateTime MEMBER_JOINED_AT = LocalDateTime.of(2026, 4, 19, 10, 30);
 
@@ -56,11 +59,15 @@ public class GroupServiceTest {
     private final UserRepository userRepository = mock(UserRepository.class);
 
     // 내부 그룹 서비스 — 실객체
-    private final GroupMemberService groupMemberService = new GroupMemberService(groupMemberRepository);
+    private final GroupMemberService groupMemberService = new GroupMemberService(
+            groupMemberRepository,
+            new ImageReadUrlBuilder(new StorageProperties(TEST_IMAGE_BASE_URL))
+    );
     private final GroupChallengeService groupChallengeService = new GroupChallengeService(
             groupChallengeRepository,
             groupChallengeParticipantRepository,
-            groupRepository
+            groupRepository,
+            new ImageReadUrlBuilder(new StorageProperties(TEST_IMAGE_BASE_URL))
     );
     private final GroupChallengeParticipantService groupChallengeParticipantService = new GroupChallengeParticipantService(groupChallengeParticipantRepository);
     private final InviteCodeGenerator inviteCodeGenerator = mock(InviteCodeGenerator.class);
@@ -105,7 +112,7 @@ public class GroupServiceTest {
         when(groupRepository.findById(GROUP_ID)).thenReturn(Optional.of(recruitingGroup()));
         when(groupChallengeRepository.findTopByGroupIdOrderByChallengeNoDesc(GROUP_ID))
                 .thenReturn(Optional.of(activeChallenge()));
-        when(groupMemberRepository.findMembersWithUserByGroupId(GROUP_ID))
+        when(groupMemberRepository.findMemberUserQueryResultsByGroupId(GROUP_ID))
                 .thenReturn(List.of(ownerMember()));
 
         List<GroupResponse> responses = groupService.getMyGroups(OWNER_USER_ID);
@@ -123,7 +130,7 @@ public class GroupServiceTest {
                 .thenReturn(Optional.of(ownerGroupMember()));
         when(groupChallengeRepository.findTopByGroupIdOrderByChallengeNoDesc(GROUP_ID))
                 .thenReturn(Optional.of(activeChallenge()));
-        when(groupMemberRepository.findMembersWithUserByGroupId(GROUP_ID))
+        when(groupMemberRepository.findMemberUserQueryResultsByGroupId(GROUP_ID))
                 .thenReturn(List.of(ownerMember(), joinedMemberResponse()));
 
         GroupResponse response = groupService.getGroup(GROUP_ID, OWNER_USER_ID);
@@ -131,6 +138,8 @@ public class GroupServiceTest {
         assertThat(response.id()).isEqualTo(GROUP_ID);
         assertThat(response.myRole()).isEqualTo("OWNER");
         assertThat(response.members()).hasSize(2);
+        assertThat(response.members().getFirst().profileImageUrl())
+                .isEqualTo(TEST_IMAGE_BASE_URL + "/profile-images/1/profile.png");
         assertThat(response.currentChallenge().status()).isEqualTo("ACTIVE");
     }
 
@@ -266,7 +275,7 @@ public class GroupServiceTest {
         when(groupChallengeRepository.findTopByGroupIdOrderByChallengeNoDesc(GROUP_ID))
                 .thenReturn(Optional.of(recruitingChallenge()));
         when(groupMemberRepository.save(any(GroupMember.class))).thenReturn(joinedMember());
-        when(groupMemberRepository.findMembersWithUserByGroupId(GROUP_ID)).thenReturn(groupMembers());
+        when(groupMemberRepository.findMemberUserQueryResultsByGroupId(GROUP_ID)).thenReturn(groupMembers());
 
         // when
         GroupResponse response = groupService.joinGroup(INVITE_CODE, MEMBER_USER_ID);
@@ -462,16 +471,16 @@ public class GroupServiceTest {
         return groupMember;
     }
 
-    private List<GroupMemberResponse> groupMembers() {
+    private List<GroupMemberUserQueryResult> groupMembers() {
         return List.of(ownerMember(), joinedMemberResponse());
     }
 
-    private GroupMemberResponse ownerMember() {
-        return new GroupMemberResponse(
+    private GroupMemberUserQueryResult ownerMember() {
+        return new GroupMemberUserQueryResult(
                 100L,
                 OWNER_USER_ID,
                 "지민",
-                "https://...",
+                "profile-images/1/profile.png",
                 "OWNER",
                 "ACTIVE",
                 GROUP_CREATED_AT,
@@ -479,8 +488,8 @@ public class GroupServiceTest {
         );
     }
 
-    private GroupMemberResponse joinedMemberResponse() {
-        return new GroupMemberResponse(
+    private GroupMemberUserQueryResult joinedMemberResponse() {
+        return new GroupMemberUserQueryResult(
                 JOINED_GROUP_MEMBER_ID,
                 MEMBER_USER_ID,
                 "민수",

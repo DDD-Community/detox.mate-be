@@ -98,7 +98,7 @@ public class CommentControllerDocsTest {
                                 fieldWithPath("items[].author").description("작성자 정보"),
                                 fieldWithPath("items[].author.userId").type(NUMBER).description("작성자 유저 ID"),
                                 fieldWithPath("items[].author.displayName").type(STRING).description("작성자 표시 이름"),
-                                fieldWithPath("items[].author.profileImageUrl").type(STRING).description("작성자 프로필 이미지 URL"),
+                                fieldWithPath("items[].author.profileImageUrl").type(STRING).description("저장된 작성자 프로필 이미지 object key를 읽기 URL로 변환한 값"),
                                 fieldWithPath("items[].commentBody").type(STRING).description("댓글 내용"),
                                 fieldWithPath("items[].createdAt").type(STRING).description("댓글 생성 시각"),
                                 fieldWithPath("nextCursor").type(STRING).description("다음 페이지 커서. 다음 페이지가 없으면 null")
