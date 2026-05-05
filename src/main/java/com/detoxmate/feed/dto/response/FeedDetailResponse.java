@@ -1,20 +1,28 @@
 package com.detoxmate.feed.dto.response;
 
-import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 
 public record FeedDetailResponse(
-        Long stampId,
+        Long challengeRecordId,
         Long groupChallengeId,
+        Long activityRecordId,
+        String challengeStatus,
+        LocalDate recordDate,
         FeedDetailAuthorInfo author,
-        Instant createdAt,
+        LocalDateTime activityCreatedAt,
         String activityImageUrl,
         String oneLineReview,
-        String goalStatus,
+        FeedGoalStatus goalStatus,
         Integer snapshotGoalMinutes,
         List<FeedDetailUsageDetail> details,
         FeedDetailReactionSummary reactions,
-        Integer commentCount
+        Integer commentCount,
+        Integer pokeCount,
+        Boolean pokeable,
+        Boolean poked,
+        List<FeedDetailPokedUser> pokedUsers
 ) {
 }

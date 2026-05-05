@@ -1,5 +1,6 @@
 package com.detoxmate.common.error;
 
+import com.detoxmate.common.exception.CustomException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.ServletException;
 import org.springframework.http.HttpStatus;
@@ -44,6 +45,18 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(toErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR));
+    }
+
+    @ExceptionHandler(CustomException.class)
+    public ResponseEntity<ErrorResponse> handleCustomException(CustomException exception) {
+        HttpStatus status = exception.getErrorCode().getHttpStatus();
+
+        return ResponseEntity.status(status)
+                .body(new ErrorResponse(
+                        exception.getErrorCode().name(),
+                        exception.getErrorCode().getMessage(),
+                        status.value()
+                ));
     }
 
     @ExceptionHandler(Exception.class)

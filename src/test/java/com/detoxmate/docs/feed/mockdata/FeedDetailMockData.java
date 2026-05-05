@@ -2,40 +2,55 @@ package com.detoxmate.docs.feed.mockdata;
 
 import com.detoxmate.feed.dto.response.*;
 
-import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class FeedDetailMockData {
 
     public static FeedDetailResponse createFeedDetailResponse() {
         return new FeedDetailResponse(
-                101L,
+                1000L,
                 1L,
+                2000L,
+                "AFTER_RECORD_SUCCESS",
+                LocalDate.of(2026, 5, 3),
                 new FeedDetailAuthorInfo(
-                        2L, "지수", "https://cdn.detoxmate.co.kr/profile/2.png"
+                        10L,
+                        "민준",
+                        "https://example.com/profiles/minjun.png"
                 ),
-                Instant.parse("2026-04-25T13:00:00Z"),
-                "https://cdn.detoxmate.co.kr/activity/101.png",  // activityImageUrl
-                "2시간동안 러닝 뛰고 온 날!",
-                "SUCCESS",
-                80,
+                LocalDateTime.of(2026, 5, 3, 13, 0),
+                "activity/image-1000.png",
+                "오늘 인증 완료",
+                FeedGoalStatus.SUCCESS,
+                180,
                 List.of(
-                        new FeedDetailUsageDetail("ALL_USE", 70)
+                        new FeedDetailUsageDetail("INSTAGRAM", 40),
+                        new FeedDetailUsageDetail("YOUTUBE", 80)
                 ),
                 new FeedDetailReactionSummary(
-                        7,
+                        2,
                         List.of(
                                 new FeedDetailReactionItem(
-                                        "MUSCLE", 6L, "xeulbn",
-                                        "https://cdn.detoxmate.co.kr/profile/6.png"
+                                        "CLAP",
+                                        20L,
+                                        "Alice",
+                                        "https://example.com/profiles/alice.png"
                                 ),
                                 new FeedDetailReactionItem(
-                                        "MUSCLE", 2L, "의진",
-                                        "https://cdn.detoxmate.co.kr/profile/2.png"
+                                        "MUSCLE",
+                                        21L,
+                                        "Bob",
+                                        "https://example.com/profiles/bob.png"
                                 )
                         )
                 ),
-                10
+                2,
+                0,
+                false,
+                false,
+                List.of()
         );
     }
 }
