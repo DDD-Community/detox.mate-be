@@ -51,4 +51,24 @@ public class GroupMemberTest {
 
         assertThat(member.getJoinedAt()).isNotNull();
     }
+
+    @Test
+    void 멤버를_OWNER로_위임할_수_있다() {
+        GroupMember member = GroupMember.createMember(2L, 10L);
+
+        member.promoteToOwner();
+
+        assertThat(member.getRole()).isEqualTo(GroupMemberRole.OWNER.name());
+        assertThat(member.isOwner()).isTrue();
+    }
+
+    @Test
+    void 활성_멤버가_탈퇴하면_LEFT_상태와_leftAt이_설정된다() {
+        GroupMember member = GroupMember.createMember(2L, 10L);
+
+        member.leave();
+
+        assertThat(member.getStatus()).isEqualTo(GroupMemberStatus.LEFT.name());
+        assertThat(member.getLeftAt()).isNotNull();
+    }
 }

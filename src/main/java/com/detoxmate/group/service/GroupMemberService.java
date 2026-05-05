@@ -44,6 +44,14 @@ public class GroupMemberService {
         return groupMemberRepository.findByUserIdAndGroupIdAndStatus(userId, groupId, "ACTIVE");
     }
 
+    public Optional<GroupMember> findLatestActiveMemberExcept(Long groupId, Long excludedGroupMemberId) {
+        return groupMemberRepository.findFirstByGroupIdAndStatusAndIdNotOrderByJoinedAtDescIdDesc(
+                groupId,
+                "ACTIVE",
+                excludedGroupMemberId
+        );
+    }
+
     public boolean existsActiveGroupMember(Long userId) {
         return groupMemberRepository.existsByUserIdAndStatus(userId, "ACTIVE");
     }
@@ -67,5 +75,9 @@ public class GroupMemberService {
                 row.joinedAt(),
                 row.leftAt()
         );
+    }
+
+    public void promoteToOwner(GroupMember groupMember) {
+        groupMember.promoteToOwner();
     }
 }

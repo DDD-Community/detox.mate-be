@@ -60,4 +60,13 @@ public class GroupChallenge {
     public static GroupChallenge createFirst(Long groupId) {
         return new GroupChallenge(groupId, 1, GroupChallengeStatus.RECRUITING);
     }
+
+    public void cancel() {
+        if (status == GroupChallengeStatus.COMPLETED || status == GroupChallengeStatus.CANCELED) {
+            return;
+        }
+
+        status = GroupChallengeStatus.CANCELED;
+        endAt = LocalDateTime.now();
+    }
 }

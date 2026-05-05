@@ -87,6 +87,7 @@ class GroupMemberControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.id").value(100))
+                .andExpect(jsonPath("$.status").value("ACTIVE"))
                 .andExpect(jsonPath("$.currentGoals[0].id").value(101))
                 .andExpect(jsonPath("$.stats.overall.achievementRate").value(43))
                 .andDo(document("groups/members/get-by-id",
@@ -149,6 +150,7 @@ class GroupMemberControllerTest {
                 "의진",
                 "https://example.com/profile.png",
                 "MEMBER",
+                "ACTIVE",
                 LocalDateTime.of(2026, 5, 1, 23, 50),
                 4,
                 List.of(
@@ -194,6 +196,7 @@ class GroupMemberControllerTest {
                 fieldWithPath("displayName").type(JsonFieldType.STRING).description("사용자 표시 이름"),
                 fieldWithPath("profileImageUrl").type(JsonFieldType.STRING).description("저장된 프로필 이미지 object key를 읽기 URL로 변환한 값").optional(),
                 fieldWithPath("role").type(JsonFieldType.STRING).description("그룹 내 역할"),
+                fieldWithPath("status").type(JsonFieldType.STRING).description("그룹 멤버 상태"),
                 fieldWithPath("joinedAt").type(JsonFieldType.STRING).description("그룹 참여 일시"),
                 fieldWithPath("dayCount").type(JsonFieldType.NUMBER).description("현재 챌린지 참여일 기준 D-day. 같은 날이면 0"),
                 fieldWithPath("currentGoals").type(JsonFieldType.ARRAY).description("목표 타입별 최신 목표 시간"),

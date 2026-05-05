@@ -47,6 +47,10 @@ public class GroupChallengeService {
         groupChallengeRepository.deleteAllByGroupId(groupId);
     }
 
+    public void cancelGroupChallenge(GroupChallenge groupChallenge) {
+        groupChallenge.cancel();
+    }
+
     public List<GroupChallengeResponse> getMyGroupChallenges(Long userId, String status) {
         GroupChallengeStatus groupChallengeStatus = parseStatus(status);
         List<GroupChallenge> groupChallenges =
