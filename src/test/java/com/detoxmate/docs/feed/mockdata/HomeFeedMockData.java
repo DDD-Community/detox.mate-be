@@ -4,7 +4,7 @@ import com.detoxmate.feed.dto.response.HomeFeedChallengeInfo;
 import com.detoxmate.feed.dto.response.HomeFeedMemberCard;
 import com.detoxmate.feed.dto.response.HomeFeedResponse;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class HomeFeedMockData {
@@ -13,31 +13,45 @@ public class HomeFeedMockData {
         return new HomeFeedResponse(
                 new HomeFeedChallengeInfo(
                         1L,
-                        "수능 100일 전 모임",
-                        Instant.parse("2026-04-20T00:00:00Z"),
-                        7
+                        "수능방",
+                        LocalDateTime.of(2026, 5, 3, 9, 0),
+                        3
                 ),
                 List.of(
                         new HomeFeedMemberCard(
-                                1L, 11L, "강슬빈",
-                                "https://cdn.detoxmate.co.kr/profile/1.png",
-                                "VERIFIED",
-                                "https://cdn.detoxmate.co.kr/acting/1.png",
-                                "2시간 러닝 뛰고 옴",
-                                70,
-                                "8H 30M",
-                                101L,
-                                3, 5, 0,
+                                10L,
+                                100L,
+                                "민준",
+                                "https://example.com/profiles/minjun.png",
+                                1000L,
+                                "AFTER_RECORD_SUCCESS",
+                                "activity/image-1000.png",
+                                "오늘 인증 완료",
+                                120,
+                                null,
+                                2000L,
+                                LocalDateTime.of(2026, 5, 3, 13, 0),
+                                4,
+                                2,
+                                0,
                                 false
                         ),
                         new HomeFeedMemberCard(
-                                2L, 12L, "김지호",
-                                "https://cdn.detoxmate.co.kr/profile/2.png",
-                                "NOT_YET",
-                                null, null, null,
-                                "8H 30M",
+                                11L,
+                                101L,
+                                "서연",
+                                "https://example.com/profiles/seoyeon.png",
+                                1001L,
+                                "BEFORE_RECORD",
                                 null,
-                                0, 0, 1,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                0,
+                                1,
+                                3,
                                 true
                         )
                 )

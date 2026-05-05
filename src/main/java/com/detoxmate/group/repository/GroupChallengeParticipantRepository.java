@@ -20,11 +20,11 @@ public interface GroupChallengeParticipantRepository extends JpaRepository<Group
             JOIN GroupMember gm ON gm.id = gcp.groupMemberId
             WHERE gcp.groupChallengeId = :groupChallengeId
               AND gm.userId = :userId
+              AND gcp.status = 'JOINED'
+              AND gm.status = 'ACTIVE'
             """)
-    boolean existsByGroupChallengeIdAndUserId(
-            @Param("groupChallengeId") Long groupChallengeId,
-            @Param("userId") Long userId
-    );
+    boolean existsByGroupChallengeIdAndUserId(@Param("groupChallengeId") Long groupChallengeId,
+                                              @Param("userId") Long userId);
 
     @Query("""
             SELECT new com.detoxmate.group.dto.GroupChallengeParticipantRow(
@@ -68,5 +68,52 @@ public interface GroupChallengeParticipantRepository extends JpaRepository<Group
             """)
     List<GroupChallengeParticipantRow> findParticipantRowsByGroupChallengeIds(
             @Param("groupChallengeIds") List<Long> groupChallengeIds
+    );
+
+    @Query("""
+        SELECT new com.detoxmate.group.dto.GroupChallengeParticipantRow(
+            gcp.groupChallengeId,
+            gcp.id,
+            gm.id,
+            gm.userId,
+            u.displayName,
+            u.profileImageObjectKey,
+            gcp.status,
+            gcp.joinedAt,
+            gcp.withdrawnAt
+        )
+        FROM GroupChallengeParticipant gcp
+        JOIN GroupMember gm ON gm.id = gcp.groupMemberId
+        LEFT JOIN User u ON u.id = gm.userId
+        WHERE gcp.groupChallengeId = :groupChallengeId
+                AND gcp.status = 'JOINED'
+                AND gm.status = 'ACTIVE'
+        ORDER BY u.displayName ASC, gcp.id ASC
+        """)
+    List<GroupChallengeParticipantRow> findFeedParticipantRowsByGroupChallengeId(
+            @Param("groupChallengeId") Long groupChallengeId
+    );
+
+    @Query("""
+        SELECT new com.detoxmate.group.dto.GroupChallengeParticipantRow(
+            gcp.groupChallengeId,
+            gcp.id,
+            gm.id,
+            gm.userId,
+            u.displayName,
+            u.profileImageObjectKey,
+            gcp.status,
+            gcp.joinedAt,
+            gcp.withdrawnAt
+        )
+        FROM GroupChallengeParticipant gcp
+        JOIN GroupMember gm ON gm.id = gcp.groupMemberId
+        LEFT JOIN User u ON u.id = gm.userId
+        WHERE gcp.id = :participantId
+                AND gcp.status = 'JOINED'
+                AND gm.status = 'ACTIVE'
+        """)
+    Optional<GroupChallengeParticipantRow> findParticipantRowForFeedDetail(
+            @Param("participantId") Long participantId
     );
 }

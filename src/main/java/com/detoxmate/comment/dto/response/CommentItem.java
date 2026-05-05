@@ -1,7 +1,6 @@
 package com.detoxmate.comment.dto.response;
 
-import java.time.Instant;
-import java.util.List;
+import java.time.LocalDateTime;
 
 /**
  * 댓글 목록 항목
@@ -9,9 +8,7 @@ import java.util.List;
 public record CommentItem(
         Long commentId,
         CommentAuthorInfo author,
-        String body,
-        List<RelatedCommentDto> relatedComment,
-        Instant createdAt,
-        Integer replyCount
+        String commentBody,
+        LocalDateTime createdAt
 ) {
 }

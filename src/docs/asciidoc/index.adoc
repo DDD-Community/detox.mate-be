@@ -122,30 +122,30 @@ operation::uploads/presigned-urls-invalid-request[snippets='http-request,request
 
   === Get Feed Detail
 
-  operation::group-challenges/feed-detail-get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+  operation::challenge-records/feed-detail-get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
 
   == Reaction API
 
   === Create Reaction
 
-  operation::group-challenges/reaction-create[snippets='http-request,request-headers,path-parameters,request-fields,http-response,response-fields']
+  operation::challenge-records/reaction-create[snippets='http-request,request-headers,path-parameters,request-fields,http-response,response-fields']
 
   === Delete Reaction
 
-  operation::group-challenges/reaction-delete[snippets='http-request,request-headers,path-parameters,http-response']
+  operation::challenge-records/reaction-delete[snippets='http-request,request-headers,path-parameters,http-response']
 
   == Comment API
 
   === List Comments
 
-  operation::group-challenges/comments-list-get[snippets='http-request,request-headers,path-parameters,query-parameters,http-response,response-fields']
+  operation::challenge-records/comments-list-get[snippets='http-request,request-headers,path-parameters,query-parameters,http-response,response-fields']
 
   === Create Comment
 
-  operation::group-challenges/comment-create[snippets='http-request,request-headers,path-parameters,request-fields,http-response,response-fields']
+  operation::challenge-records/comment-create[snippets='http-request,request-headers,path-parameters,request-fields,http-response,response-fields']
 
   == Poke API
 
   === Poke Member
 
-  operation::group-challenges/poke-create[snippets='http-request,request-headers,path-parameters,http-response']
+  operation::challenge-records/poke-create[snippets='http-request,request-headers,path-parameters,http-response']

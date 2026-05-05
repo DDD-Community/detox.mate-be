@@ -28,4 +28,8 @@ public class GroupChallengeParticipantService {
         groupChallengeParticipantRepository.findByGroupChallengeIdAndGroupMemberId(groupChallengeId, groupMemberId)
                 .ifPresent(GroupChallengeParticipant::withdraw);
     }
+
+    public boolean checkGroupChallengeParticipant(Long groupChallengeId, Long userId) {
+        return groupChallengeParticipantRepository.existsByGroupChallengeIdAndUserId(groupChallengeId, userId);
+    }
 }
