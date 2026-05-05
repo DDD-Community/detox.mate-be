@@ -177,6 +177,7 @@ class ReactionControllerTest {
     void delete_author_returns204() throws Exception {
         // given
         ChallengeRecord challengeRecord = saveCertifiedRecord();
+        saveStatusCount(challengeRecord.getId());
 
         Reaction reaction = reactionRepository.save(
                 Reaction.create(challengeRecord.getId(), currentUserId, ReactionBody.CLAP)
