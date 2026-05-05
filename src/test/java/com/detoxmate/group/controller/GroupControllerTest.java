@@ -36,6 +36,8 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.response
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -276,7 +278,7 @@ class GroupControllerTest {
         when(groupService.getGroup(1L, 1L))
                 .thenReturn(GroupMockData.groupDetailResponse(1L));
 
-        mockMvc.perform(get("/groups/{id}", 1L)
+        mockMvc.perform(get("/groups/{groupId}", 1L)
                         .header("Authorization", "Bearer access-token"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
@@ -303,7 +305,7 @@ class GroupControllerTest {
 
     @Test
     void 그룹_상세_조회_요청에_Authorization_헤더가_없으면_401_에러를_반환한다() throws Exception {
-        mockMvc.perform(get("/groups/{id}", 1L))
+        mockMvc.perform(get("/groups/{groupId}", 1L))
                 .andExpect(status().isUnauthorized())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
@@ -311,16 +313,60 @@ class GroupControllerTest {
     }
 
     @Test
+    void 그룹_이름을_변경하면_변경된_그룹_정보를_반환한다() throws Exception {
+        HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
+        FieldDescriptor[] requestFieldDescriptors = updateGroupRequestFields();
+        FieldDescriptor[] responseFieldDescriptors = groupResponseFields();
+        ParameterDescriptor[] pathParameterDescriptors = groupIdPathParameters();
+        com.epages.restdocs.apispec.ParameterDescriptorWithType[] typedPathParameterDescriptors = groupIdOpenApiPathParameters();
+        when(groupService.updateGroup(1L, 1L, "주말 디톡스"))
+                .thenReturn(GroupMockData.groupDetailResponse(1L));
+
+        mockMvc.perform(patch("/groups/{groupId}", 1L)
+                        .header("Authorization", "Bearer access-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "name": "주말 디톡스"
+                        }
+                        """))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.name").value("주말 디톡스"))
+                .andDo(result -> verify(groupService).updateGroup(1L, 1L, "주말 디톡스"))
+                .andDo(document("groups/patch",
+                        preprocessRequest(prettyPrint()),
+                        preprocessResponse(prettyPrint()),
+                        requestHeaders(requestHeaderDescriptors),
+                        pathParameters(pathParameterDescriptors),
+                        requestFields(requestFieldDescriptors),
+                        responseFields(responseFieldDescriptors),
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Group")
+                                .summary("Update group")
+                                .description("로그인 사용자가 속한 그룹의 전역 그룹 이름을 변경한다.")
+                                .requestHeaders(requestHeaderDescriptors)
+                                .pathParameters(typedPathParameterDescriptors)
+                                .requestSchema(schema("UpdateGroupRequest"))
+                                .responseSchema(schema("GroupResponse"))
+                                .requestFields(requestFieldDescriptors)
+                                .responseFields(responseFieldDescriptors)
+                                .build()
+                        )));
+    }
+
+    @Test
     void 그룹을_탈퇴하면_204_응답을_반환한다() throws Exception {
         HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
-        ParameterDescriptor[] pathParameterDescriptors = leaveGroupPathParameters();
-        com.epages.restdocs.apispec.ParameterDescriptorWithType[] typedPathParameterDescriptors = leaveGroupOpenApiPathParameters();
+        ParameterDescriptor[] pathParameterDescriptors = groupIdPathParameters();
+        com.epages.restdocs.apispec.ParameterDescriptorWithType[] typedPathParameterDescriptors = groupIdOpenApiPathParameters();
 
-        mockMvc.perform(post("/groups/{id}/leave", 1L)
-                        .header("Authorization", "Bearer access-token"))
+        mockMvc.perform(delete("/groups/{groupId}/members/me", 1L)
+                .header("Authorization", "Bearer access-token"))
                 .andExpect(status().isNoContent())
-                .andDo(result -> verify(groupService).leaveGroup(1L, 1L))
-                .andDo(document("groups/leave",
+                .andDo(result -> verify(groupService).withdrawGroup(1L, 1L))
+                .andDo(document("groups/members/me-delete",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
                         requestHeaders(requestHeaderDescriptors),
@@ -337,7 +383,7 @@ class GroupControllerTest {
 
     @Test
     void 그룹_탈퇴_요청에_Authorization_헤더가_없으면_401_에러를_반환한다() throws Exception {
-        mockMvc.perform(post("/groups/{id}/leave", 1L))
+        mockMvc.perform(delete("/groups/{groupId}/members/me", 1L))
                 .andExpect(status().isUnauthorized())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
@@ -346,29 +392,15 @@ class GroupControllerTest {
 
     private ParameterDescriptor[] groupIdPathParameters() {
         return new ParameterDescriptor[] {
-                parameterWithName("id").description("조회할 그룹 ID")
-        };
-    }
-
-    private ParameterDescriptor[] leaveGroupPathParameters() {
-        return new ParameterDescriptor[] {
-                parameterWithName("id").description("탈퇴할 그룹 ID")
+                parameterWithName("groupId").description("그룹 ID")
         };
     }
 
     private com.epages.restdocs.apispec.ParameterDescriptorWithType[] groupIdOpenApiPathParameters() {
         return new com.epages.restdocs.apispec.ParameterDescriptorWithType[] {
-                com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName("id")
+                com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName("groupId")
                         .type(SimpleType.INTEGER)
-                        .description("조회할 그룹 ID")
-        };
-    }
-
-    private com.epages.restdocs.apispec.ParameterDescriptorWithType[] leaveGroupOpenApiPathParameters() {
-        return new com.epages.restdocs.apispec.ParameterDescriptorWithType[] {
-                com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName("id")
-                        .type(SimpleType.INTEGER)
-                        .description("탈퇴할 그룹 ID")
+                        .description("그룹 ID")
         };
     }
 
@@ -391,6 +423,14 @@ class GroupControllerTest {
                 fieldWithPath("inviteCode")
                         .type(JsonFieldType.STRING)
                         .description("참여할 그룹의 초대 코드")
+        };
+    }
+
+    private FieldDescriptor[] updateGroupRequestFields() {
+        return new FieldDescriptor[] {
+                fieldWithPath("name")
+                        .type(JsonFieldType.STRING)
+                        .description("변경할 그룹 이름. 공백 포함 12자 이내")
         };
     }
 

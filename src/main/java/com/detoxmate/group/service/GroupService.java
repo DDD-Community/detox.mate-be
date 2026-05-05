@@ -102,6 +102,14 @@ public class GroupService {
         return toGroupResponse(group, currentMember, groupChallenge, members);
     }
 
+    public GroupResponse updateGroup(Long groupId, Long userId, String name) {
+        throw new UnsupportedOperationException("아직 미구현 - API 문서화 단계");
+    }
+
+    public void withdrawGroup(Long groupId, Long userId) {
+        throw new UnsupportedOperationException("아직 미구현 - API 문서화 단계");
+    }
+
     @Transactional
     public void deleteGroup(Long groupId) {
         Group group = groupRepository.findById(groupId)
