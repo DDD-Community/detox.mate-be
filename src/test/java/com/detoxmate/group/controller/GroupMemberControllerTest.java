@@ -192,7 +192,7 @@ class GroupMemberControllerTest {
                 fieldWithPath("userId").type(JsonFieldType.NUMBER).description("사용자 ID"),
                 fieldWithPath("groupId").type(JsonFieldType.NUMBER).description("그룹 ID"),
                 fieldWithPath("displayName").type(JsonFieldType.STRING).description("사용자 표시 이름"),
-                fieldWithPath("profileImageUrl").type(JsonFieldType.STRING).description("프로필 이미지 URL").optional(),
+                fieldWithPath("profileImageUrl").type(JsonFieldType.STRING).description("저장된 프로필 이미지 object key를 읽기 URL로 변환한 값").optional(),
                 fieldWithPath("role").type(JsonFieldType.STRING).description("그룹 내 역할"),
                 fieldWithPath("joinedAt").type(JsonFieldType.STRING).description("그룹 참여 일시"),
                 fieldWithPath("dayCount").type(JsonFieldType.NUMBER).description("현재 챌린지 참여일 기준 D-day. 같은 날이면 0"),

@@ -90,7 +90,7 @@ public class FeedControllerDocsTest {
                                 fieldWithPath("members[].userId").type(NUMBER).description("유저 ID"),
                                 fieldWithPath("members[].groupMemberId").type(NUMBER).description("그룹 멤버 ID"),
                                 fieldWithPath("members[].displayName").type(STRING).description("닉네임"),
-                                fieldWithPath("members[].profileImageUrl").type(STRING).description("프로필 이미지 URL"),
+                                fieldWithPath("members[].profileImageUrl").type(STRING).description("저장된 프로필 이미지 object key를 읽기 URL로 변환한 값"),
                                 fieldWithPath("members[].challengeStatus").type(STRING)
                                         .description("인증 상태 (NOT_YET | VERIFIED | FAILED)"),
                                 fieldWithPath("members[].activityImageUrl").type(STRING).optional()
@@ -139,7 +139,7 @@ public class FeedControllerDocsTest {
                                 fieldWithPath("groupChallengeId").type(NUMBER).description("챌린지 ID"),
                                 fieldWithPath("author.userId").type(NUMBER).description("작성자 유저 ID"),
                                 fieldWithPath("author.displayName").type(STRING).description("작성자 닉네임"),
-                                fieldWithPath("author.profileImageUrl").type(STRING).description("작성자 프로필 URL"),
+                                fieldWithPath("author.profileImageUrl").type(STRING).description("저장된 작성자 프로필 이미지 object key를 읽기 URL로 변환한 값"),
                                 fieldWithPath("createdAt").type(STRING).description("생성 시각"),
                                 fieldWithPath("activityImageUrl").type(STRING).description("활동 사진 URL"),
                                 fieldWithPath("oneLineReview").type(STRING).description("한줄평"),
@@ -151,7 +151,7 @@ public class FeedControllerDocsTest {
                                 fieldWithPath("reactions.summary[].reactionBody").type(STRING).description("리액션 종류"),
                                 fieldWithPath("reactions.summary[].userId").type(NUMBER).description("리액션 단 유저 ID"),
                                 fieldWithPath("reactions.summary[].username").type(STRING).description("유저명"),
-                                fieldWithPath("reactions.summary[].profileImageUrl").type(STRING).description("프로필 URL"),
+                                fieldWithPath("reactions.summary[].profileImageUrl").type(STRING).description("저장된 프로필 이미지 object key를 읽기 URL로 변환한 값"),
                                 fieldWithPath("commentCount").type(NUMBER).description("댓글 수")
                         ),
                         resource(builder()

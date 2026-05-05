@@ -303,7 +303,7 @@ class AuthControllerTest {
                 fieldWithPath("profileImageUrl")
                         .type(JsonFieldType.STRING)
                         .optional()
-                        .description("프로필 이미지 URL"),
+                        .description("저장된 프로필 이미지 object key를 읽기 URL로 변환한 값"),
                 fieldWithPath("accessToken")
                         .type(JsonFieldType.STRING)
                         .description("서비스 access token"),
