@@ -1,13 +1,14 @@
 package com.detoxmate.reaction.dto.response;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 
 public record ReactionResponse(
         Long reactionId,
-        Long challengeRecordId,
+        Long groupChallengeId,
+        Long stampId,
         Long userId,
         String reactionBody,
-        LocalDateTime createdAt
+        Instant createdAt
 ) {
 }

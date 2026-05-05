@@ -11,10 +11,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -52,18 +48,6 @@ public class UserService {
         socialLoginUserRepository.deleteByUserId(user.getId());
         refreshTokenSessionService.deleteByUserId(user.getId());
         userRepository.delete(user);
-    }
-
-    @Transactional(readOnly = true)
-    public Map<Long, MyProfileResponse> getProfilesByIds(Set<Long> userIds) {
-        if (userIds.isEmpty()) {
-            return Map.of();
-        }
-        return userRepository.findAllById(userIds).stream()
-                .collect(Collectors.toMap(
-                        User::getId,
-                        this::toMyProfileResponse
-                ));
     }
 
     private User getUser(String accessToken) {

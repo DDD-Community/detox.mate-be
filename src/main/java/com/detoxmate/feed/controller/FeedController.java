@@ -14,12 +14,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
+@RequestMapping("/group-challenges")
 public class FeedController {
 
     private final FeedService feedService;
     private final FeedDetailService feedDetailService;
 
-    @GetMapping("/group-challenges/{groupChallengeId}/home")
+    @GetMapping("/{groupChallengeId}/home")
     public ResponseEntity<HomeFeedResponse> getHomeFeed(@PathVariable Long groupChallengeId,
                                                         CurrentUser currentUser) {
         return ResponseEntity.ok(
@@ -27,11 +28,12 @@ public class FeedController {
         );
     }
 
-    @GetMapping("/challenge-records/{challengeRecordId}")
-    public ResponseEntity<FeedDetailResponse> getFeedDetail(@PathVariable Long challengeRecordId,
-                                                            CurrentUser currentUser) {
+    @GetMapping("/{groupChallengeId}/stamps/{stampId}")
+    public ResponseEntity<FeedDetailResponse> getStampDetail(@PathVariable Long groupChallengeId,
+                                                             @PathVariable Long stampId,
+                                                             CurrentUser currentUser) {
         return ResponseEntity.ok(
-                feedDetailService.getFeedDetail(challengeRecordId, currentUser.id())
+                feedDetailService.getFeedDetail(groupChallengeId, stampId, currentUser.id())
         );
     }
 
