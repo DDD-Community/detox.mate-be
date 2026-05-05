@@ -4,12 +4,15 @@ import com.detoxmate.activityrecord.domain.ActivityRecord;
 import com.detoxmate.challengerecord.domain.ChallengeRecord;
 import com.detoxmate.challengerecord.service.ChallengeRecordService;
 import com.detoxmate.challengerecordstatuscount.domain.ChallengeRecordStatusCount;
+import com.detoxmate.common.exception.CustomException;
+import com.detoxmate.common.exception.feed.FeedErrorCode;
 import com.detoxmate.feed.dto.response.HomeFeedChallengeInfo;
 import com.detoxmate.feed.dto.response.HomeFeedMemberCard;
 import com.detoxmate.feed.dto.response.HomeFeedResponse;
 import com.detoxmate.feed.util.FeedQueryReader;
 import com.detoxmate.feed.util.GroupChallengeFeedSource;
 import com.detoxmate.group.dto.GroupChallengeParticipantResponse;
+import com.detoxmate.group.service.GroupChallengeParticipantService;
 import com.detoxmate.poke.service.PokeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,10 +27,13 @@ public class FeedService {
 
     private final FeedQueryReader feedQueryReader;
     private final ChallengeRecordService challengeRecordService;
+    private final GroupChallengeParticipantService participantService;
     private final PokeService pokeService;
 
     @Transactional
     public HomeFeedResponse getHomeFeed(Long groupChallengeId, Long currentUserId) {
+        validateParticipant(groupChallengeId, currentUserId);
+
         GroupChallengeFeedSource source = feedQueryReader.getHomeFeedSource(groupChallengeId);
 
         LocalDate today = LocalDate.now();
@@ -140,4 +146,9 @@ public class FeedService {
         return statusCount == null ? 0 : statusCount.getPokeCount();
     }
 
+    private void validateParticipant(Long groupChallengeId, Long currentUserId) {
+        if (!participantService.checkGroupChallengeParticipant(groupChallengeId, currentUserId)) {
+            throw new CustomException(FeedErrorCode.FEED_ACCESS_DENIED);
+        }
+    }
 }

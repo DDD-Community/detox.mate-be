@@ -122,6 +122,7 @@ class FeedControllerTest {
         User currentUser = userRepository.save(User.createNew("나"));
         User author = userRepository.save(User.createNew("민준"));
 
+        saveParticipant(group.getId(), challenge.getId(), currentUser);
         GroupChallengeParticipant authorParticipant =
                 saveParticipant(group.getId(), challenge.getId(), author);
 

@@ -20,20 +20,16 @@ public class FeedController {
     private final FeedDetailService feedDetailService;
 
     @GetMapping("/group-challenges/{groupChallengeId}/home")
-    public ResponseEntity<HomeFeedResponse> getHomeFeed(
-            @PathVariable Long groupChallengeId,
-            CurrentUser currentUser
-    ) {
+    public ResponseEntity<HomeFeedResponse> getHomeFeed(@PathVariable Long groupChallengeId,
+                                                        CurrentUser currentUser) {
         return ResponseEntity.ok(
                 feedService.getHomeFeed(groupChallengeId, currentUser.id())
         );
     }
 
     @GetMapping("/challenge-records/{challengeRecordId}")
-    public ResponseEntity<FeedDetailResponse> getFeedDetail(
-            @PathVariable Long challengeRecordId,
-            CurrentUser currentUser
-    ) {
+    public ResponseEntity<FeedDetailResponse> getFeedDetail(@PathVariable Long challengeRecordId,
+                                                            CurrentUser currentUser) {
         return ResponseEntity.ok(
                 feedDetailService.getFeedDetail(challengeRecordId, currentUser.id())
         );

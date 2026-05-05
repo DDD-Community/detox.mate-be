@@ -56,6 +56,7 @@ public class ReactionService {
         validateChallengeRecord(challengeRecordId, reaction);
 
         reaction.deleteBy(currentUserId);
+        statusCountService.decreaseReactionCount(challengeRecordId);
     }
 
     private void validateReactionAllowed(ChallengeRecord challengeRecord) {

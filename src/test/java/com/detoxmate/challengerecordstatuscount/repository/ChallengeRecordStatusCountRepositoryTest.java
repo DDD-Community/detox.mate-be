@@ -74,26 +74,44 @@ class ChallengeRecordStatusCountRepositoryTest {
     }
 
     @Test
-    @DisplayName("증가된 집계 값이 저장된다")
-    void saveStatusCount_persistsCounts() {
+    @DisplayName("집계 값을 원자적으로 증가시킨다")
+    void updateCounts_increasesCountsAtomically() {
         // given
-        ChallengeRecordStatusCount statusCount = ChallengeRecordStatusCount.create(CHALLENGE_RECORD_ID);
-
-        statusCount.increaseBeforeCommentCount();
-        statusCount.increaseAfterCommentCount();
-        statusCount.increaseReactionCount();
-        statusCount.increasePokeCount();
-
-        ChallengeRecordStatusCount saved = statusCountRepository.saveAndFlush(statusCount);
+        ChallengeRecordStatusCount saved = statusCountRepository.saveAndFlush(
+                ChallengeRecordStatusCount.create(CHALLENGE_RECORD_ID)
+        );
 
         // when
+        statusCountRepository.increaseBeforeCommentCount(CHALLENGE_RECORD_ID);
+        statusCountRepository.increaseAfterCommentCount(CHALLENGE_RECORD_ID);
+        statusCountRepository.increaseReactionCount(CHALLENGE_RECORD_ID);
+        statusCountRepository.increasePokeCount(CHALLENGE_RECORD_ID);
+
+        // then
         ChallengeRecordStatusCount found =
                 statusCountRepository.findById(saved.getId()).orElseThrow();
 
-        // then
         assertThat(found.getBeforeCommentCount()).isEqualTo(1);
         assertThat(found.getAfterCommentCount()).isEqualTo(1);
         assertThat(found.getReactionCount()).isEqualTo(1);
         assertThat(found.getPokeCount()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("리액션 수 감소는 0 미만으로 내려가지 않는다")
+    void decreaseReactionCount_doesNotGoBelowZero() {
+        // given
+        ChallengeRecordStatusCount saved = statusCountRepository.saveAndFlush(
+                ChallengeRecordStatusCount.create(CHALLENGE_RECORD_ID)
+        );
+
+        // when
+        statusCountRepository.decreaseReactionCount(CHALLENGE_RECORD_ID);
+
+        // then
+        ChallengeRecordStatusCount found =
+                statusCountRepository.findById(saved.getId()).orElseThrow();
+
+        assertThat(found.getReactionCount()).isZero();
     }
 }

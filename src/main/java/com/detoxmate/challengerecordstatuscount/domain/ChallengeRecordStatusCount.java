@@ -53,22 +53,6 @@ public class ChallengeRecordStatusCount {
         return new ChallengeRecordStatusCount(challengeRecordId);
     }
 
-    public void increaseBeforeCommentCount() {
-        beforeCommentCount++;
-    }
-
-    public void increaseAfterCommentCount() {
-        afterCommentCount++;
-    }
-
-    public void increaseReactionCount() {
-        reactionCount++;
-    }
-
-    public void increasePokeCount() {
-        pokeCount++;
-    }
-
     private static void validate(Long challengeRecordId) {
         if (challengeRecordId == null) {
             throw new CustomException(ChallengeRecordStatusCountErrorCode.CHALLENGE_RECORD_REQUIRED);

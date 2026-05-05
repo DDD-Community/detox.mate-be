@@ -99,6 +99,23 @@ class ChallengeRecordStatusServiceTest {
     }
 
     @Test
+    @DisplayName("리액션 수를 1 감소시키고 0 미만으로 내려가지 않는다")
+    void decreaseReactionCount_decreasesReactionCountWithoutNegativeCount() {
+        // given
+        ChallengeRecordStatusCount statusCount = saveStatusCount();
+        statusCountService.increaseReactionCount(CHALLENGE_RECORD_ID);
+
+        // when
+        statusCountService.decreaseReactionCount(CHALLENGE_RECORD_ID);
+        statusCountService.decreaseReactionCount(CHALLENGE_RECORD_ID);
+
+        // then
+        ChallengeRecordStatusCount found = statusCountRepository.findById(statusCount.getId()).orElseThrow();
+
+        assertThat(found.getReactionCount()).isZero();
+    }
+
+    @Test
     @DisplayName("찌르기 수를 1 증가시킨다")
     void increasePokeCount_increasesPokeCount() {
         // given

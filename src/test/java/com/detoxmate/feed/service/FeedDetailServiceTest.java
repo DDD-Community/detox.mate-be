@@ -87,17 +87,17 @@ class FeedDetailServiceTest {
         User poker1 = userRepository.save(User.createNew("Alice"));
         User poker2 = userRepository.save(User.createNew("Bob"));
 
+        saveParticipant(group.getId(), challenge.getId(), currentUser);
         GroupChallengeParticipant authorParticipant = saveParticipant(group.getId(), challenge.getId(), author);
 
         ChallengeRecord challengeRecord = challengeRecordRepository.save(
                 ChallengeRecord.create(challenge.getId(), authorParticipant.getId(), LocalDate.now())
         );
 
-        ChallengeRecordStatusCount statusCount = ChallengeRecordStatusCount.create(challengeRecord.getId());
-        statusCount.increaseBeforeCommentCount();
-        statusCount.increasePokeCount();
-        statusCount.increasePokeCount();
-        statusCountRepository.save(statusCount);
+        statusCountRepository.saveAndFlush(ChallengeRecordStatusCount.create(challengeRecord.getId()));
+        statusCountRepository.increaseBeforeCommentCount(challengeRecord.getId());
+        statusCountRepository.increasePokeCount(challengeRecord.getId());
+        statusCountRepository.increasePokeCount(challengeRecord.getId());
 
         pokeRepository.save(Poke.create(challengeRecord.getId(), poker1.getId(), author.getId(), LocalDate.now()));
         pokeRepository.save(Poke.create(challengeRecord.getId(), poker2.getId(), author.getId(), LocalDate.now()));
@@ -148,6 +148,7 @@ class FeedDetailServiceTest {
         User currentUser = userRepository.save(User.createNew("나"));
         User author = userRepository.save(User.createNew("민준"));
 
+        saveParticipant(group.getId(), challenge.getId(), currentUser);
         GroupChallengeParticipant authorParticipant = saveParticipant(group.getId(), challenge.getId(), author);
 
         ChallengeRecord challengeRecord = challengeRecordRepository.save(
@@ -179,6 +180,7 @@ class FeedDetailServiceTest {
         User currentUser = userRepository.save(User.createNew("나"));
         User author = userRepository.save(User.createNew("민준"));
 
+        saveParticipant(group.getId(), challenge.getId(), currentUser);
         GroupChallengeParticipant authorParticipant = saveParticipant(group.getId(), challenge.getId(), author);
 
         ChallengeRecord challengeRecord = challengeRecordRepository.save(
@@ -209,6 +211,7 @@ class FeedDetailServiceTest {
         User reactor1 = userRepository.save(User.createNew("Alice"));
         User reactor2 = userRepository.save(User.createNew("Bob"));
 
+        saveParticipant(group.getId(), challenge.getId(), currentUser);
         GroupChallengeParticipant authorParticipant = saveParticipant(group.getId(), challenge.getId(), author);
 
         ActivityRecord activityRecord = activityRecordRepository.save(
@@ -232,11 +235,10 @@ class FeedDetailServiceTest {
         );
         challengeRecordRepository.save(challengeRecord);
 
-        ChallengeRecordStatusCount statusCount = ChallengeRecordStatusCount.create(challengeRecord.getId());
-        statusCount.increaseAfterCommentCount();
-        statusCount.increaseReactionCount();
-        statusCount.increaseReactionCount();
-        statusCountRepository.save(statusCount);
+        statusCountRepository.saveAndFlush(ChallengeRecordStatusCount.create(challengeRecord.getId()));
+        statusCountRepository.increaseAfterCommentCount(challengeRecord.getId());
+        statusCountRepository.increaseReactionCount(challengeRecord.getId());
+        statusCountRepository.increaseReactionCount(challengeRecord.getId());
 
         reactionRepository.save(Reaction.create(challengeRecord.getId(), reactor1.getId(), ReactionBody.CLAP));
         reactionRepository.save(Reaction.create(challengeRecord.getId(), reactor2.getId(), ReactionBody.MUSCLE));
@@ -275,7 +277,7 @@ class FeedDetailServiceTest {
         GroupMember groupMember = groupMemberRepository.save(GroupMember.createMember(user.getId(),groupId));
 
         return participantRepository.save(
-                GroupChallengeParticipant.join(groupChallengeId, groupMember.getId())
+                GroupChallengeParticipant.join(groupMember.getId(), groupChallengeId)
         );
     }
 }

@@ -32,37 +32,35 @@ public class ChallengeRecordStatusCountService {
 
     @Transactional
     public void increaseBeforeCommentCount(Long challengeRecordId) {
-        ChallengeRecordStatusCount statusCount = getStatusCount(challengeRecordId);
-
-        statusCount.increaseBeforeCommentCount();
+        validateUpdated(statusCountRepository.increaseBeforeCommentCount(challengeRecordId));
     }
 
     @Transactional
     public void increaseAfterCommentCount(Long challengeRecordId) {
-        ChallengeRecordStatusCount statusCount = getStatusCount(challengeRecordId);
-
-        statusCount.increaseAfterCommentCount();
+        validateUpdated(statusCountRepository.increaseAfterCommentCount(challengeRecordId));
     }
 
     @Transactional
     public void increaseReactionCount(Long challengeRecordId) {
-        ChallengeRecordStatusCount statusCount = getStatusCount(challengeRecordId);
+        validateUpdated(statusCountRepository.increaseReactionCount(challengeRecordId));
+    }
 
-        statusCount.increaseReactionCount();
+    @Transactional
+    public void decreaseReactionCount(Long challengeRecordId) {
+        validateUpdated(statusCountRepository.decreaseReactionCount(challengeRecordId));
     }
 
     @Transactional
     public void increasePokeCount(Long challengeRecordId) {
-        ChallengeRecordStatusCount statusCount = getStatusCount(challengeRecordId);
-
-        statusCount.increasePokeCount();
+        validateUpdated(statusCountRepository.increasePokeCount(challengeRecordId));
     }
 
-    private ChallengeRecordStatusCount getStatusCount(Long challengeRecordId) {
-        return statusCountRepository.findByChallengeRecordId(challengeRecordId)
-                .orElseThrow(() -> new CustomException(
-                        ChallengeRecordStatusCountErrorCode.CHALLENGE_RECORD_STATUS_COUNT_NOT_FOUND
-                ));
+    private void validateUpdated(int updatedCount) {
+        if (updatedCount == 0) {
+            throw new CustomException(
+                    ChallengeRecordStatusCountErrorCode.CHALLENGE_RECORD_STATUS_COUNT_NOT_FOUND
+            );
+        }
     }
 
 }

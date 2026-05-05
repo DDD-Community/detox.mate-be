@@ -10,6 +10,7 @@ import com.detoxmate.common.exception.feed.FeedErrorCode;
 import com.detoxmate.feed.dto.response.*;
 import com.detoxmate.feed.util.FeedQueryReader;
 import com.detoxmate.group.dto.GroupChallengeParticipantResponse;
+import com.detoxmate.group.service.GroupChallengeParticipantService;
 import com.detoxmate.poke.domain.Poke;
 import com.detoxmate.poke.service.PokeService;
 import com.detoxmate.reaction.domain.Reaction;
@@ -36,9 +37,13 @@ public class FeedDetailService {
     private final PokeService pokeService;
     private final UserService userService;
 
+    private final GroupChallengeParticipantService participantService;
+
     @Transactional(readOnly = true)
     public FeedDetailResponse getFeedDetail(Long challengeRecordId, Long currentUserId) {
         ChallengeRecord challengeRecord = challengeRecordService.get(challengeRecordId);
+
+        validateParticipant(challengeRecord.getGroupChallengeId(), currentUserId);
 
         GroupChallengeParticipantResponse participant = feedQueryReader.getParticipantForFeedDetail(
                 challengeRecord.getGroupChallengeParticipantId()
@@ -224,5 +229,9 @@ public class FeedDetailService {
         return statusCount == null ? 0 : statusCount.getPokeCount();
     }
 
-
+    private void validateParticipant(Long groupChallengeId, Long currentUserId) {
+        if (!participantService.checkGroupChallengeParticipant(groupChallengeId, currentUserId)) {
+            throw new CustomException(FeedErrorCode.FEED_ACCESS_DENIED);
+        }
+    }
 }

@@ -207,12 +207,10 @@ class FeedServiceTest {
                 ChallengeRecord.create(challenge.getId(), targetParticipant.getId(), LocalDate.now())
         );
 
-        ChallengeRecordStatusCount statusCount = ChallengeRecordStatusCount.create(targetRecord.getId());
-        statusCount.increaseBeforeCommentCount();
-        statusCount.increaseBeforeCommentCount();
-        statusCount.increasePokeCount();
-
-        statusCountRepository.save(statusCount);
+        statusCountRepository.saveAndFlush(ChallengeRecordStatusCount.create(targetRecord.getId()));
+        statusCountRepository.increaseBeforeCommentCount(targetRecord.getId());
+        statusCountRepository.increaseBeforeCommentCount(targetRecord.getId());
+        statusCountRepository.increasePokeCount(targetRecord.getId());
 
         // when
         HomeFeedResponse response = feedService.getHomeFeed(challenge.getId(), currentUser.getId());
