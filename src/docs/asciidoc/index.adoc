@@ -34,6 +34,10 @@ operation::dev-auth/test-login-unsupported-key[snippets='http-request,request-fi
 operation::users/me-get[snippets='http-request,request-headers,http-response,response-fields']
 operation::users/me-get-unauthorized[snippets='http-request,request-headers,http-response,response-fields']
 
+=== Update My Profile
+
+operation::users/me-patch[snippets='http-request,request-headers,request-fields,http-response,response-fields']
+
 === Withdraw My Account
 
 operation::users/me-delete[snippets='http-request,request-headers,http-response']
@@ -56,6 +60,21 @@ operation::me/groups-get[snippets='http-request,http-response,response-fields']
 === Get Group Detail
 
 operation::groups/get-by-id[snippets='http-request,path-parameters,http-response,response-fields']
+
+=== Update Group
+
+operation::groups/patch[snippets='http-request,request-headers,path-parameters,request-fields,http-response,response-fields']
+
+=== Leave Group
+
+operation::groups/members/me-delete[snippets='http-request,request-headers,path-parameters,http-response']
+
+== Group Member API
+
+=== Get Group Member Profile
+
+operation::groups/members/get-by-id[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+operation::groups/members/get-by-id-forbidden[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
 
 == Group Challenge API
 

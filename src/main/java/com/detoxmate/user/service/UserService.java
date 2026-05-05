@@ -4,6 +4,7 @@ import com.detoxmate.auth.JwtTokenProvider;
 import com.detoxmate.auth.service.RefreshTokenSessionService;
 import com.detoxmate.user.dto.MyProfileResponse;
 import com.detoxmate.user.domain.User;
+import com.detoxmate.user.dto.UpdateMyProfileRequest;
 import com.detoxmate.user.repository.SocialLoginUserRepository;
 import com.detoxmate.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,14 @@ public class UserService {
         User user = getUser(userId);
 
         return toMyProfileResponse(user);
+    }
+
+    public MyProfileResponse updateMe(Long userId, UpdateMyProfileRequest request) {
+        throw new UnsupportedOperationException("아직 미구현 - API 문서화 단계");
+    }
+
+    public void withdrawMe(Long userId) {
+        throw new UnsupportedOperationException("아직 미구현 - API 문서화 단계");
     }
 
     @Transactional
