@@ -18,6 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -106,8 +107,9 @@ public class GroupService {
         throw new UnsupportedOperationException("아직 미구현 - API 문서화 단계");
     }
 
+    @Transactional
     public void withdrawGroup(Long groupId, Long userId) {
-        throw new UnsupportedOperationException("아직 미구현 - API 문서화 단계");
+        leaveActiveMemberFromLatestChallenge(groupId, userId);
     }
 
     @Transactional
@@ -126,17 +128,29 @@ public class GroupService {
 
     @Transactional
     public void leaveGroup(Long groupId, Long userId) {
-        lockUserForGroupOperation(userId);
+        leaveActiveMemberFromLatestChallenge(groupId, userId);
+    }
 
-        groupRepository.findById(groupId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "그룹을 찾을 수 없습니다."));
+    private void leaveActiveMemberFromLatestChallenge(Long groupId, Long userId) {
+        lockUserForGroupOperation(userId);
+        lockGroupForWithdrawal(groupId);
 
         GroupMember groupMember = groupMemberService.findActiveGroupMember(userId, groupId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "내가 속한 그룹만 탈퇴할 수 있습니다."));
         GroupChallenge latestChallenge = groupChallengeService.getLatestChallenge(groupId);
+        Optional<GroupMember> remainingActiveMember =
+                groupMemberService.findLatestActiveMemberExcept(groupMember.getGroupId(), groupMember.getId());
+
+        if (groupMember.isOwner()) {
+            remainingActiveMember.ifPresent(groupMemberService::promoteToOwner);
+        }
 
         groupMemberService.leaveGroupMember(groupMember);
         groupChallengeParticipantService.withdrawGroupChallengeParticipant(latestChallenge.getId(), groupMember.getId());
+
+        if (remainingActiveMember.isEmpty()) {
+            groupChallengeService.cancelGroupChallenge(latestChallenge);
+        }
     }
 
     private GroupResponse toGroupResponse(
@@ -174,6 +188,11 @@ public class GroupService {
     private void lockUserForGroupOperation(Long userId) {
         userRepository.findByIdForUpdate(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
+    }
+
+    private void lockGroupForWithdrawal(Long groupId) {
+        groupRepository.findByIdForUpdate(groupId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "그룹을 찾을 수 없습니다."));
     }
 
     private Group saveGroupWithUniqueInviteCode(String groupName) {

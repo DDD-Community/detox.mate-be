@@ -75,4 +75,12 @@ public class GroupMember {
         status = GroupMemberStatus.LEFT.name();
         leftAt = LocalDateTime.now();
     }
+
+    public boolean isOwner() {
+        return GroupMemberRole.OWNER.name().equals(role);
+    }
+
+    public void promoteToOwner() {
+        role = GroupMemberRole.OWNER.name();
+    }
 }

@@ -29,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -311,17 +312,19 @@ public class GroupServiceTest {
 
     @Test
     void 그룹을_탈퇴하면_멤버를_LEFT로_변경하고_최신_챌린지_참가자를_WITHDRAWN으로_변경한다() {
-        GroupMember groupMember = ownerGroupMember();
+        GroupMember groupMember = joinedMember();
         GroupChallengeParticipant participant = joinedParticipant(groupMember.getId(), RECRUITING_CHALLENGE_ID);
-        when(groupRepository.findById(GROUP_ID)).thenReturn(Optional.of(recruitingGroup()));
-        when(groupMemberRepository.findByUserIdAndGroupIdAndStatus(OWNER_USER_ID, GROUP_ID, "ACTIVE"))
+        when(groupRepository.findByIdForUpdate(GROUP_ID)).thenReturn(Optional.of(recruitingGroup()));
+        when(groupMemberRepository.findByUserIdAndGroupIdAndStatus(MEMBER_USER_ID, GROUP_ID, "ACTIVE"))
                 .thenReturn(Optional.of(groupMember));
         when(groupChallengeRepository.findTopByGroupIdOrderByChallengeNoDesc(GROUP_ID))
                 .thenReturn(Optional.of(recruitingChallenge()));
+        when(groupMemberRepository.findFirstByGroupIdAndStatusAndIdNotOrderByJoinedAtDescIdDesc(GROUP_ID, "ACTIVE", groupMember.getId()))
+                .thenReturn(Optional.of(ownerGroupMember()));
         when(groupChallengeParticipantRepository.findByGroupChallengeIdAndGroupMemberId(RECRUITING_CHALLENGE_ID, groupMember.getId()))
                 .thenReturn(Optional.of(participant));
 
-        groupService.leaveGroup(GROUP_ID, OWNER_USER_ID);
+        groupService.withdrawGroup(GROUP_ID, MEMBER_USER_ID);
 
         assertThat(groupMember.getStatus()).isEqualTo("LEFT");
         assertThat(groupMember.getLeftAt()).isNotNull();
@@ -330,14 +333,71 @@ public class GroupServiceTest {
     }
 
     @Test
+    void 방장이_탈퇴하면_가장_최근에_가입한_ACTIVE_멤버에게_OWNER를_위임한다() {
+        GroupMember owner = ownerGroupMember();
+        GroupMember latestMember = joinedMember();
+        GroupChallengeParticipant participant = joinedParticipant(owner.getId(), RECRUITING_CHALLENGE_ID);
+        when(groupRepository.findByIdForUpdate(GROUP_ID)).thenReturn(Optional.of(recruitingGroup()));
+        when(groupMemberRepository.findByUserIdAndGroupIdAndStatus(OWNER_USER_ID, GROUP_ID, "ACTIVE"))
+                .thenReturn(Optional.of(owner));
+        when(groupChallengeRepository.findTopByGroupIdOrderByChallengeNoDesc(GROUP_ID))
+                .thenReturn(Optional.of(recruitingChallenge()));
+        when(groupMemberRepository.findFirstByGroupIdAndStatusAndIdNotOrderByJoinedAtDescIdDesc(GROUP_ID, "ACTIVE", owner.getId()))
+                .thenReturn(Optional.of(latestMember));
+        when(groupChallengeParticipantRepository.findByGroupChallengeIdAndGroupMemberId(RECRUITING_CHALLENGE_ID, owner.getId()))
+                .thenReturn(Optional.of(participant));
+
+        groupService.withdrawGroup(GROUP_ID, OWNER_USER_ID);
+
+        assertThat(owner.getStatus()).isEqualTo("LEFT");
+        assertThat(latestMember.getRole()).isEqualTo("OWNER");
+        assertThat(participant.getStatus()).isEqualTo(GroupChallengeParticipantStatus.WITHDRAWN.name());
+    }
+
+    @Test
+    void 방장이_마지막_멤버로_탈퇴하면_그룹과_챌린지는_삭제하지_않고_최신_챌린지를_취소한다() {
+        GroupMember owner = ownerGroupMember();
+        GroupChallenge latestChallenge = recruitingChallenge();
+        GroupChallengeParticipant participant = joinedParticipant(owner.getId(), RECRUITING_CHALLENGE_ID);
+        when(groupRepository.findByIdForUpdate(GROUP_ID)).thenReturn(Optional.of(recruitingGroup()));
+        when(groupMemberRepository.findByUserIdAndGroupIdAndStatus(OWNER_USER_ID, GROUP_ID, "ACTIVE"))
+                .thenReturn(Optional.of(owner));
+        when(groupChallengeRepository.findTopByGroupIdOrderByChallengeNoDesc(GROUP_ID))
+                .thenReturn(Optional.of(latestChallenge));
+        when(groupMemberRepository.findFirstByGroupIdAndStatusAndIdNotOrderByJoinedAtDescIdDesc(GROUP_ID, "ACTIVE", owner.getId()))
+                .thenReturn(Optional.empty());
+        when(groupChallengeParticipantRepository.findByGroupChallengeIdAndGroupMemberId(RECRUITING_CHALLENGE_ID, owner.getId()))
+                .thenReturn(Optional.of(participant));
+
+        groupService.withdrawGroup(GROUP_ID, OWNER_USER_ID);
+
+        assertThat(owner.getStatus()).isEqualTo("LEFT");
+        assertThat(participant.getStatus()).isEqualTo(GroupChallengeParticipantStatus.WITHDRAWN.name());
+        assertThat(latestChallenge.getStatus()).isEqualTo(GroupChallengeStatus.CANCELED);
+        assertThat(latestChallenge.getEndAt()).isNotNull();
+        verify(groupRepository, never()).delete(any(Group.class));
+        verify(groupChallengeRepository, never()).deleteAllByGroupId(GROUP_ID);
+        verify(groupMemberRepository, never()).deleteAllByGroupId(GROUP_ID);
+    }
+
+    @Test
     void 내가_속하지_않은_그룹은_탈퇴할_수_없다() {
-        when(groupRepository.findById(GROUP_ID)).thenReturn(Optional.of(recruitingGroup()));
+        when(groupRepository.findByIdForUpdate(GROUP_ID)).thenReturn(Optional.of(recruitingGroup()));
         when(groupMemberRepository.findByUserIdAndGroupIdAndStatus(OWNER_USER_ID, GROUP_ID, "ACTIVE"))
                 .thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> groupService.leaveGroup(GROUP_ID, OWNER_USER_ID))
+        assertThatThrownBy(() -> groupService.withdrawGroup(GROUP_ID, OWNER_USER_ID))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("403 FORBIDDEN");
+    }
+
+    @Test
+    void 존재하지_않는_그룹은_탈퇴할_수_없다() {
+        when(groupRepository.findByIdForUpdate(GROUP_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> groupService.withdrawGroup(GROUP_ID, OWNER_USER_ID))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("404 NOT_FOUND");
     }
 
     private Group recruitingGroup() {

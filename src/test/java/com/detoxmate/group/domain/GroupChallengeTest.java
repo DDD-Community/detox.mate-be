@@ -24,4 +24,14 @@ public class GroupChallengeTest {
 
         assertThat(challenge.getStatus()).isEqualTo(GroupChallengeStatus.RECRUITING);
     }
+
+    @Test
+    void 챌린지를_취소하면_CANCELED_상태와_endAt이_설정된다() {
+        GroupChallenge challenge = GroupChallenge.createFirst(10L);
+
+        challenge.cancel();
+
+        assertThat(challenge.getStatus()).isEqualTo(GroupChallengeStatus.CANCELED);
+        assertThat(challenge.getEndAt()).isNotNull();
+    }
 }
