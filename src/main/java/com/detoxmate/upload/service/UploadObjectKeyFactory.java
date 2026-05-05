@@ -32,7 +32,7 @@ class UploadObjectKeyFactory {
     }
 
     private String profileImageKey(Long userId, String sanitizedFileName, String uuid) {
-        return UploadObjectKeyPath.userPrefix(userId, UploadPurpose.PROFILE_IMAGE) + uuid + "-" + sanitizedFileName;
+        return UploadObjectKeyPath.objectKeyPrefixForUser(userId, UploadPurpose.PROFILE_IMAGE) + uuid + "-" + sanitizedFileName;
     }
 
     private String sanitize(String fileName) {

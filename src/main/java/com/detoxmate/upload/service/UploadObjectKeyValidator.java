@@ -11,6 +11,6 @@ public class UploadObjectKeyValidator {
             return false;
         }
 
-        return objectKey.startsWith(UploadObjectKeyPath.userPrefix(userId, uploadPurpose));
+        return objectKey.startsWith(UploadObjectKeyPath.objectKeyPrefixForUser(userId, uploadPurpose));
     }
 }

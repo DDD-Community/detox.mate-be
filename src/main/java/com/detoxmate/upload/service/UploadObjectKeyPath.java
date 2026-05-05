@@ -12,7 +12,7 @@ final class UploadObjectKeyPath {
     private UploadObjectKeyPath() {
     }
 
-    static String userPrefix(Long userId, UploadPurpose uploadPurpose) {
+    static String objectKeyPrefixForUser(Long userId, UploadPurpose uploadPurpose) {
         return switch (uploadPurpose) {
             case ACTIVITY_RECORD_IMAGE -> ACTIVITY_RECORD_IMAGE_DIRECTORY + "/" + userId + "/";
             case PROFILE_IMAGE -> PROFILE_IMAGE_DIRECTORY + "/" + userId + "/";
@@ -20,7 +20,7 @@ final class UploadObjectKeyPath {
     }
 
     static String activityRecordImageDirectory(Long userId, LocalDate date) {
-        return userPrefix(userId, UploadPurpose.ACTIVITY_RECORD_IMAGE)
+        return objectKeyPrefixForUser(userId, UploadPurpose.ACTIVITY_RECORD_IMAGE)
                 + date.getYear() + "/"
                 + String.format("%02d", date.getMonthValue()) + "/";
     }
