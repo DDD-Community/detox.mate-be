@@ -19,17 +19,22 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class FeedService {
 
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+
     private final FeedQueryReader feedQueryReader;
     private final ChallengeRecordService challengeRecordService;
     private final GroupChallengeParticipantService participantService;
     private final PokeService pokeService;
+    private final Clock clock;
 
     @Transactional
     public HomeFeedResponse getHomeFeed(Long groupChallengeId, Long currentUserId) {
@@ -37,7 +42,7 @@ public class FeedService {
 
         GroupChallengeFeedSource source = feedQueryReader.getHomeFeedSource(groupChallengeId);
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(clock.withZone(KST));
 
         List<HomeFeedMemberCard> members = source.participants().stream()
                 .map(participant -> {
