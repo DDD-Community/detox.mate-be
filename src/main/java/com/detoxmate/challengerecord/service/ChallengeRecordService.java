@@ -7,6 +7,7 @@ import com.detoxmate.challengerecordstatuscount.service.ChallengeRecordStatusCou
 import com.detoxmate.common.exception.CustomException;
 import com.detoxmate.common.exception.challengerecord.ChallengeRecordErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,13 +33,27 @@ public class ChallengeRecordService {
     public ChallengeRecord create(Long groupChallengeId, Long groupChallengeParticipantId, LocalDate recordDate) {
         ChallengeRecord challengeRecord = challengeRecordRepository
                 .findByParticipantDate(groupChallengeId, groupChallengeParticipantId, recordDate)
-                .orElseGet(() -> challengeRecordRepository.save(
-                        ChallengeRecord.create(groupChallengeId, groupChallengeParticipantId, recordDate)
-                ));
+                .orElseGet(() -> createOrFindExisting(groupChallengeId, groupChallengeParticipantId, recordDate));
 
         statusCountService.getOrCreate(challengeRecord.getId());
 
         return challengeRecord;
+    }
+
+    private ChallengeRecord createOrFindExisting(
+            Long groupChallengeId,
+            Long groupChallengeParticipantId,
+            LocalDate recordDate
+    ) {
+        try {
+            return challengeRecordRepository.saveAndFlush(
+                    ChallengeRecord.create(groupChallengeId, groupChallengeParticipantId, recordDate)
+            );
+        } catch (DataIntegrityViolationException exception) {
+            return challengeRecordRepository
+                    .findByParticipantDate(groupChallengeId, groupChallengeParticipantId, recordDate)
+                    .orElseThrow(() -> exception);
+        }
     }
 
     @Transactional

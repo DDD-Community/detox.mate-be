@@ -13,7 +13,13 @@ import java.util.Objects;
 
 @Entity
 @Getter
-@Table(name = "challenge_record")
+@Table(
+        name = "challenge_record",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_challenge_record_participant_date",
+                columnNames = {"group_challenge_id", "group_challenge_participant_id", "record_date"}
+        )
+)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ChallengeRecord {
 
