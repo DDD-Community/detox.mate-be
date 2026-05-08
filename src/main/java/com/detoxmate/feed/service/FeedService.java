@@ -4,6 +4,7 @@ import com.detoxmate.activityrecord.domain.ActivityRecord;
 import com.detoxmate.challengerecord.domain.ChallengeRecord;
 import com.detoxmate.challengerecord.service.ChallengeRecordService;
 import com.detoxmate.challengerecordstatuscount.domain.ChallengeRecordStatusCount;
+import com.detoxmate.common.MemberActivityOrder;
 import com.detoxmate.common.exception.CustomException;
 import com.detoxmate.common.exception.feed.FeedErrorCode;
 import com.detoxmate.feed.dto.response.HomeFeedChallengeInfo;
@@ -48,7 +49,10 @@ public class FeedService {
 
                     return toMemberCard(participant, challengeRecord, currentUserId);
                 })
-                .sorted(this::compareMemberCard)
+                .sorted(MemberActivityOrder.latestCertifiedThenDisplayName(
+                        HomeFeedMemberCard::verifiedAt,
+                        HomeFeedMemberCard::displayName
+                ))
                 .toList();
 
         return new HomeFeedResponse(
@@ -103,21 +107,6 @@ public class FeedService {
                 pokeCount(statusCount),
                 poked
         );
-    }
-
-    private int compareMemberCard(HomeFeedMemberCard first, HomeFeedMemberCard second) {
-        boolean firstVerified = first.activityRecordId() != null;
-        boolean secondVerified = second.activityRecordId() != null;
-
-        if (firstVerified != secondVerified) {
-            return firstVerified ? -1 : 1;
-        }
-
-        if (firstVerified) {
-            return second.verifiedAt().compareTo(first.verifiedAt());
-        }
-
-        return first.displayName().compareTo(second.displayName());
     }
 
     private int totalUsedMinutes(ActivityRecord activityRecord) {
