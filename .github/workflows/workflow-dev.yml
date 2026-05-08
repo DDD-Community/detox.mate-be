@@ -117,8 +117,13 @@ jobs:
             ${{ env.APP_NAME }}:latest
 
       - name: Remove .env file
+        if: always()
         run: rm -f deploy/.env
 
-      - name: Cleanup unused images
+      - name: Cleanup runner and docker cache
+        if: always()
         run: |
-          docker image prune -f
+          rm -rf deploy || true
+          docker image prune -af || true
+          docker builder prune -af || true
+          rm -rf /home/ec2-user/actions-runner/_work/_temp/* || true
