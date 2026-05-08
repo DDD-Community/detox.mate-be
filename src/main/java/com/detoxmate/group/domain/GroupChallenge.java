@@ -12,7 +12,9 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
@@ -35,6 +37,7 @@ public class GroupChallenge {
 
     @Column(name = "status", nullable = false, length = 20)
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private GroupChallengeStatus status;
 
     @Column(name = "start_at")
@@ -59,6 +62,15 @@ public class GroupChallenge {
 
     public static GroupChallenge createFirst(Long groupId) {
         return new GroupChallenge(groupId, 1, GroupChallengeStatus.RECRUITING);
+    }
+
+    public void activate(LocalDateTime startAt) {
+        if (status != GroupChallengeStatus.RECRUITING) {
+            return;
+        }
+
+        status = GroupChallengeStatus.ACTIVE;
+        this.startAt = startAt;
     }
 
     public void cancel() {
