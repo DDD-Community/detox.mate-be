@@ -105,6 +105,25 @@ class GroupActivityVerificationPolicyTest {
     }
 
     @Test
+    @DisplayName("활동중 멤버가 1명이어도 유효한 목표가 있으면 첫 인증 시작일을 산정한다")
+    void firstVerificationDate_startsWithSingleActiveMember() {
+        List<GroupActivityParticipant> participants = List.of(
+                participant(1L, 1L, LocalDate.of(2026, 4, 10), null)
+        );
+        List<MemberDailyGoal> goals = List.of(
+                goal(1L, LocalDate.of(2026, 4, 12))
+        );
+
+        LocalDate firstVerificationDate = policy.firstVerificationDate(
+                participants,
+                goals,
+                LocalDate.of(2026, 4, 20)
+        );
+
+        assertThat(firstVerificationDate).isEqualTo(LocalDate.of(2026, 4, 13));
+    }
+
+    @Test
     @DisplayName("탈퇴한 멤버는 탈퇴 당일부터 활동중 멤버에서 제외된다")
     void verifyConfirmedDate_excludesMemberFromLeftDate() {
         LocalDate date = LocalDate.of(2026, 4, 13);

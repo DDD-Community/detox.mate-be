@@ -13,8 +13,6 @@ import java.util.Set;
 @Component
 public class GroupActivityVerificationPolicy {
 
-    private static final int MIN_GROUP_MEMBERS_TO_START = 2;
-
     public LocalDate firstVerificationDate(
             List<GroupActivityParticipant> participants,
             List<MemberDailyGoal> goals,
@@ -28,8 +26,7 @@ public class GroupActivityVerificationPolicy {
         LocalDate lastCandidate = lastCandidateDate(goals, today);
 
         for (LocalDate date = firstCandidate; !date.isAfter(lastCandidate); date = date.plusDays(1)) {
-            if (presentMemberCount(participants, date) >= MIN_GROUP_MEMBERS_TO_START
-                    && activeMembers(participants, goals, date) > 0) {
+            if (activeMembers(participants, goals, date) > 0) {
                 return date;
             }
         }
@@ -164,12 +161,6 @@ public class GroupActivityVerificationPolicy {
 
     private int activeMembers(List<GroupActivityParticipant> participants, List<MemberDailyGoal> goals, LocalDate date) {
         return activeParticipants(participants, goals, date).size();
-    }
-
-    private int presentMemberCount(List<GroupActivityParticipant> participants, LocalDate date) {
-        return (int) participants.stream()
-                .filter(participant -> participant.presentForWholeDay(date))
-                .count();
     }
 
     private GroupDailyVerificationResult result(int activeMemberCount, int certifiedMemberCount, int requiredCount) {
