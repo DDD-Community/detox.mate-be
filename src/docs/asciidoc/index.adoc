@@ -27,6 +27,12 @@ operation::dev-auth/test-login[snippets='http-request,request-fields,http-respon
 operation::dev-auth/test-login-invalid-request[snippets='http-request,request-fields,http-response,response-fields']
 operation::dev-auth/test-login-unsupported-key[snippets='http-request,request-fields,http-response,response-fields']
 
+== Dev Fixture API
+
+=== Seed Activity Calendar Rich Fixture
+
+operation::dev-fixtures/activity-calendar-rich[snippets='http-request,http-response,response-fields']
+
 == User API
 
 === Get My Profile
@@ -75,6 +81,16 @@ operation::groups/members/me-delete[snippets='http-request,request-headers,path-
 
 operation::groups/members/get-by-id[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
 operation::groups/members/get-by-id-forbidden[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+
+== Group Activity Calendar API
+
+=== Get Group Activity Calendar Summary
+
+operation::groups/activity-calendar/get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+
+=== Get Group Activity Calendar Daily History
+
+operation::groups/activity-calendar/history-get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
 
 == Group Challenge API
 
