@@ -12,6 +12,7 @@ public record GroupChallengeParticipantResponse(
         String status,
         LocalDateTime joinedAt,
         LocalDateTime withdrawnAt,
-        List<GoalTimeResponse> goalTimes
+        List<GoalTimeResponse> goalTimes,
+        boolean isWithdrawn
 ) {
 }

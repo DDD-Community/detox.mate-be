@@ -161,7 +161,8 @@ public class GroupChallengeService {
                 participantRow.status(),
                 participantRow.joinedAt(),
                 participantRow.withdrawnAt(),
-                List.of()
+                List.of(),
+                participantRow.isWithdrawn()
         );
     }
 

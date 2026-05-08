@@ -19,6 +19,7 @@ public record HomeFeedMemberCard(
         Integer reactionCount,
         Integer commentCount,
         Integer pokeCount,
-        Boolean isPoked
+        Boolean isPoked,
+        boolean isWithdrawn
 ) {
 }

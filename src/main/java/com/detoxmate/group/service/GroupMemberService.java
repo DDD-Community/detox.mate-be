@@ -73,7 +73,8 @@ public class GroupMemberService {
                 row.role(),
                 row.status(),
                 row.joinedAt(),
-                row.leftAt()
+                row.leftAt(),
+                row.isWithdrawn()
         );
     }
 

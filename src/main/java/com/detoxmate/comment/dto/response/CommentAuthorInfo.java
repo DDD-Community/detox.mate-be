@@ -6,6 +6,7 @@ package com.detoxmate.comment.dto.response;
 public record CommentAuthorInfo(
         Long userId,
         String displayName,
-        String profileImageUrl
+        String profileImageUrl,
+        boolean isWithdrawn
 ) {
 }

@@ -2,6 +2,8 @@ package com.detoxmate.user.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -19,6 +21,8 @@ import java.time.LocalDateTime;
 @Table(name = "users")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User {
+
+    public static final String WITHDRAWN_DISPLAY_NAME = "탈퇴한 사용자";
 
     @Id
     @Column(name = "user_id")
@@ -39,9 +43,17 @@ public class User {
     @Column(name = "profile_image_object_key", length = 1024)
     private String profileImageObjectKey;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", length = 20)
+    private UserStatus status;
+
+    @Column(name = "withdrawn_at")
+    private LocalDateTime withdrawnAt;
+
     private User(String displayName, String profileImageObjectKey) {
         this.displayName = displayName;
         this.profileImageObjectKey = profileImageObjectKey;
+        this.status = UserStatus.ACTIVE;
     }
 
     public static User createNew(String displayName) {
@@ -58,5 +70,40 @@ public class User {
 
     public void changeProfileImageObjectKey(String profileImageObjectKey) {
         this.profileImageObjectKey = profileImageObjectKey;
+    }
+
+    public boolean isActive() {
+        return status == null || status == UserStatus.ACTIVE;
+    }
+
+    public boolean isWithdrawn() {
+        return status == UserStatus.WITHDRAWN;
+    }
+
+    public String getPublicDisplayName() {
+        if (isWithdrawn()) {
+            return WITHDRAWN_DISPLAY_NAME;
+        }
+
+        return displayName;
+    }
+
+    public String getPublicProfileImageObjectKey() {
+        if (isWithdrawn()) {
+            return null;
+        }
+
+        return profileImageObjectKey;
+    }
+
+    public void withdraw() {
+        if (isWithdrawn()) {
+            return;
+        }
+
+        status = UserStatus.WITHDRAWN;
+        withdrawnAt = LocalDateTime.now();
+        displayName = WITHDRAWN_DISPLAY_NAME;
+        profileImageObjectKey = null;
     }
 }

@@ -34,6 +34,7 @@ public class HomeFeedMockData {
                                 4,
                                 2,
                                 0,
+                                false,
                                 false
                         ),
                         new HomeFeedMemberCard(
@@ -52,7 +53,8 @@ public class HomeFeedMockData {
                                 0,
                                 1,
                                 3,
-                                true
+                                true,
+                                false
                         )
                 )
         );

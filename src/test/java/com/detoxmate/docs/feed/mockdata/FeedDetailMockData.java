@@ -18,7 +18,8 @@ public class FeedDetailMockData {
                 new FeedDetailAuthorInfo(
                         10L,
                         "민준",
-                        "https://example.com/profiles/minjun.png"
+                        "https://example.com/profiles/minjun.png",
+                        false
                 ),
                 LocalDateTime.of(2026, 5, 3, 13, 0),
                 "activity/image-1000.png",
@@ -36,13 +37,15 @@ public class FeedDetailMockData {
                                         "CLAP",
                                         20L,
                                         "Alice",
-                                        "https://example.com/profiles/alice.png"
+                                        "https://example.com/profiles/alice.png",
+                                        false
                                 ),
                                 new FeedDetailReactionItem(
                                         "MUSCLE",
                                         21L,
                                         "Bob",
-                                        "https://example.com/profiles/bob.png"
+                                        "https://example.com/profiles/bob.png",
+                                        false
                                 )
                         )
                 ),

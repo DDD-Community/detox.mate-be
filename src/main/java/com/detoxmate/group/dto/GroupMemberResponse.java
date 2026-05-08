@@ -10,6 +10,7 @@ public record GroupMemberResponse(
         String role,
         String status,
         LocalDateTime joinedAt,
-        LocalDateTime leftAt
+        LocalDateTime leftAt,
+        boolean isWithdrawn
 ) {
 }

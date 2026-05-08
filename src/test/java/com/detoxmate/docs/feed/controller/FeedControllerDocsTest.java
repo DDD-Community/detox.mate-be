@@ -176,7 +176,8 @@ public class FeedControllerDocsTest {
                 fieldWithPath("members[].reactionCount").type(NUMBER).description("리액션 수"),
                 fieldWithPath("members[].commentCount").type(NUMBER).description("댓글 수"),
                 fieldWithPath("members[].pokeCount").type(NUMBER).description("받은 콕 수"),
-                fieldWithPath("members[].isPoked").type(BOOLEAN).description("내가 콕 찔렀는지 여부")
+                fieldWithPath("members[].isPoked").type(BOOLEAN).description("내가 콕 찔렀는지 여부"),
+                fieldWithPath("members[].isWithdrawn").type(BOOLEAN).description("탈퇴한 사용자인지 여부")
         };
     }
 
@@ -191,6 +192,7 @@ public class FeedControllerDocsTest {
                 fieldWithPath("author.userId").type(NUMBER).description("작성자 유저 ID"),
                 fieldWithPath("author.displayName").type(STRING).description("작성자 닉네임"),
                 fieldWithPath("author.profileImageUrl").type(STRING).description("저장된 작성자 프로필 이미지 object key를 읽기 URL로 변환한 값"),
+                fieldWithPath("author.isWithdrawn").type(BOOLEAN).description("작성자가 탈퇴한 사용자인지 여부"),
                 fieldWithPath("activityCreatedAt").type(STRING).description("인증 생성 시각. 인증 전이면 null"),
                 fieldWithPath("activityImageUrl").type(STRING).description("활동 사진 object key 또는 URL. 인증 전이면 null"),
                 fieldWithPath("oneLineReview").type(STRING).description("한줄평. 인증 전이면 null"),
@@ -205,6 +207,7 @@ public class FeedControllerDocsTest {
                 fieldWithPath("reactions.summary[].userId").type(NUMBER).description("리액션 작성자 유저 ID"),
                 fieldWithPath("reactions.summary[].displayName").type(STRING).description("리액션 작성자 닉네임"),
                 fieldWithPath("reactions.summary[].profileImageUrl").type(STRING).description("저장된 리액션 작성자 프로필 이미지 object key를 읽기 URL로 변환한 값"),
+                fieldWithPath("reactions.summary[].isWithdrawn").type(BOOLEAN).description("리액션 작성자가 탈퇴한 사용자인지 여부"),
                 fieldWithPath("commentCount").type(NUMBER).description("현재 상세 상태에 해당하는 댓글 수"),
                 fieldWithPath("pokeCount").type(NUMBER).description("받은 콕 수"),
                 fieldWithPath("pokeable").type(BOOLEAN).description("현재 사용자가 콕 찌를 수 있는지 여부"),

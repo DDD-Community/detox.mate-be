@@ -5,6 +5,7 @@ public record FeedDetailReactionItem(
         String reactionBody,
         Long userId,
         String displayName,
-        String profileImageUrl
+        String profileImageUrl,
+        boolean isWithdrawn
 ) {
 }

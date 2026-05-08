@@ -13,7 +13,7 @@ import com.detoxmate.comment.dto.response.CommentResponse;
 import com.detoxmate.comment.repository.CommentRepository;
 import com.detoxmate.common.exception.CustomException;
 import com.detoxmate.common.exception.challengerecord.ChallengeRecordErrorCode;
-import com.detoxmate.user.dto.MyProfileResponse;
+import com.detoxmate.user.dto.UserProfileSummary;
 import com.detoxmate.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -52,7 +52,7 @@ public class CommentService {
 
         long totalCount = commentRepository.countByChallengeRecord(challengeRecordId, commentStatus);
 
-        Map<Long, MyProfileResponse> profiles = findProfiles(page);
+        Map<Long, UserProfileSummary> profiles = findProfiles(page);
 
         List<CommentItem> items = page.stream()
                 .map(comment -> toCommentItem(comment, profiles.get(comment.getUserId())))
@@ -134,20 +134,20 @@ public class CommentService {
         return String.valueOf(page.get(page.size() - 1).getId());
     }
 
-    private Map<Long, MyProfileResponse> findProfiles(List<Comment> comments) {
+    private Map<Long, UserProfileSummary> findProfiles(List<Comment> comments) {
         Set<Long> authorIds = comments.stream()
                 .map(Comment::getUserId)
                 .collect(Collectors.toSet());
 
-        return userService.getProfilesByIds(authorIds);
+        return userService.getProfileSummariesByIds(authorIds);
     }
 
-    private CommentAuthorInfo toAuthorInfo(Comment comment, MyProfileResponse profile) {
+    private CommentAuthorInfo toAuthorInfo(Comment comment, UserProfileSummary profile) {
         if (profile != null) {
-            return new CommentAuthorInfo(profile.id(), profile.displayName(), profile.profileImageUrl());
+            return new CommentAuthorInfo(profile.id(), profile.displayName(), profile.profileImageUrl(), profile.isWithdrawn());
         }
 
-        return new CommentAuthorInfo(comment.getUserId(), null, null);
+        return new CommentAuthorInfo(comment.getUserId(), null, null, false);
     }
 
     private CommentResponse toCommentResponse(Comment comment) {
@@ -160,7 +160,7 @@ public class CommentService {
         );
     }
 
-    private CommentItem toCommentItem(Comment comment, MyProfileResponse profile) {
+    private CommentItem toCommentItem(Comment comment, UserProfileSummary profile) {
         CommentAuthorInfo author = toAuthorInfo(comment, profile);
 
         return new CommentItem(

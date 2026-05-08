@@ -35,7 +35,8 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
                 gm.role,
                 gm.status,
                 gm.joinedAt,
-                gm.leftAt
+                gm.leftAt,
+                CASE WHEN u.status = com.detoxmate.user.domain.UserStatus.WITHDRAWN THEN true ELSE false END
             )
             FROM GroupMember gm
             LEFT JOIN User u ON gm.userId = u.id
