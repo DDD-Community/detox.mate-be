@@ -2,6 +2,7 @@ package com.detoxmate.docs.feed.controller;
 
 
 import com.detoxmate.auth.CurrentUserResolver;
+import com.detoxmate.docs.feed.mockdata.FeedDetailMockData;
 import com.detoxmate.docs.feed.mockdata.HomeFeedMockData;
 import com.detoxmate.feed.controller.FeedController;
 import com.detoxmate.feed.service.FeedService;
@@ -226,6 +227,36 @@ public class FeedControllerDocsTest {
                         )));
     }
 
+    @Test
+    void 피드_상세_조회_Deprecated() throws Exception {
+        given(feedService.getFeedDetail(eq(1000L), eq(1L)))
+                .willReturn(FeedDetailMockData.createFeedDetailResponse());
+
+        HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
+        ParameterDescriptor[] pathParameterDescriptors = legacyFeedDetailPathParameters();
+        FieldDescriptor[] responseFieldDescriptors = legacyFeedDetailResponseFields();
+
+        mockMvc.perform(get("/challenge-records/{challengeRecordId}", 1000L)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+                .andExpect(status().isOk())
+                .andDo(document("challenge-records/feed-detail-get-deprecated",
+                        preprocessRequest(prettyPrint()),
+                        preprocessResponse(prettyPrint()),
+                        requestHeaders(requestHeaderDescriptors),
+                        pathParameters(pathParameterDescriptors),
+                        responseFields(responseFieldDescriptors),
+                        resource(builder()
+                                .tag("Feed")
+                                .summary("[Deprecated] 피드 상세 조회")
+                                .description("[Deprecated] 기존 호환용 API다. 신규 클라이언트는 GET /group-challenges/{groupChallengeId}/challenge-records/{challengeRecordId}를 사용한다.")
+                                .requestHeaders(requestHeaderDescriptors)
+                                .pathParameters(pathParameterDescriptors)
+                                .responseSchema(schema("FeedDetailResponse"))
+                                .responseFields(responseFieldDescriptors)
+                                .build()
+                        )));
+    }
+
     private HeaderDescriptor[] authorizationHeaderDescriptors() {
         return new HeaderDescriptor[] {
                 headerWithName(HttpHeaders.AUTHORIZATION).description("Bearer {accessToken} 형식의 서비스 access token")
@@ -241,6 +272,12 @@ public class FeedControllerDocsTest {
     private ParameterDescriptor[] feedDetailPathParameters() {
         return new ParameterDescriptor[] {
                 parameterWithName("groupChallengeId").description("그룹 챌린지 ID"),
+                parameterWithName("challengeRecordId").description("챌린지 기록 ID")
+        };
+    }
+
+    private ParameterDescriptor[] legacyFeedDetailPathParameters() {
+        return new ParameterDescriptor[] {
                 parameterWithName("challengeRecordId").description("챌린지 기록 ID")
         };
     }
@@ -425,6 +462,41 @@ public class FeedControllerDocsTest {
                         .description("리액션 작성자 표시 이름").optional(),
                 fieldWithPath("reactions.summary[].profileImageUrl").type(STRING)
                         .description("리액션 작성자 프로필 이미지 URL").optional()
+        };
+    }
+
+    private FieldDescriptor[] legacyFeedDetailResponseFields() {
+        return new FieldDescriptor[] {
+                fieldWithPath("challengeRecordId").type(NUMBER).description("챌린지 기록 ID"),
+                fieldWithPath("groupChallengeId").type(NUMBER).description("그룹 챌린지 ID"),
+                fieldWithPath("activityRecordId").type(NUMBER).description("활동 인증 기록 ID. 인증 전이면 null").optional(),
+                fieldWithPath("challengeStatus").type(STRING)
+                        .description("챌린지 기록 상태 (BEFORE_RECORD | AFTER_RECORD_SUCCESS | AFTER_RECORD_FAIL)"),
+                fieldWithPath("recordDate").type(STRING).description("기록 날짜"),
+                fieldWithPath("author.userId").type(NUMBER).description("작성자 유저 ID"),
+                fieldWithPath("author.displayName").type(STRING).description("작성자 닉네임"),
+                fieldWithPath("author.profileImageUrl").type(STRING)
+                        .description("저장된 작성자 프로필 이미지 object key를 읽기 URL로 변환한 값").optional(),
+                fieldWithPath("activityCreatedAt").type(STRING).description("인증 생성 시각. 인증 전이면 null").optional(),
+                fieldWithPath("activityImageUrl").type(STRING).description("활동 사진 object key 또는 URL. 인증 전이면 null").optional(),
+                fieldWithPath("oneLineReview").type(STRING).description("한줄평. 인증 전이면 null").optional(),
+                fieldWithPath("goalStatus").type(STRING).description("목표 달성 결과 (SUCCESS | FAIL). 인증 전이면 null").optional(),
+                fieldWithPath("snapshotGoalMinutes").type(NUMBER).description("인증 당시 목표 시간 합계(분). 인증 전이면 null").optional(),
+                fieldWithPath("details").type(ARRAY).description("인증 상세 사용량 목록. 인증 전이면 빈 배열"),
+                fieldWithPath("details[].usageGoalTypeCode").type(STRING).description("사용 목표 타입 코드").optional(),
+                fieldWithPath("details[].usedMinutes").type(NUMBER).description("사용 시간(분)").optional(),
+                fieldWithPath("reactions.totalCount").type(NUMBER).description("리액션 총 개수"),
+                fieldWithPath("reactions.summary").type(ARRAY).description("리액션 최신순 요약 목록"),
+                fieldWithPath("reactions.summary[].reactionBody").type(STRING).description("리액션 종류").optional(),
+                fieldWithPath("reactions.summary[].userId").type(NUMBER).description("리액션 작성자 유저 ID").optional(),
+                fieldWithPath("reactions.summary[].displayName").type(STRING).description("리액션 작성자 닉네임").optional(),
+                fieldWithPath("reactions.summary[].profileImageUrl").type(STRING)
+                        .description("저장된 리액션 작성자 프로필 이미지 object key를 읽기 URL로 변환한 값").optional(),
+                fieldWithPath("commentCount").type(NUMBER).description("현재 상세 상태에 해당하는 댓글 수"),
+                fieldWithPath("pokeCount").type(NUMBER).description("받은 콕 수"),
+                fieldWithPath("pokeable").type(BOOLEAN).description("현재 사용자가 콕 찌를 수 있는지 여부"),
+                fieldWithPath("poked").type(BOOLEAN).description("현재 사용자가 이미 콕 찔렀는지 여부"),
+                fieldWithPath("pokedUsers").type(ARRAY).description("콕 찌른 유저 목록. 인증 후 상세이면 빈 배열")
         };
     }
 

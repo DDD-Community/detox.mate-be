@@ -152,6 +152,10 @@ operation::uploads/presigned-urls-invalid-request[snippets='http-request,request
 
   operation::group-challenges/challenge-record-detail-get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
 
+  === Get Feed Detail (Deprecated)
+
+  operation::challenge-records/feed-detail-get-deprecated[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+
   == Reaction API
 
   === Create Reaction
