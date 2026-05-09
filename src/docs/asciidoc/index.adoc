@@ -33,6 +33,10 @@ operation::dev-auth/test-login-unsupported-key[snippets='http-request,request-fi
 
 operation::dev-fixtures/activity-calendar-rich[snippets='http-request,http-response,response-fields']
 
+=== Reset Activity Calendar Rich Fixture With SQL Snapshot
+
+operation::dev-fixtures/activity-calendar-rich-reset[snippets='http-request,http-response,response-fields']
+
 == User API
 
 === Get My Profile
@@ -91,6 +95,12 @@ operation::groups/activity-calendar/get[snippets='http-request,request-headers,p
 === Get Group Activity Calendar Daily History
 
 operation::groups/activity-calendar/history-get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+
+== Group Activity Feed API
+
+=== Get Group Daily Activity Feed
+
+operation::groups/activity-feed/history-get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
 
 == Group Challenge API
 
