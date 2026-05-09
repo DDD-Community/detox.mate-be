@@ -209,7 +209,7 @@ class GroupActivityCalendarControllerTest {
     }
 
     private GroupActivityFeedResponse.MemberResponse activityFeedMemberResponse() {
-        return activityFeedMemberResponse(null, null);
+        return activityFeedMemberResponse(10000L, null);
     }
 
     private GroupActivityFeedResponse.MemberResponse activityFeedMemberDetailResponse() {
@@ -406,7 +406,7 @@ class GroupActivityCalendarControllerTest {
                 fieldWithPath(path + "goals[].goalMinutes").type(JsonFieldType.NUMBER).description("목표 시간(분)").optional(),
                 fieldWithPath(path + "goals[].effectiveDate").type(JsonFieldType.STRING).description("목표 적용 시작일").optional(),
                 fieldWithPath(path + "challengeRecordId").type(JsonFieldType.NUMBER)
-                        .description("기존 challenge-records 댓글/리액션/콕 API 호출에 사용하는 챌린지 기록 ID. 상세 조회에서만 제공")
+                        .description("기존 challenge-records 댓글/리액션/콕 API 호출에 사용하는 챌린지 기록 ID. 기록이 없으면 생략")
                         .optional(),
                 fieldWithPath(path + "activityRecord").type(JsonFieldType.VARIES)
                         .description("선택 날짜의 활동 인증 내용. 인증하지 않았으면 null").optional(),

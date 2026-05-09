@@ -126,8 +126,8 @@ class GroupActivityCalendarApiTest {
     }
 
     @Test
-    @DisplayName("GET /groups/{groupId}/activity-feed/days/{date} — 일별 활동 피드는 dailyStatus 하나로 멤버 상태를 표현한다")
-    void getActivityFeed_returnsDailyStatusWithoutChallengeRecordFields() throws Exception {
+    @DisplayName("GET /groups/{groupId}/activity-feed/days/{date} — 일별 활동 피드는 기존 challenge-records API와 연동할 기록 ID를 제공한다")
+    void getActivityFeed_returnsChallengeRecordIdForExistingRecord() throws Exception {
         CalendarFixture fixture = saveCalendarFixture();
 
         mockMvc.perform(get(
@@ -147,7 +147,7 @@ class GroupActivityCalendarApiTest {
                 .andExpect(jsonPath("$.members.length()").value(4))
                 .andExpect(jsonPath("$.members[0].displayName").value("민준"))
                 .andExpect(jsonPath("$.members[0].dailyStatus").value("GOAL_FAILED"))
-                .andExpect(jsonPath("$.members[0].challengeRecordId").doesNotExist())
+                .andExpect(jsonPath("$.members[0].challengeRecordId").isNumber())
                 .andExpect(jsonPath("$.members[0].challengeStatus").doesNotExist())
                 .andExpect(jsonPath("$.members[0].activityRecord.id").doesNotExist())
                 .andExpect(jsonPath("$.members[0].activityRecord.allAchieved").value(false))
@@ -175,8 +175,8 @@ class GroupActivityCalendarApiTest {
     }
 
     @Test
-    @DisplayName("GET /groups/{groupId}/activity-feed/days/{date} — 오늘 활동 피드는 빈 기록을 보장하되 기록 ID를 노출하지 않는다")
-    void getActivityFeed_todayCreatesEmptyRecordsWithoutExposingRecordIds() throws Exception {
+    @DisplayName("GET /groups/{groupId}/activity-feed/days/{date} — 오늘 활동 피드는 빈 기록을 만들고 기존 API 연동 ID를 제공한다")
+    void getActivityFeed_todayCreatesEmptyRecordsAndExposesRecordIds() throws Exception {
         CalendarFixture fixture = saveCalendarFixture();
 
         assertThat(challengeRecordRepository.findAllByGroupChallengeDate(fixture.challenge().getId(), TODAY))
@@ -195,7 +195,7 @@ class GroupActivityCalendarApiTest {
                 .andExpect(jsonPath("$.members.length()").value(4))
                 .andExpect(jsonPath("$.members[0].displayName").value("나"))
                 .andExpect(jsonPath("$.members[0].dailyStatus").value("NOT_CERTIFIED"))
-                .andExpect(jsonPath("$.members[0].challengeRecordId").doesNotExist())
+                .andExpect(jsonPath("$.members[0].challengeRecordId").isNumber())
                 .andExpect(jsonPath("$.members[0].challengeStatus").doesNotExist())
                 .andExpect(jsonPath("$.members[0].activityRecord").doesNotExist())
                 .andExpect(jsonPath("$.members[0].reactionCount").value(0))

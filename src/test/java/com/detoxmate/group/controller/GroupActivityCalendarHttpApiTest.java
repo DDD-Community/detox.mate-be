@@ -120,11 +120,12 @@ class GroupActivityCalendarHttpApiTest {
         assertThat(activityFeedResponse.body()).contains(
                 "\"dayStatus\":\"CONFIRMED\"",
                 "\"dailyStatus\":\"GOAL_ACHIEVED\"",
+                "\"challengeRecordId\":",
                 "\"reactionCount\":0",
                 "\"commentCount\":0",
                 "\"isPoked\":false"
         );
-        assertThat(activityFeedResponse.body()).doesNotContain("challengeRecordId", "challengeStatus");
+        assertThat(activityFeedResponse.body()).doesNotContain("challengeStatus");
         assertThat(activityFeedMemberResponse.statusCode()).isEqualTo(200);
         assertThat(activityFeedMemberResponse.body()).contains(
                 "\"groupMemberId\":" + fixture.certifiedGroupMemberId(),

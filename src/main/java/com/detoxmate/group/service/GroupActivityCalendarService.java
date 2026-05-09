@@ -376,7 +376,7 @@ public class GroupActivityCalendarService {
                         activityDay.activity().goals(),
                         activityDay.date()
                 )),
-                includeReactions && challengeRecord != null ? challengeRecord.getId() : null,
+                challengeRecord == null ? null : challengeRecord.getId(),
                 activityRecord,
                 reactionCount(statusCount),
                 commentCount(challengeRecord, statusCount),
