@@ -32,6 +32,8 @@ public record GroupActivityFeedResponse(
             int commentCount,
             int pokeCount,
             @JsonProperty("isPoked") boolean isPoked,
+            @JsonInclude(JsonInclude.Include.NON_NULL) Boolean pokeable,
+            @JsonInclude(JsonInclude.Include.NON_NULL) List<PokedUserResponse> pokedUsers,
             @JsonInclude(JsonInclude.Include.NON_NULL) ReactionSummaryResponse reactions
     ) {
     }
@@ -53,6 +55,13 @@ public record GroupActivityFeedResponse(
 
     public record ReactionResponse(
             String reactionBody,
+            Long userId,
+            String displayName,
+            String profileImageUrl
+    ) {
+    }
+
+    public record PokedUserResponse(
             Long userId,
             String displayName,
             String profileImageUrl

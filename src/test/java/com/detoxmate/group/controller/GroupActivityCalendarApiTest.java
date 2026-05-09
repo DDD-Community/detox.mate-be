@@ -22,11 +22,14 @@ import com.detoxmate.group.repository.GroupChallengeParticipantRepository;
 import com.detoxmate.group.repository.GroupChallengeRepository;
 import com.detoxmate.group.repository.GroupMemberRepository;
 import com.detoxmate.group.repository.GroupRepository;
+import com.detoxmate.poke.domain.Poke;
+import com.detoxmate.poke.repository.PokeRepository;
 import com.detoxmate.reaction.domain.Reaction;
 import com.detoxmate.reaction.domain.ReactionBody;
 import com.detoxmate.reaction.repository.ReactionRepository;
 import com.detoxmate.user.domain.User;
 import com.detoxmate.user.repository.UserRepository;
+import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,9 +40,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,6 +57,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -103,6 +109,9 @@ class GroupActivityCalendarApiTest {
 
     @Autowired
     ReactionRepository reactionRepository;
+
+    @Autowired
+    PokeRepository pokeRepository;
 
     @Autowired
     JdbcTemplate jdbcTemplate;
@@ -219,8 +228,8 @@ class GroupActivityCalendarApiTest {
     }
 
     @Test
-    @DisplayName("GET /groups/{groupId}/activity-feed/days/{date}/members/{groupMemberId} — 일별 활동 피드 상세를 카드 인터페이스로 조회한다")
-    void getActivityFeedMember_returnsSingleActivityFeedMember() throws Exception {
+    @DisplayName("GET /groups/{groupId}/activity-feed/days/{date}/members/{groupMemberId} — 인증 후 멤버 상세는 카드 인터페이스와 리액션을 반환한다")
+    void getActivityFeedMember_afterRecordReturnsCardDetailWithReactions() throws Exception {
         CalendarFixture fixture = saveCalendarFixture();
         Long minjunGroupMemberId = groupMemberIdOf(fixture.challenge(), "민준");
 
@@ -255,7 +264,85 @@ class GroupActivityCalendarApiTest {
                 .andExpect(jsonPath("$.comments").doesNotExist())
                 .andExpect(jsonPath("$.commentCount").value(10))
                 .andExpect(jsonPath("$.pokeCount").value(0))
-                .andExpect(jsonPath("$.isPoked").value(false));
+                .andExpect(jsonPath("$.isPoked").value(false))
+                .andExpect(jsonPath("$.pokeable").value(false))
+                .andExpect(jsonPath("$.pokedUsers").isEmpty());
+    }
+
+    @Test
+    @DisplayName("GET /groups/{groupId}/activity-feed/days/{date}/members/{groupMemberId} — 오늘 인증 전 상세는 카드 인터페이스와 콕/댓글 연동 정보를 반환한다")
+    void getActivityFeedMember_todayBeforeRecordReturnsCardDetailWithPokesAndComments() throws Exception {
+        CalendarFixture fixture = saveCalendarFixture();
+        GroupActivityParticipantRow minjunRow = participantRowOf(fixture.challenge(), "민준");
+
+        MvcResult initialDetailResult = mockMvc.perform(get(
+                        "/groups/{groupId}/activity-feed/days/{date}/members/{groupMemberId}",
+                        fixture.group().getId(),
+                        TODAY,
+                        minjunRow.groupMemberId()
+                )
+                        .header(HttpHeaders.AUTHORIZATION, bearer(fixture.currentUser().getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.groupMemberId").value(minjunRow.groupMemberId()))
+                .andExpect(jsonPath("$.displayName").value("민준"))
+                .andExpect(jsonPath("$.dailyStatus").value("NOT_CERTIFIED"))
+                .andExpect(jsonPath("$.challengeRecordId").isNumber())
+                .andExpect(jsonPath("$.challengeStatus").doesNotExist())
+                .andExpect(jsonPath("$.activityRecord").doesNotExist())
+                .andExpect(jsonPath("$.reactions.totalCount").value(0))
+                .andExpect(jsonPath("$.reactions.summary").isEmpty())
+                .andExpect(jsonPath("$.commentCount").value(0))
+                .andExpect(jsonPath("$.pokeCount").value(0))
+                .andExpect(jsonPath("$.isPoked").value(false))
+                .andExpect(jsonPath("$.pokeable").value(true))
+                .andExpect(jsonPath("$.pokedUsers").isEmpty())
+                .andReturn();
+
+        Number challengeRecordId = JsonPath.read(
+                initialDetailResult.getResponse().getContentAsString(),
+                "$.challengeRecordId"
+        );
+
+        statusCountRepository.increasePokeCount(challengeRecordId.longValue());
+        pokeRepository.save(Poke.create(
+                challengeRecordId.longValue(),
+                fixture.currentUser().getId(),
+                minjunRow.userId(),
+                TODAY
+        ));
+
+        mockMvc.perform(post("/challenge-records/{challengeRecordId}/comments", challengeRecordId.longValue())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(fixture.currentUser().getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "commentBody": "인증 기다리고 있어요" }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.challengeRecordId").value(challengeRecordId.longValue()))
+                .andExpect(jsonPath("$.commentBody").value("인증 기다리고 있어요"));
+
+        mockMvc.perform(get("/challenge-records/{challengeRecordId}/comments", challengeRecordId.longValue())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(fixture.currentUser().getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(1))
+                .andExpect(jsonPath("$.items[0].commentBody").value("인증 기다리고 있어요"));
+
+        mockMvc.perform(get(
+                        "/groups/{groupId}/activity-feed/days/{date}/members/{groupMemberId}",
+                        fixture.group().getId(),
+                        TODAY,
+                        minjunRow.groupMemberId()
+                )
+                        .header(HttpHeaders.AUTHORIZATION, bearer(fixture.currentUser().getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.challengeRecordId").value(challengeRecordId.longValue()))
+                .andExpect(jsonPath("$.dailyStatus").value("NOT_CERTIFIED"))
+                .andExpect(jsonPath("$.activityRecord").doesNotExist())
+                .andExpect(jsonPath("$.commentCount").value(1))
+                .andExpect(jsonPath("$.pokeCount").value(1))
+                .andExpect(jsonPath("$.isPoked").value(true))
+                .andExpect(jsonPath("$.pokeable").value(true))
+                .andExpect(jsonPath("$.pokedUsers[0].displayName").value("나"));
     }
 
     private CalendarFixture saveCalendarFixture() {
@@ -406,9 +493,12 @@ class GroupActivityCalendarApiTest {
     }
 
     private Long groupMemberIdOf(GroupChallenge challenge, String displayName) {
+        return participantRowOf(challenge, displayName).groupMemberId();
+    }
+
+    private GroupActivityParticipantRow participantRowOf(GroupChallenge challenge, String displayName) {
         return participantRepository.findActivityParticipantRowsByGroupChallengeId(challenge.getId()).stream()
                 .filter(row -> displayName.equals(row.displayName()))
-                .map(GroupActivityParticipantRow::groupMemberId)
                 .findFirst()
                 .orElseThrow();
     }

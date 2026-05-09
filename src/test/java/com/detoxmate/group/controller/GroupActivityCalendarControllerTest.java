@@ -270,6 +270,8 @@ class GroupActivityCalendarControllerTest {
                 10,
                 0,
                 false,
+                reactions == null ? null : false,
+                reactions == null ? null : List.of(),
                 reactions
         );
     }
@@ -432,6 +434,16 @@ class GroupActivityCalendarControllerTest {
                 fieldWithPath(path + "commentCount").type(JsonFieldType.NUMBER).description("댓글 수"),
                 fieldWithPath(path + "pokeCount").type(JsonFieldType.NUMBER).description("받은 콕 수"),
                 fieldWithPath(path + "isPoked").type(JsonFieldType.BOOLEAN).description("현재 사용자가 콕 찔렀는지 여부"),
+                fieldWithPath(path + "pokeable").type(JsonFieldType.BOOLEAN)
+                        .description("상세 조회에서만 제공하는 현재 사용자의 콕 가능 여부").optional(),
+                fieldWithPath(path + "pokedUsers").type(JsonFieldType.ARRAY)
+                        .description("상세 조회에서만 제공하는 콕 찌른 사용자 목록").optional(),
+                fieldWithPath(path + "pokedUsers[].userId").type(JsonFieldType.NUMBER)
+                        .description("콕 찌른 사용자 ID").optional(),
+                fieldWithPath(path + "pokedUsers[].displayName").type(JsonFieldType.STRING)
+                        .description("콕 찌른 사용자 표시 이름").optional(),
+                fieldWithPath(path + "pokedUsers[].profileImageUrl").type(JsonFieldType.STRING)
+                        .description("콕 찌른 사용자 프로필 이미지 URL").optional(),
                 fieldWithPath(path + "reactions").type(JsonFieldType.OBJECT)
                         .description("상세 조회에서만 제공하는 리액션 요약").optional(),
                 fieldWithPath(path + "reactions.totalCount").type(JsonFieldType.NUMBER)

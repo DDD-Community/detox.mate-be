@@ -382,7 +382,43 @@ public class GroupActivityCalendarService {
                 commentCount(challengeRecord, statusCount),
                 pokeCount(statusCount),
                 isPoked(challengeRecord, row.userId(), activityDay),
+                includeReactions ? pokeable(challengeRecord) : null,
+                includeReactions ? toPokedUsers(challengeRecord) : null,
                 includeReactions ? toReactionSummary(challengeRecord) : null
+        );
+    }
+
+    private Boolean pokeable(ChallengeRecord challengeRecord) {
+        return challengeRecord != null
+                && challengeRecord.isBeforeRecord()
+                && challengeRecord.isToday(today());
+    }
+
+    private List<GroupActivityFeedResponse.PokedUserResponse> toPokedUsers(ChallengeRecord challengeRecord) {
+        if (challengeRecord == null || !challengeRecord.isBeforeRecord()) {
+            return List.of();
+        }
+
+        List<Poke> pokes = pokeService.getPokesForChallengeRecord(challengeRecord.getId());
+        Map<Long, MyProfileResponse> profiles = userService.getProfilesByIds(
+                pokes.stream()
+                        .map(Poke::getSenderUserId)
+                        .collect(Collectors.toSet())
+        );
+
+        return pokes.stream()
+                .map(poke -> toPokedUserResponse(poke, profiles.get(poke.getSenderUserId())))
+                .toList();
+    }
+
+    private GroupActivityFeedResponse.PokedUserResponse toPokedUserResponse(
+            Poke poke,
+            MyProfileResponse profile
+    ) {
+        return new GroupActivityFeedResponse.PokedUserResponse(
+                poke.getSenderUserId(),
+                profile == null ? null : profile.displayName(),
+                profile == null ? null : profile.profileImageUrl()
         );
     }
 
