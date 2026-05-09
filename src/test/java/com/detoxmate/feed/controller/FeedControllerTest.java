@@ -37,6 +37,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class FeedControllerTest {
 
+    private static final String OVERVIEW_URL = "/group-challenges/{groupChallengeId}/overview";
     private static final String HOME_FEED_URL = "/group-challenges/{groupChallengeId}/home";
     private static final String FEED_DETAIL_URL = "/challenge-records/{challengeRecordId}";
 
@@ -66,6 +67,28 @@ class FeedControllerTest {
 
     @Autowired
     ChallengeRecordStatusCountRepository statusCountRepository;
+
+    @Test
+    @DisplayName("GET /group-challenges/{groupChallengeId}/overview — 홈 상단용 챌린지 개요를 조회한다")
+    void getGroupChallengeOverview_returnsChallengeOverview() throws Exception {
+        // given
+        Group group = groupRepository.save(Group.createNew("수능방", "ABCDE"));
+        GroupChallenge challenge = groupChallengeRepository.save(GroupChallenge.createFirst(group.getId()));
+
+        User currentUser = userRepository.save(User.createNew("나"));
+        saveParticipant(group.getId(), challenge.getId(), currentUser);
+
+        // when & then
+        mockMvc.perform(get(OVERVIEW_URL, challenge.getId())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(currentUser.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.groupChallengeId").value(challenge.getId()))
+                .andExpect(jsonPath("$.groupId").value(group.getId()))
+                .andExpect(jsonPath("$.groupName").value("수능방"))
+                .andExpect(jsonPath("$.challengeNo").value(1))
+                .andExpect(jsonPath("$.status").value("RECRUITING"))
+                .andExpect(jsonPath("$.streakCount").value(0));
+    }
 
     @Test
     @DisplayName("GET /group-challenges/{groupChallengeId}/home — 홈 피드를 조회하면 참여자 카드와 challengeRecordId를 반환한다")

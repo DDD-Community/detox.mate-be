@@ -1,5 +1,6 @@
 package com.detoxmate.docs.feed.mockdata;
 
+import com.detoxmate.feed.dto.response.GroupChallengeOverviewResponse;
 import com.detoxmate.feed.dto.response.HomeFeedChallengeInfo;
 import com.detoxmate.feed.dto.response.HomeFeedMemberCard;
 import com.detoxmate.feed.dto.response.HomeFeedResponse;
@@ -8,6 +9,19 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public class HomeFeedMockData {
+
+    public static GroupChallengeOverviewResponse createGroupChallengeOverviewResponse() {
+        return new GroupChallengeOverviewResponse(
+                1L,
+                10L,
+                "수능방",
+                3,
+                "ACTIVE",
+                LocalDateTime.of(2026, 5, 3, 9, 0),
+                null,
+                3
+        );
+    }
 
     public static HomeFeedResponse createHomeFeedResponse() {
         return new HomeFeedResponse(

@@ -9,6 +9,7 @@ import com.detoxmate.challengerecordstatuscount.domain.ChallengeRecordStatusCoun
 import com.detoxmate.challengerecordstatuscount.repository.ChallengeRecordStatusCountRepository;
 import com.detoxmate.feed.dto.response.HomeFeedMemberCard;
 import com.detoxmate.feed.dto.response.HomeFeedResponse;
+import com.detoxmate.feed.dto.response.GroupChallengeOverviewResponse;
 import com.detoxmate.group.domain.Group;
 import com.detoxmate.group.domain.GroupChallenge;
 import com.detoxmate.group.domain.GroupChallengeParticipant;
@@ -77,6 +78,34 @@ class FeedServiceTest {
 
     @Autowired
     PokeRepository pokeRepository;
+
+    @Test
+    @DisplayName("챌린지 개요를 조회하면 홈 피드 카드용 챌린지 기록을 생성하지 않는다")
+    void getGroupChallengeOverview_doesNotCreateChallengeRecords() {
+        // given
+        Group group = groupRepository.save(Group.createNew("수능방", "ABCDE"));
+        GroupChallenge challenge = groupChallengeRepository.save(GroupChallenge.createFirst(group.getId()));
+
+        User currentUser = userRepository.save(User.createNew("나"));
+        saveParticipant(group.getId(), challenge.getId(), currentUser);
+
+        assertThat(challengeRecordRepository.findAll()).isEmpty();
+
+        // when
+        GroupChallengeOverviewResponse response = feedService.getGroupChallengeOverview(
+                challenge.getId(),
+                currentUser.getId()
+        );
+
+        // then
+        assertThat(response.groupChallengeId()).isEqualTo(challenge.getId());
+        assertThat(response.groupId()).isEqualTo(group.getId());
+        assertThat(response.groupName()).isEqualTo("수능방");
+        assertThat(response.challengeNo()).isEqualTo(1);
+        assertThat(response.status()).isEqualTo("RECRUITING");
+        assertThat(response.streakCount()).isZero();
+        assertThat(challengeRecordRepository.findAll()).isEmpty();
+    }
 
     @Test
     @DisplayName("홈 피드를 조회하면 오늘 챌린지 기록이 없는 참여자에게 빈 챌린지 기록을 생성하고 카드에 내려준다")

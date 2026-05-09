@@ -7,6 +7,7 @@ import com.detoxmate.challengerecordstatuscount.domain.ChallengeRecordStatusCoun
 import com.detoxmate.common.MemberActivityOrder;
 import com.detoxmate.common.exception.CustomException;
 import com.detoxmate.common.exception.feed.FeedErrorCode;
+import com.detoxmate.feed.dto.response.GroupChallengeOverviewResponse;
 import com.detoxmate.feed.dto.response.HomeFeedChallengeInfo;
 import com.detoxmate.feed.dto.response.HomeFeedMemberCard;
 import com.detoxmate.feed.dto.response.HomeFeedResponse;
@@ -14,6 +15,7 @@ import com.detoxmate.feed.util.FeedQueryReader;
 import com.detoxmate.feed.util.GroupChallengeFeedSource;
 import com.detoxmate.group.dto.GroupChallengeParticipantResponse;
 import com.detoxmate.group.service.GroupChallengeParticipantService;
+import com.detoxmate.poke.domain.Poke;
 import com.detoxmate.poke.service.PokeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,6 +25,8 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -36,6 +40,24 @@ public class FeedService {
     private final PokeService pokeService;
     private final Clock clock;
 
+    @Transactional(readOnly = true)
+    public GroupChallengeOverviewResponse getGroupChallengeOverview(Long groupChallengeId, Long currentUserId) {
+        validateParticipant(groupChallengeId, currentUserId);
+
+        GroupChallengeFeedSource source = feedQueryReader.getHomeFeedSource(groupChallengeId);
+
+        return new GroupChallengeOverviewResponse(
+                source.challenge().getId(),
+                source.group().getId(),
+                source.group().getName(),
+                source.challenge().getChallengeNo(),
+                source.challenge().getStatus().name(),
+                source.challenge().getStartAt(),
+                source.challenge().getEndAt(),
+                0
+        );
+    }
+
     @Transactional
     public HomeFeedResponse getHomeFeed(Long groupChallengeId, Long currentUserId) {
         validateParticipant(groupChallengeId, currentUserId);
@@ -44,7 +66,7 @@ public class FeedService {
 
         LocalDate today = LocalDate.now(clock.withZone(KST));
 
-        List<HomeFeedMemberCard> members = source.participants().stream()
+        List<FeedMemberSource> memberSources = source.participants().stream()
                 .map(participant -> {
                     ChallengeRecord challengeRecord = challengeRecordService.create(
                             groupChallengeId,
@@ -52,8 +74,17 @@ public class FeedService {
                             today
                     );
 
-                    return toMemberCard(participant, challengeRecord, currentUserId);
+                    return new FeedMemberSource(participant, challengeRecord);
                 })
+                .toList();
+        Set<PokeKey> pokedRecords = pokedRecords(memberSources, currentUserId);
+
+        List<HomeFeedMemberCard> members = memberSources.stream()
+                .map(memberSource -> toMemberCard(
+                        memberSource.participant(),
+                        memberSource.challengeRecord(),
+                        pokedRecords
+                ))
                 .sorted(MemberActivityOrder.latestCertifiedThenDisplayName(
                         HomeFeedMemberCard::verifiedAt,
                         HomeFeedMemberCard::displayName
@@ -77,7 +108,7 @@ public class FeedService {
 
     private HomeFeedMemberCard toMemberCard(GroupChallengeParticipantResponse participant,
                                             ChallengeRecord challengeRecord,
-                                            Long currentUserId) {
+                                            Set<PokeKey> pokedRecords) {
 
         ActivityRecord activityRecord = feedQueryReader.findActivityRecord(
                 challengeRecord.getActivityRecordId()
@@ -88,11 +119,7 @@ public class FeedService {
         );
 
         boolean poked = challengeRecord.isBeforeRecord()
-                && pokeService.existsPoke(
-                challengeRecord.getId(),
-                currentUserId,
-                participant.userId()
-        );
+                && pokedRecords.contains(new PokeKey(challengeRecord.getId(), participant.userId()));
 
         return new HomeFeedMemberCard(
                 participant.userId(),
@@ -140,9 +167,34 @@ public class FeedService {
         return statusCount == null ? 0 : statusCount.getPokeCount();
     }
 
+    private Set<PokeKey> pokedRecords(List<FeedMemberSource> memberSources, Long currentUserId) {
+        List<Long> beforeRecordIds = memberSources.stream()
+                .map(FeedMemberSource::challengeRecord)
+                .filter(ChallengeRecord::isBeforeRecord)
+                .map(ChallengeRecord::getId)
+                .toList();
+
+        return pokeService.getPokesByChallengeRecordsAndSender(beforeRecordIds, currentUserId).stream()
+                .map(PokeKey::from)
+                .collect(Collectors.toSet());
+    }
+
     private void validateParticipant(Long groupChallengeId, Long currentUserId) {
         if (!participantService.checkGroupChallengeParticipant(groupChallengeId, currentUserId)) {
             throw new CustomException(FeedErrorCode.FEED_ACCESS_DENIED);
+        }
+    }
+
+    private record FeedMemberSource(
+            GroupChallengeParticipantResponse participant,
+            ChallengeRecord challengeRecord
+    ) {
+    }
+
+    private record PokeKey(Long challengeRecordId, Long receiverUserId) {
+
+        private static PokeKey from(Poke poke) {
+            return new PokeKey(poke.getChallengeRecordId(), poke.getReceiverUserId());
         }
     }
 }

@@ -71,6 +71,36 @@ public class FeedControllerDocsTest {
     }
 
     @Test
+    void 그룹_챌린지_개요_조회() throws Exception {
+        given(feedService.getGroupChallengeOverview(eq(1L), eq(1L)))
+                .willReturn(HomeFeedMockData.createGroupChallengeOverviewResponse());
+
+        HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
+        ParameterDescriptor[] pathParameterDescriptors = homeFeedPathParameters();
+        FieldDescriptor[] responseFieldDescriptors = groupChallengeOverviewResponseFields();
+
+        mockMvc.perform(get("/group-challenges/{groupChallengeId}/overview", 1L)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+                .andExpect(status().isOk())
+                .andDo(document("group-challenges/overview-get",
+                        preprocessRequest(prettyPrint()),
+                        preprocessResponse(prettyPrint()),
+                        requestHeaders(requestHeaderDescriptors),
+                        pathParameters(pathParameterDescriptors),
+                        responseFields(responseFieldDescriptors),
+                        resource(builder()
+                                .tag("Feed")
+                                .summary("그룹 챌린지 홈 개요 조회")
+                                .description("홈 화면의 피드 목록 외 챌린지/모임 개요 정보를 조회한다.")
+                                .requestHeaders(requestHeaderDescriptors)
+                                .pathParameters(pathParameterDescriptors)
+                                .responseSchema(schema("GroupChallengeOverviewResponse"))
+                                .responseFields(responseFieldDescriptors)
+                                .build()
+                        )));
+    }
+
+    @Test
     void 홈_피드_조회() throws Exception {
         given(feedService.getHomeFeed(eq(1L), eq(1L)))
                 .willReturn(HomeFeedMockData.createHomeFeedResponse());
@@ -91,7 +121,7 @@ public class FeedControllerDocsTest {
                         resource(builder()
                                 .tag("Feed")
                                 .summary("홈 피드 조회")
-                                .description("그룹 챌린지의 오늘 홈 피드를 조회한다. 오늘 챌린지 기록이 없으면 빈 챌린지 기록을 생성한 뒤 멤버 카드를 반환한다.")
+                                .description("[Deprecated] 기존 호환용 API다. 신규 클라이언트는 GET /group-challenges/{groupChallengeId}/overview와 피드 목록 API를 분리해서 사용한다.")
                                 .requestHeaders(requestHeaderDescriptors)
                                 .pathParameters(pathParameterDescriptors)
                                 .responseSchema(schema("HomeFeedResponse"))
@@ -177,6 +207,19 @@ public class FeedControllerDocsTest {
                 fieldWithPath("members[].commentCount").type(NUMBER).description("댓글 수"),
                 fieldWithPath("members[].pokeCount").type(NUMBER).description("받은 콕 수"),
                 fieldWithPath("members[].isPoked").type(BOOLEAN).description("내가 콕 찔렀는지 여부")
+        };
+    }
+
+    private FieldDescriptor[] groupChallengeOverviewResponseFields() {
+        return new FieldDescriptor[] {
+                fieldWithPath("groupChallengeId").type(NUMBER).description("그룹 챌린지 ID"),
+                fieldWithPath("groupId").type(NUMBER).description("그룹 ID"),
+                fieldWithPath("groupName").type(STRING).description("그룹 이름"),
+                fieldWithPath("challengeNo").type(NUMBER).description("그룹 내 챌린지 회차"),
+                fieldWithPath("status").type(STRING).description("그룹 챌린지 상태"),
+                fieldWithPath("startAt").type(STRING).optional().description("챌린지 시작 시각"),
+                fieldWithPath("endAt").type(STRING).optional().description("챌린지 종료 시각"),
+                fieldWithPath("streakCount").type(NUMBER).description("연속 인증 일수")
         };
     }
 
