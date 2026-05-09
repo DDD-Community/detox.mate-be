@@ -114,6 +114,34 @@ public class GroupChallengeRecordFeedService {
         );
     }
 
+    public GroupChallengeRecordFeedResponse.MemberResponse getDetail(
+            Long groupChallengeId,
+            Long challengeRecordId,
+            Long currentUserId
+    ) {
+        GroupActivityContext activity = loadActivityContext(groupChallengeId, currentUserId);
+        ChallengeRecord challengeRecord = challengeRecordService.get(challengeRecordId);
+        if (!Objects.equals(challengeRecord.getGroupChallengeId(), groupChallengeId)) {
+            throw new CustomException(FeedErrorCode.FEED_ACCESS_DENIED);
+        }
+
+        GroupActivityDayContext activityDay = loadActivityDayContext(
+                activity,
+                challengeRecord.getRecordDate(),
+                currentUserId,
+                challengeRecord.isToday(today())
+        );
+
+        return activity.participantRows().stream()
+                .filter(row -> Objects.equals(
+                        row.groupChallengeParticipantId(),
+                        challengeRecord.getGroupChallengeParticipantId()
+                ))
+                .map(row -> toMemberResponse(row, activityDay, true))
+                .findFirst()
+                .orElseThrow(() -> new CustomException(FeedErrorCode.FEED_PARTICIPANT_NOT_FOUND));
+    }
+
     private GroupActivityContext loadActivityContext(Long groupChallengeId, Long currentUserId) {
         validateParticipant(groupChallengeId, currentUserId);
 

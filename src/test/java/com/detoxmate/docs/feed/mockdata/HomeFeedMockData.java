@@ -154,4 +154,53 @@ public class HomeFeedMockData {
                 )
         );
     }
+
+    public static GroupChallengeRecordFeedResponse.MemberResponse createGroupChallengeRecordFeedDetailResponse() {
+        return new GroupChallengeRecordFeedResponse.MemberResponse(
+                100L,
+                1000L,
+                10L,
+                "민준",
+                "https://example.com/profiles/minjun.png",
+                false,
+                "ACTIVE",
+                "JOINED",
+                "GOAL_ACHIEVED",
+                true,
+                List.of(new MemberDailyGoalResponse(
+                        900L,
+                        UsageGoalTypeCode.TOTAL_USAGE,
+                        120,
+                        LocalDate.of(2026, 5, 3)
+                )),
+                10000L,
+                new GroupChallengeRecordFeedResponse.ActivityRecordResponse(
+                        LocalDateTime.of(2026, 5, 3, 13, 0),
+                        "https://example.com/activity-records/10000.png",
+                        "오늘 인증 완료",
+                        true,
+                        List.of(new ActivityRecordDetailHistoryResponse(
+                                UsageGoalTypeCode.TOTAL_USAGE,
+                                90,
+                                120,
+                                true
+                        ))
+                ),
+                4,
+                2,
+                0,
+                false,
+                false,
+                List.of(),
+                new GroupChallengeRecordFeedResponse.ReactionSummaryResponse(
+                        1,
+                        List.of(new GroupChallengeRecordFeedResponse.ReactionResponse(
+                                "CLAP",
+                                11L,
+                                "서연",
+                                "https://example.com/profiles/seoyeon.png"
+                        ))
+                )
+        );
+    }
 }

@@ -62,6 +62,18 @@ public class FeedController {
         );
     }
 
+    @GetMapping("/group-challenges/{groupChallengeId}/challenge-records/{challengeRecordId}")
+    public ResponseEntity<GroupChallengeRecordFeedResponse.MemberResponse> getGroupChallengeRecordDetail(
+            @PathVariable Long groupChallengeId,
+            @PathVariable Long challengeRecordId,
+            CurrentUser currentUser
+    ) {
+        return ResponseEntity.ok(
+                feedService.getGroupChallengeRecordDetail(groupChallengeId, challengeRecordId, currentUser.id())
+        );
+    }
+
+    @Deprecated(since = "2026-05-10", forRemoval = false)
     @GetMapping("/challenge-records/{challengeRecordId}")
     public ResponseEntity<FeedDetailResponse> getFeedDetail(@PathVariable Long challengeRecordId,
                                                             CurrentUser currentUser) {

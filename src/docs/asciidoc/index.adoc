@@ -150,7 +150,7 @@ operation::uploads/presigned-urls-invalid-request[snippets='http-request,request
 
   === Get Feed Detail
 
-  operation::challenge-records/feed-detail-get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+  operation::group-challenges/challenge-record-detail-get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
 
   == Reaction API
 

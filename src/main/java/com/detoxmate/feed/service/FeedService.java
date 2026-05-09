@@ -122,6 +122,14 @@ public class FeedService {
         return feedDetailService.getFeedDetail(challengeRecordId, currentUserId);
     }
 
+    public GroupChallengeRecordFeedResponse.MemberResponse getGroupChallengeRecordDetail(
+            Long groupChallengeId,
+            Long challengeRecordId,
+            Long currentUserId
+    ) {
+        return groupChallengeRecordFeedService.getDetail(groupChallengeId, challengeRecordId, currentUserId);
+    }
+
     private HomeFeedChallengeInfo toChallengeInfo(GroupChallengeFeedSource source) {
         return new HomeFeedChallengeInfo(
                 source.challenge().getId(),
