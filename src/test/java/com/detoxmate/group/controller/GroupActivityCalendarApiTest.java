@@ -244,8 +244,8 @@ class GroupActivityCalendarApiTest {
     }
 
     @Test
-    @DisplayName("히스토리 피드 카드의 challengeRecordId로 기존 피드 상세를 조회한다")
-    void getFeedDetail_fromHistoryChallengeRecordIdReturnsExistingDetail() throws Exception {
+    @DisplayName("히스토리 피드 카드의 challengeRecordId로 챌린지 기록 피드 상세를 조회한다")
+    void getGroupChallengeRecordDetail_fromHistoryChallengeRecordIdReturnsCardDetail() throws Exception {
         CalendarFixture fixture = saveCalendarFixture();
 
         MvcResult historyResult = mockMvc.perform(
@@ -260,22 +260,24 @@ class GroupActivityCalendarApiTest {
                 "$.members[0].challengeRecordId"
         );
 
-        mockMvc.perform(get("/challenge-records/{challengeRecordId}", challengeRecordId.longValue())
+        mockMvc.perform(get(
+                        "/group-challenges/{groupChallengeId}/challenge-records/{challengeRecordId}",
+                        fixture.challenge().getId(),
+                        challengeRecordId.longValue()
+                )
                         .header(HttpHeaders.AUTHORIZATION, bearer(fixture.currentUser().getId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.challengeRecordId").value(challengeRecordId.longValue()))
-                .andExpect(jsonPath("$.groupChallengeId").value(fixture.challenge().getId()))
-                .andExpect(jsonPath("$.activityRecordId").isNumber())
-                .andExpect(jsonPath("$.challengeStatus").value("AFTER_RECORD_FAIL"))
-                .andExpect(jsonPath("$.recordDate").value("2026-04-13"))
-                .andExpect(jsonPath("$.author.displayName").value("민준"))
-                .andExpect(jsonPath("$.activityCreatedAt").exists())
-                .andExpect(jsonPath("$.activityImageUrl").exists())
-                .andExpect(jsonPath("$.oneLineReview").value("릴스 무한루프에 빠졌어요..."))
-                .andExpect(jsonPath("$.goalStatus").value("FAIL"))
-                .andExpect(jsonPath("$.snapshotGoalMinutes").value(120))
-                .andExpect(jsonPath("$.details[0].usageGoalTypeCode").value("TOTAL_USAGE"))
-                .andExpect(jsonPath("$.details[0].usedMinutes").value(365))
+                .andExpect(jsonPath("$.displayName").value("민준"))
+                .andExpect(jsonPath("$.dailyStatus").value("GOAL_FAILED"))
+                .andExpect(jsonPath("$.challengeStatus").doesNotExist())
+                .andExpect(jsonPath("$.author").doesNotExist())
+                .andExpect(jsonPath("$.activityRecord.submittedAt").exists())
+                .andExpect(jsonPath("$.activityRecord.activityImageUrl").exists())
+                .andExpect(jsonPath("$.activityRecord.reflectionText").value("릴스 무한루프에 빠졌어요..."))
+                .andExpect(jsonPath("$.activityRecord.allAchieved").value(false))
+                .andExpect(jsonPath("$.activityRecord.details[0].usageGoalType").value("TOTAL_USAGE"))
+                .andExpect(jsonPath("$.activityRecord.details[0].usedMinutes").value(365))
                 .andExpect(jsonPath("$.reactions.totalCount").value(2))
                 .andExpect(jsonPath("$.reactions.summary[0].reactionBody").value("MUSCLE"))
                 .andExpect(jsonPath("$.reactions.summary[0].displayName").value("지수"))
@@ -284,13 +286,13 @@ class GroupActivityCalendarApiTest {
                 .andExpect(jsonPath("$.commentCount").value(10))
                 .andExpect(jsonPath("$.pokeCount").value(0))
                 .andExpect(jsonPath("$.pokeable").value(false))
-                .andExpect(jsonPath("$.poked").value(false))
+                .andExpect(jsonPath("$.isPoked").value(false))
                 .andExpect(jsonPath("$.pokedUsers").isEmpty());
     }
 
     @Test
-    @DisplayName("홈 피드 카드의 challengeRecordId로 인증 전 상세와 댓글/콕 API를 연동한다")
-    void getFeedDetail_fromTodayChallengeRecordIdSupportsPokesAndComments() throws Exception {
+    @DisplayName("홈 피드 카드의 challengeRecordId로 인증 전 피드 상세와 댓글/콕 API를 연동한다")
+    void getGroupChallengeRecordDetail_fromTodayChallengeRecordIdSupportsPokesAndComments() throws Exception {
         CalendarFixture fixture = saveCalendarFixture();
         GroupActivityParticipantRow minjunRow = participantRowOf(fixture.challenge(), "민준");
 
@@ -329,26 +331,25 @@ class GroupActivityCalendarApiTest {
                 .andExpect(jsonPath("$.totalCount").value(1))
                 .andExpect(jsonPath("$.items[0].commentBody").value("인증 기다리고 있어요"));
 
-        mockMvc.perform(get("/challenge-records/{challengeRecordId}", challengeRecordId.longValue())
+        mockMvc.perform(get(
+                        "/group-challenges/{groupChallengeId}/challenge-records/{challengeRecordId}",
+                        fixture.challenge().getId(),
+                        challengeRecordId.longValue()
+                )
                         .header(HttpHeaders.AUTHORIZATION, bearer(fixture.currentUser().getId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.challengeRecordId").value(challengeRecordId.longValue()))
-                .andExpect(jsonPath("$.challengeStatus").value("BEFORE_RECORD"))
-                .andExpect(jsonPath("$.recordDate").value("2026-04-16"))
-                .andExpect(jsonPath("$.author.displayName").value("민준"))
-                .andExpect(jsonPath("$.activityRecordId").doesNotExist())
-                .andExpect(jsonPath("$.activityCreatedAt").doesNotExist())
-                .andExpect(jsonPath("$.activityImageUrl").doesNotExist())
-                .andExpect(jsonPath("$.oneLineReview").doesNotExist())
-                .andExpect(jsonPath("$.goalStatus").doesNotExist())
-                .andExpect(jsonPath("$.snapshotGoalMinutes").doesNotExist())
-                .andExpect(jsonPath("$.details").isEmpty())
+                .andExpect(jsonPath("$.displayName").value("민준"))
+                .andExpect(jsonPath("$.dailyStatus").value("NOT_CERTIFIED"))
+                .andExpect(jsonPath("$.challengeStatus").doesNotExist())
+                .andExpect(jsonPath("$.author").doesNotExist())
+                .andExpect(jsonPath("$.activityRecord").doesNotExist())
                 .andExpect(jsonPath("$.reactions.totalCount").value(0))
                 .andExpect(jsonPath("$.reactions.summary").isEmpty())
                 .andExpect(jsonPath("$.commentCount").value(1))
                 .andExpect(jsonPath("$.pokeCount").value(1))
                 .andExpect(jsonPath("$.pokeable").value(true))
-                .andExpect(jsonPath("$.poked").value(true))
+                .andExpect(jsonPath("$.isPoked").value(true))
                 .andExpect(jsonPath("$.pokedUsers[0].displayName").value("나"));
     }
 
