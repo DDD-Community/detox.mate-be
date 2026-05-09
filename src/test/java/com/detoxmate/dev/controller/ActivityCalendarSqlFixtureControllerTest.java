@@ -4,7 +4,7 @@ import com.detoxmate.dev.dto.ActivityCalendarRichFixtureResponse;
 import com.detoxmate.dev.dto.FixtureCheckDatesResponse;
 import com.detoxmate.dev.dto.FixtureSummaryResponse;
 import com.detoxmate.dev.dto.FixtureUserResponse;
-import com.detoxmate.dev.service.ActivityCalendarRichFixtureService;
+import com.detoxmate.dev.service.ActivityCalendarSqlFixtureService;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,56 +38,56 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(RestDocumentationExtension.class)
-class DevFixtureControllerTest {
+class ActivityCalendarSqlFixtureControllerTest {
 
-    private ActivityCalendarRichFixtureService fixtureService;
+    private ActivityCalendarSqlFixtureService fixtureService;
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp(RestDocumentationContextProvider restDocumentation) {
-        fixtureService = mock(ActivityCalendarRichFixtureService.class);
-        mockMvc = MockMvcBuilders.standaloneSetup(new DevFixtureController(fixtureService))
+        fixtureService = mock(ActivityCalendarSqlFixtureService.class);
+        mockMvc = MockMvcBuilders.standaloneSetup(new ActivityCalendarSqlFixtureController(fixtureService))
                 .setControllerAdvice(new com.detoxmate.common.error.GlobalExceptionHandler())
                 .apply(documentationConfiguration(restDocumentation))
                 .build();
     }
 
     @Test
-    void activity_calendar_rich_fixture를_생성한다() throws Exception {
+    void activity_calendar_rich_fixture를_SQL로_reset한다() throws Exception {
         LocalDate today = LocalDate.of(2026, 5, 9);
-        when(fixtureService.seed())
+        when(fixtureService.reset())
                 .thenReturn(new ActivityCalendarRichFixtureResponse(
                         "activity-calendar-rich",
-                        1L,
-                        10L,
+                        -910000001L,
+                        -910000001L,
                         "ACR01",
                         today,
                         today.minusDays(8),
                         new FixtureSummaryResponse(5, 3, 0, 8),
                         new FixtureCheckDatesResponse(today.minusDays(8), today.minusDays(5), today),
                         List.of(
-                                new FixtureUserResponse("me", 1L, "캘린더 나", "access-token-me"),
-                                new FixtureUserResponse("member", 2L, "캘린더 지수", "access-token-jisu"),
-                                new FixtureUserResponse("member", 3L, "캘린더 민준", "access-token-minjun")
+                                new FixtureUserResponse("me", -910000001L, "캘린더 나", "access-token-me"),
+                                new FixtureUserResponse("member", -910000002L, "캘린더 지수", "access-token-jisoo"),
+                                new FixtureUserResponse("member", -910000003L, "캘린더 민준", "access-token-minjun")
                         )
                 ));
         FieldDescriptor[] responseFieldDescriptors = activityCalendarRichFixtureResponseFields();
 
-        mockMvc.perform(post("/dev/fixtures/activity-calendar-rich"))
+        mockMvc.perform(post("/dev/fixtures/activity-calendar-rich/reset"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.fixture").value("activity-calendar-rich"))
                 .andExpect(jsonPath("$.inviteCode").value("ACR01"))
                 .andExpect(jsonPath("$.summary.streakDays").value(8))
-                .andDo(result -> verify(fixtureService).seed())
-                .andDo(document("dev-fixtures/activity-calendar-rich",
+                .andDo(result -> verify(fixtureService).reset())
+                .andDo(document("dev-fixtures/activity-calendar-rich-reset",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
                         responseFields(responseFieldDescriptors),
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Dev Fixture")
-                                .summary("Seed activity calendar rich fixture")
-                                .description("local/dev 환경에서 그룹 활동 캘린더 happy case 검증용 fixture를 삭제 후 재생성한다.")
+                                .summary("Reset activity calendar rich fixture with SQL snapshot")
+                                .description("local/dev 환경에서 SQL 스냅샷 방식으로 그룹 활동 캘린더 happy case fixture를 삭제 후 재생성한다.")
                                 .responseSchema(schema("ActivityCalendarRichFixtureResponse"))
                                 .responseFields(responseFieldDescriptors)
                                 .build()

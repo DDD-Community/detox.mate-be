@@ -74,46 +74,47 @@ public class ActivityCalendarRichFixtureService {
 
         LocalDate today = LocalDate.now(clock.withZone(KST));
         LocalDate firstVerificationDate = today.minusDays(8);
+        LocalDate dMinus8 = today.minusDays(8);
+        LocalDate dMinus7 = today.minusDays(7);
+        LocalDate dMinus6 = today.minusDays(6);
+        LocalDate dMinus5 = today.minusDays(5);
+        LocalDate dMinus4 = today.minusDays(4);
+        LocalDate dMinus3 = today.minusDays(3);
+        LocalDate dMinus2 = today.minusDays(2);
+        LocalDate dMinus1 = today.minusDays(1);
         UsageGoalType totalUsage = totalUsageGoalType();
         Group group = groupRepository.saveAndFlush(Group.createNew(GROUP_NAME, INVITE_CODE));
         GroupChallenge challenge = saveActiveChallenge(group, firstVerificationDate.atStartOfDay());
 
         FixtureMember me = saveFixtureMember(group, challenge, "me", "캘린더 나", true, today.minusDays(10).atTime(10, 0));
-        FixtureMember jisu = saveFixtureMember(group, challenge, "member", "캘린더 지수", false, today.minusDays(10).atTime(10, 1));
-        FixtureMember minjun = saveFixtureMember(group, challenge, "member", "캘린더 민준", false, today.minusDays(10).atTime(10, 2));
+        FixtureMember jisu = saveFixtureMember(group, challenge, "member", "캘린더 지수", false, dMinus8.atTime(10, 0));
+        FixtureMember minjun = saveFixtureMember(group, challenge, "member", "캘린더 민준", false, dMinus6.atTime(10, 0));
 
-        LocalDateTime goalSetAt = today.minusDays(9).atTime(9, 0);
-        UserUsageGoalTime meGoal = saveGoal(me.user(), totalUsage, 120, goalSetAt);
-        UserUsageGoalTime jisuGoal = saveGoal(jisu.user(), totalUsage, 120, goalSetAt);
-        UserUsageGoalTime minjunGoal = saveGoal(minjun.user(), totalUsage, 120, goalSetAt);
+        UserUsageGoalTime meGoal = saveGoal(me.user(), totalUsage, 120, today.minusDays(9).atTime(9, 0));
+        UserUsageGoalTime jisuGoal = saveGoal(jisu.user(), totalUsage, 120, dMinus7.atTime(9, 0));
+        UserUsageGoalTime minjunGoal = saveGoal(minjun.user(), totalUsage, 120, dMinus5.atTime(9, 0));
 
-        certify(challenge, me, meGoal, today.minusDays(8), LocalTime.of(20, 30), 90, true);
-        certify(challenge, jisu, jisuGoal, today.minusDays(8), LocalTime.of(20, 20), 80, true);
-        certify(challenge, minjun, minjunGoal, today.minusDays(8), LocalTime.of(20, 10), 100, true);
+        certify(challenge, me, meGoal, dMinus8, LocalTime.of(20, 30), 90, true);
+        certify(challenge, me, meGoal, dMinus7, LocalTime.of(20, 30), 90, true);
 
-        certify(challenge, me, meGoal, today.minusDays(7), LocalTime.of(20, 30), 90, true);
-        certify(challenge, jisu, jisuGoal, today.minusDays(7), LocalTime.of(20, 20), 80, true);
+        certify(challenge, me, meGoal, dMinus6, LocalTime.of(20, 30), 90, true);
+        certify(challenge, jisu, jisuGoal, dMinus6, LocalTime.of(20, 20), 80, true);
 
-        certify(challenge, me, meGoal, today.minusDays(6), LocalTime.of(20, 30), 90, true);
-        certify(challenge, jisu, jisuGoal, today.minusDays(6), LocalTime.of(20, 20), 80, true);
-        certify(challenge, minjun, minjunGoal, today.minusDays(6), LocalTime.of(20, 10), 100, true);
+        certify(challenge, me, meGoal, dMinus5, LocalTime.of(20, 30), 90, true);
 
-        certify(challenge, me, meGoal, today.minusDays(5), LocalTime.of(20, 30), 90, true);
-        certify(challenge, minjun, minjunGoal, today.minusDays(5), LocalTime.of(20, 20), 100, true);
+        certify(challenge, me, meGoal, dMinus4, LocalTime.of(20, 30), 90, true);
+        certify(challenge, jisu, jisuGoal, dMinus4, LocalTime.of(20, 20), 80, true);
+        certify(challenge, minjun, minjunGoal, dMinus4, LocalTime.of(20, 10), 100, true);
 
-        certify(challenge, me, meGoal, today.minusDays(4), LocalTime.of(20, 30), 90, true);
-        certify(challenge, jisu, jisuGoal, today.minusDays(4), LocalTime.of(20, 20), 80, true);
-        certify(challenge, minjun, minjunGoal, today.minusDays(4), LocalTime.of(20, 10), 100, true);
+        certify(challenge, jisu, jisuGoal, dMinus3, LocalTime.of(20, 30), 80, true);
+        certify(challenge, minjun, minjunGoal, dMinus3, LocalTime.of(20, 20), 100, true);
 
-        certify(challenge, jisu, jisuGoal, today.minusDays(3), LocalTime.of(20, 30), 80, true);
-        certify(challenge, minjun, minjunGoal, today.minusDays(3), LocalTime.of(20, 20), 100, true);
+        certify(challenge, me, meGoal, dMinus2, LocalTime.of(20, 30), 90, true);
+        certify(challenge, jisu, jisuGoal, dMinus2, LocalTime.of(20, 20), 80, true);
+        certify(challenge, minjun, minjunGoal, dMinus2, LocalTime.of(20, 10), 100, true);
 
-        certify(challenge, me, meGoal, today.minusDays(2), LocalTime.of(20, 30), 90, true);
-        certify(challenge, jisu, jisuGoal, today.minusDays(2), LocalTime.of(20, 20), 80, true);
-        certify(challenge, minjun, minjunGoal, today.minusDays(2), LocalTime.of(20, 10), 100, true);
-
-        certify(challenge, me, meGoal, today.minusDays(1), LocalTime.of(20, 30), 90, true);
-        certify(challenge, jisu, jisuGoal, today.minusDays(1), LocalTime.of(20, 20), 80, true);
+        certify(challenge, me, meGoal, dMinus1, LocalTime.of(20, 30), 90, true);
+        certify(challenge, jisu, jisuGoal, dMinus1, LocalTime.of(20, 20), 80, true);
 
         return new ActivityCalendarRichFixtureResponse(
                 FIXTURE_NAME,
@@ -122,8 +123,8 @@ public class ActivityCalendarRichFixtureService {
                 INVITE_CODE,
                 today,
                 firstVerificationDate,
-                new FixtureSummaryResponse(4, 4, 0, 8),
-                new FixtureCheckDatesResponse(today.minusDays(8), today.minusDays(7), today),
+                new FixtureSummaryResponse(5, 3, 0, 8),
+                new FixtureCheckDatesResponse(dMinus8, dMinus5, today),
                 List.of(toUserResponse(me), toUserResponse(jisu), toUserResponse(minjun))
         );
     }

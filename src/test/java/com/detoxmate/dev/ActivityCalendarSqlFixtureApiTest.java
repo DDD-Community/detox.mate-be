@@ -1,7 +1,5 @@
 package com.detoxmate.dev;
 
-import com.detoxmate.dev.dto.ActivityCalendarRichFixtureResponse;
-import com.detoxmate.dev.service.ActivityCalendarRichFixtureService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
@@ -11,8 +9,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.sql.Timestamp;
@@ -28,13 +26,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-class ActivityCalendarRichFixtureApiTest {
+class ActivityCalendarSqlFixtureApiTest {
 
     @Autowired
     MockMvc mockMvc;
-
-    @Autowired
-    ActivityCalendarRichFixtureService fixtureService;
 
     @Autowired
     JdbcTemplate jdbcTemplate;
@@ -42,9 +37,9 @@ class ActivityCalendarRichFixtureApiTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
-    @DisplayName("activity-calendar-rich fixture를 생성하면 응답 토큰으로 캘린더 happy case를 조회할 수 있다")
-    void seedActivityCalendarRichFixture() throws Exception {
-        JsonNode fixture = createFixture();
+    @DisplayName("SQL reset fixture를 생성하면 응답 토큰으로 캘린더 happy case를 조회할 수 있다")
+    void resetActivityCalendarSqlFixture() throws Exception {
+        JsonNode fixture = resetFixture();
         long groupId = fixture.get("groupId").asLong();
         String accessToken = fixture.get("users").get(0).get("accessToken").asText();
 
@@ -98,17 +93,18 @@ class ActivityCalendarRichFixtureApiTest {
     }
 
     @Test
-    @DisplayName("activity-calendar-rich fixture는 같은 초대코드 그룹을 삭제하고 재생성한다")
-    void seedActivityCalendarRichFixtureIsIdempotent() {
-        ActivityCalendarRichFixtureResponse first = fixtureService.seed();
-        ActivityCalendarRichFixtureResponse second = fixtureService.seed();
+    @DisplayName("SQL reset fixture는 여러 번 호출해도 같은 fixture 상태로 재생성된다")
+    void resetActivityCalendarSqlFixtureIsIdempotent() throws Exception {
+        JsonNode first = resetFixture();
+        JsonNode second = resetFixture();
 
-        assertThat(second.inviteCode()).isEqualTo("ACR01");
-        assertThat(second.groupId()).isNotEqualTo(first.groupId());
+        assertThat(second.get("inviteCode").asText()).isEqualTo("ACR01");
+        assertThat(second.get("groupId").asLong()).isEqualTo(first.get("groupId").asLong());
+        assertThat(second.get("summary").get("streakDays").asInt()).isEqualTo(8);
     }
 
-    private JsonNode createFixture() throws Exception {
-        String response = mockMvc.perform(post("/dev/fixtures/activity-calendar-rich"))
+    private JsonNode resetFixture() throws Exception {
+        String response = mockMvc.perform(post("/dev/fixtures/activity-calendar-rich/reset"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.fixture").value("activity-calendar-rich"))
                 .andExpect(jsonPath("$.inviteCode").value("ACR01"))
