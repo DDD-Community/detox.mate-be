@@ -92,15 +92,15 @@ operation::groups/members/get-by-id-forbidden[snippets='http-request,request-hea
 
 operation::groups/activity-calendar/get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
 
-=== Get Group Activity Calendar Daily History
-
-operation::groups/activity-calendar/history-get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
-
 == Group Activity Feed API
 
 === Get Group Daily Activity Feed
 
-operation::groups/activity-feed/history-get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+operation::groups/activity-feed/day-get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+
+=== Get Group Daily Activity Feed Member
+
+operation::groups/activity-feed/member-get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
 
 == Group Challenge API
 
@@ -142,7 +142,11 @@ operation::uploads/presigned-urls-invalid-request[snippets='http-request,request
 
   == Feed API
 
-  === Get Home Feed
+  === Get Group Challenge Overview
+
+  operation::group-challenges/overview-get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+
+  === Get Home Feed (Deprecated)
 
   operation::group-challenges/home-feed-get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
 

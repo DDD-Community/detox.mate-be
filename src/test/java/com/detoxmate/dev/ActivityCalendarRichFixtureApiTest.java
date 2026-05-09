@@ -59,7 +59,7 @@ class ActivityCalendarRichFixtureApiTest {
                 .andExpect(jsonPath("$.summary.resetCount").value(0));
 
         mockMvc.perform(get(
-                        "/groups/{groupId}/activity-calendar/days/{date}",
+                        "/groups/{groupId}/activity-feed/days/{date}",
                         groupId,
                         fixture.get("checkDates").get("halfDay").asText()
                 )
@@ -72,7 +72,7 @@ class ActivityCalendarRichFixtureApiTest {
                 .andExpect(jsonPath("$.members.length()").value(3));
 
         mockMvc.perform(get(
-                                "/groups/{groupId}/activity-calendar/days/{date}",
+                                "/groups/{groupId}/activity-feed/days/{date}",
                                 groupId,
                                 fixture.get("checkDates").get("allDay").asText()
                         )
@@ -84,7 +84,7 @@ class ActivityCalendarRichFixtureApiTest {
                 .andExpect(jsonPath("$.members.length()").value(3));
 
         mockMvc.perform(get(
-                        "/groups/{groupId}/activity-calendar/days/{date}",
+                        "/groups/{groupId}/activity-feed/days/{date}",
                         groupId,
                         fixture.get("today").asText()
                 )

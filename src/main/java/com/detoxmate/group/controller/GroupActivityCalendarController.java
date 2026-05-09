@@ -1,8 +1,8 @@
 package com.detoxmate.group.controller;
 
 import com.detoxmate.auth.CurrentUser;
-import com.detoxmate.group.dto.GroupActivityCalendarHistoryResponse;
 import com.detoxmate.group.dto.GroupActivityCalendarResponse;
+import com.detoxmate.group.dto.GroupActivityFeedResponse;
 import com.detoxmate.group.service.GroupActivityCalendarService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -26,12 +26,22 @@ public class GroupActivityCalendarController {
         return groupActivityCalendarService.getCalendar(groupId, currentUser.id());
     }
 
-    @GetMapping("/groups/{groupId}/activity-calendar/days/{date}")
-    public GroupActivityCalendarHistoryResponse getActivityCalendarHistory(
+    @GetMapping("/groups/{groupId}/activity-feed/days/{date}")
+    public GroupActivityFeedResponse getActivityFeed(
             CurrentUser currentUser,
             @PathVariable Long groupId,
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
-        return groupActivityCalendarService.getCalendarHistory(groupId, date, currentUser.id());
+        return groupActivityCalendarService.getActivityFeed(groupId, date, currentUser.id());
+    }
+
+    @GetMapping("/groups/{groupId}/activity-feed/days/{date}/members/{groupMemberId}")
+    public GroupActivityFeedResponse.MemberResponse getActivityFeedMember(
+            CurrentUser currentUser,
+            @PathVariable Long groupId,
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @PathVariable Long groupMemberId
+    ) {
+        return groupActivityCalendarService.getActivityFeedMember(groupId, date, groupMemberId, currentUser.id());
     }
 }

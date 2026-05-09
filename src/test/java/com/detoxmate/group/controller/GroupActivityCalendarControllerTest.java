@@ -3,11 +3,9 @@ package com.detoxmate.group.controller;
 import com.detoxmate.activityrecord.dto.UsageGoalTypeCode;
 import com.detoxmate.auth.CurrentUserResolver;
 import com.detoxmate.group.dto.ActivityRecordDetailHistoryResponse;
-import com.detoxmate.group.dto.ActivityRecordHistoryResponse;
-import com.detoxmate.group.dto.CalendarHistoryMemberResponse;
-import com.detoxmate.group.dto.GroupActivityCalendarHistoryResponse;
 import com.detoxmate.group.dto.GroupActivityCalendarResponse;
 import com.detoxmate.group.dto.GroupActivityCalendarSummaryResponse;
+import com.detoxmate.group.dto.GroupActivityFeedResponse;
 import com.detoxmate.group.dto.GroupDailyVerificationSummaryResponse;
 import com.detoxmate.group.dto.MemberDailyGoalResponse;
 import com.detoxmate.group.service.GroupActivityCalendarService;
@@ -111,33 +109,69 @@ class GroupActivityCalendarControllerTest {
     }
 
     @Test
-    void 그룹_활동_캘린더_히스토리를_조회한다() throws Exception {
-        when(groupActivityCalendarService.getCalendarHistory(1L, LocalDate.of(2026, 4, 10), 1L))
-                .thenReturn(calendarHistoryResponse());
+    void 일별_활동_피드를_조회한다() throws Exception {
+        when(groupActivityCalendarService.getActivityFeed(1L, LocalDate.of(2026, 4, 10), 1L))
+                .thenReturn(activityFeedResponse());
 
         HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
-        ParameterDescriptor[] pathParameterDescriptors = historyPathParameters();
-        FieldDescriptor[] responseFieldDescriptors = calendarHistoryResponseFields();
+        ParameterDescriptor[] pathParameterDescriptors = activityFeedPathParameters();
+        FieldDescriptor[] responseFieldDescriptors = activityFeedResponseFields("members[]");
 
-        mockMvc.perform(get("/groups/{groupId}/activity-calendar/days/{date}", 1L, "2026-04-10")
+        mockMvc.perform(get("/groups/{groupId}/activity-feed/days/{date}", 1L, "2026-04-10")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.dailySummary.result").value("HALF"))
                 .andExpect(jsonPath("$.members[0].dailyStatus").value("GOAL_ACHIEVED"))
-                .andDo(document("groups/activity-calendar/history-get",
+                .andDo(document("groups/activity-feed/day-get",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
                         requestHeaders(requestHeaderDescriptors),
                         pathParameters(pathParameterDescriptors),
                         responseFields(responseFieldDescriptors),
                         resource(ResourceSnippetParameters.builder()
-                                .tag("Group Activity Calendar")
-                                .summary("Get group activity calendar daily history")
-                                .description("캘린더에서 선택한 날짜의 멤버별 상태, 유효 목표, 활동 인증 내용을 조회한다.")
+                                .tag("Group Activity Feed")
+                                .summary("Get group daily activity feed")
+                                .description("홈 피드와 캘린더 히스토리에서 공통으로 사용하는 날짜별 멤버 활동 피드를 조회한다.")
                                 .requestHeaders(requestHeaderDescriptors)
-                                .pathParameters(historyOpenApiPathParameters())
-                                .responseSchema(schema("GroupActivityCalendarHistoryResponse"))
+                                .pathParameters(activityFeedOpenApiPathParameters())
+                                .responseSchema(schema("GroupActivityFeedResponse"))
+                                .responseFields(responseFieldDescriptors)
+                                .build()
+                        )));
+    }
+
+    @Test
+    void 일별_활동_피드_멤버_상세를_조회한다() throws Exception {
+        when(groupActivityCalendarService.getActivityFeedMember(1L, LocalDate.of(2026, 4, 10), 100L, 1L))
+                .thenReturn(activityFeedMemberDetailResponse());
+
+        HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
+        ParameterDescriptor[] pathParameterDescriptors = activityFeedMemberPathParameters();
+        FieldDescriptor[] responseFieldDescriptors = activityFeedMemberResponseFields("");
+
+        mockMvc.perform(get("/groups/{groupId}/activity-feed/days/{date}/members/{groupMemberId}",
+                        1L,
+                        "2026-04-10",
+                        100L
+                )
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.dailyStatus").value("GOAL_ACHIEVED"))
+                .andExpect(jsonPath("$.reactions.totalCount").value(2))
+                .andDo(document("groups/activity-feed/member-get",
+                        preprocessRequest(prettyPrint()),
+                        preprocessResponse(prettyPrint()),
+                        requestHeaders(requestHeaderDescriptors),
+                        pathParameters(pathParameterDescriptors),
+                        responseFields(responseFieldDescriptors),
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Group Activity Feed")
+                                .summary("Get group daily activity feed member")
+                                .description("날짜별 활동 피드의 특정 멤버 카드를 동일한 응답 인터페이스로 조회한다.")
+                                .requestHeaders(requestHeaderDescriptors)
+                                .pathParameters(activityFeedMemberOpenApiPathParameters())
+                                .responseSchema(schema("GroupActivityFeedMember"))
                                 .responseFields(responseFieldDescriptors)
                                 .build()
                         )));
@@ -158,8 +192,8 @@ class GroupActivityCalendarControllerTest {
         );
     }
 
-    private GroupActivityCalendarHistoryResponse calendarHistoryResponse() {
-        return new GroupActivityCalendarHistoryResponse(
+    private GroupActivityFeedResponse activityFeedResponse() {
+        return new GroupActivityFeedResponse(
                 1L,
                 LocalDate.of(2026, 4, 10),
                 new GroupDailyVerificationSummaryResponse(
@@ -170,79 +204,73 @@ class GroupActivityCalendarControllerTest {
                         2,
                         2
                 ),
+                List.of(activityFeedMemberResponse())
+        );
+    }
+
+    private GroupActivityFeedResponse.MemberResponse activityFeedMemberResponse() {
+        return activityFeedMemberResponse(null, null);
+    }
+
+    private GroupActivityFeedResponse.MemberResponse activityFeedMemberDetailResponse() {
+        return activityFeedMemberResponse(10000L, new GroupActivityFeedResponse.ReactionSummaryResponse(
+                2,
                 List.of(
-                        new CalendarHistoryMemberResponse(
-                                100L,
-                                1000L,
-                                2L,
-                                "지수",
-                                "https://example.com/profile/jisu.png",
-                                false,
-                                "ACTIVE",
-                                "JOINED",
-                                "GOAL_ACHIEVED",
-                                true,
-                                List.of(new MemberDailyGoalResponse(
-                                        101L,
-                                        UsageGoalTypeCode.TOTAL_USAGE,
-                                        90,
-                                        LocalDate.of(2026, 4, 10)
-                                )),
-                                new ActivityRecordHistoryResponse(
-                                        123L,
-                                        LocalDateTime.of(2026, 4, 10, 21, 30),
-                                        "https://example.com/activity-records/1/2026/04/run.png",
-                                        "2시간동안 러닝 뛰고 온 날!",
-                                        true,
-                                        List.of(new ActivityRecordDetailHistoryResponse(
-                                                UsageGoalTypeCode.TOTAL_USAGE,
-                                                70,
-                                                90,
-                                                true
-                                        )),
-                                        22,
-                                        10
-                                )
+                        new GroupActivityFeedResponse.ReactionResponse(
+                                "MUSCLE",
+                                3L,
+                                "민준",
+                                "https://example.com/profile/minjun.png"
                         ),
-                        new CalendarHistoryMemberResponse(
-                                102L,
-                                1002L,
+                        new GroupActivityFeedResponse.ReactionResponse(
+                                "CLAP",
                                 1L,
                                 "나",
-                                "https://example.com/profile/me.png",
-                                true,
-                                "ACTIVE",
-                                "JOINED",
-                                "NOT_CERTIFIED",
-                                true,
-                                List.of(new MemberDailyGoalResponse(
-                                        301L,
-                                        UsageGoalTypeCode.TOTAL_USAGE,
-                                        90,
-                                        LocalDate.of(2026, 4, 10)
-                                )),
-                                null
-                        ),
-                        new CalendarHistoryMemberResponse(
-                                103L,
-                                1003L,
-                                3L,
-                                "서연",
-                                "https://example.com/profile/seoyeon.png",
-                                false,
-                                "LEFT",
-                                "WITHDRAWN",
-                                "NOT_ACTIVE",
-                                false,
-                                List.of(new MemberDailyGoalResponse(
-                                        401L,
-                                        UsageGoalTypeCode.TOTAL_USAGE,
-                                        70,
-                                        LocalDate.of(2026, 4, 10)
-                                )),
-                                null
+                                "https://example.com/profile/me.png"
                         )
                 )
+        ));
+    }
+
+    private GroupActivityFeedResponse.MemberResponse activityFeedMemberResponse(
+            Long challengeRecordId,
+            GroupActivityFeedResponse.ReactionSummaryResponse reactions
+    ) {
+        return new GroupActivityFeedResponse.MemberResponse(
+                100L,
+                1000L,
+                2L,
+                "지수",
+                "https://example.com/profile/jisu.png",
+                false,
+                "ACTIVE",
+                "JOINED",
+                "GOAL_ACHIEVED",
+                true,
+                List.of(new MemberDailyGoalResponse(
+                        101L,
+                        UsageGoalTypeCode.TOTAL_USAGE,
+                        90,
+                        LocalDate.of(2026, 4, 10)
+                )),
+                challengeRecordId,
+                new GroupActivityFeedResponse.ActivityRecordResponse(
+                        LocalDateTime.of(2026, 4, 10, 21, 30),
+                        "https://example.com/activity-records/1/2026/04/run.png",
+                        "2시간동안 러닝 뛰고 온 날!",
+                        true,
+                        List.of(new ActivityRecordDetailHistoryResponse(
+                                UsageGoalTypeCode.TOTAL_USAGE,
+                                70,
+                                90,
+                                true
+                        ))
+                ),
+                22,
+                10,
+                0,
+                false,
+                reactions
         );
     }
 
@@ -258,10 +286,18 @@ class GroupActivityCalendarControllerTest {
         };
     }
 
-    private ParameterDescriptor[] historyPathParameters() {
+    private ParameterDescriptor[] activityFeedPathParameters() {
         return new ParameterDescriptor[] {
                 parameterWithName("groupId").description("그룹 ID"),
-                parameterWithName("date").description("조회 날짜. YYYY-MM-DD 형식")
+                parameterWithName("date").description("조회 날짜(yyyy-MM-dd, KST 기준)")
+        };
+    }
+
+    private ParameterDescriptor[] activityFeedMemberPathParameters() {
+        return new ParameterDescriptor[] {
+                parameterWithName("groupId").description("그룹 ID"),
+                parameterWithName("date").description("조회 날짜(yyyy-MM-dd, KST 기준)"),
+                parameterWithName("groupMemberId").description("그룹 멤버 ID")
         };
     }
 
@@ -273,14 +309,28 @@ class GroupActivityCalendarControllerTest {
         };
     }
 
-    private com.epages.restdocs.apispec.ParameterDescriptorWithType[] historyOpenApiPathParameters() {
+    private com.epages.restdocs.apispec.ParameterDescriptorWithType[] activityFeedOpenApiPathParameters() {
         return new com.epages.restdocs.apispec.ParameterDescriptorWithType[] {
                 com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName("groupId")
-                        .type(SimpleType.INTEGER)
+                        .type(SimpleType.NUMBER)
                         .description("그룹 ID"),
                 com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName("date")
                         .type(SimpleType.STRING)
-                        .description("조회 날짜. YYYY-MM-DD 형식")
+                        .description("조회 날짜(yyyy-MM-dd, KST 기준)")
+        };
+    }
+
+    private com.epages.restdocs.apispec.ParameterDescriptorWithType[] activityFeedMemberOpenApiPathParameters() {
+        return new com.epages.restdocs.apispec.ParameterDescriptorWithType[] {
+                com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName("groupId")
+                        .type(SimpleType.NUMBER)
+                        .description("그룹 ID"),
+                com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName("date")
+                        .type(SimpleType.STRING)
+                        .description("조회 날짜(yyyy-MM-dd, KST 기준)"),
+                com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName("groupMemberId")
+                        .type(SimpleType.NUMBER)
+                        .description("그룹 멤버 ID")
         };
     }
 
@@ -305,14 +355,16 @@ class GroupActivityCalendarControllerTest {
         };
     }
 
-    private FieldDescriptor[] calendarHistoryResponseFields() {
-        return new FieldDescriptor[] {
+    private FieldDescriptor[] activityFeedResponseFields(String memberPrefix) {
+        FieldDescriptor[] memberFields = activityFeedMemberResponseFields(memberPrefix);
+
+        FieldDescriptor[] rootFields = new FieldDescriptor[] {
                 fieldWithPath("groupId").type(JsonFieldType.NUMBER).description("그룹 ID"),
                 fieldWithPath("date").type(JsonFieldType.STRING).description("조회 날짜"),
                 fieldWithPath("dailySummary").type(JsonFieldType.OBJECT).description("선택 날짜의 그룹 인증 집계"),
                 fieldWithPath("dailySummary.date").type(JsonFieldType.STRING).description("KST 기준 날짜"),
                 fieldWithPath("dailySummary.dayStatus").type(JsonFieldType.STRING)
-                        .description("날짜 확정 상태 (NOT_STARTED | CONFIRMED | IN_PROGRESS | FUTURE)"),
+                        .description("날짜 상태 (NOT_STARTED | CONFIRMED | IN_PROGRESS | FUTURE)"),
                 fieldWithPath("dailySummary.result").type(JsonFieldType.STRING)
                         .description("일별 그룹 인증 결과 (ALL | HALF | RESET). 확정 전이면 null").optional(),
                 fieldWithPath("dailySummary.activeMemberCount").type(JsonFieldType.NUMBER)
@@ -321,51 +373,79 @@ class GroupActivityCalendarControllerTest {
                         .description("해당 날짜에 인증한 활동중 멤버 수"),
                 fieldWithPath("dailySummary.requiredCount").type(JsonFieldType.NUMBER)
                         .description("그룹 인증 성공에 필요한 인증자 수"),
-                fieldWithPath("members").type(JsonFieldType.ARRAY).description("선택 날짜의 멤버별 활동 인증 히스토리"),
-                fieldWithPath("members[].groupMemberId").type(JsonFieldType.NUMBER).description("그룹 멤버 ID"),
-                fieldWithPath("members[].groupChallengeParticipantId").type(JsonFieldType.NUMBER)
+                fieldWithPath("members").type(JsonFieldType.ARRAY).description("선택 날짜의 멤버별 활동 피드")
+        };
+
+        FieldDescriptor[] fields = new FieldDescriptor[rootFields.length + memberFields.length];
+        System.arraycopy(rootFields, 0, fields, 0, rootFields.length);
+        System.arraycopy(memberFields, 0, fields, rootFields.length, memberFields.length);
+        return fields;
+    }
+
+    private FieldDescriptor[] activityFeedMemberResponseFields(String prefix) {
+        String path = prefix.isBlank() ? "" : prefix + ".";
+
+        return new FieldDescriptor[] {
+                fieldWithPath(path + "groupMemberId").type(JsonFieldType.NUMBER).description("그룹 멤버 ID"),
+                fieldWithPath(path + "groupChallengeParticipantId").type(JsonFieldType.NUMBER)
                         .description("그룹 챌린지 참가자 ID"),
-                fieldWithPath("members[].userId").type(JsonFieldType.NUMBER).description("사용자 ID"),
-                fieldWithPath("members[].displayName").type(JsonFieldType.STRING).description("사용자 표시 이름"),
-                fieldWithPath("members[].profileImageUrl").type(JsonFieldType.STRING).description("프로필 이미지 URL").optional(),
-                fieldWithPath("members[].isMe").type(JsonFieldType.BOOLEAN).description("로그인 사용자인지 여부"),
-                fieldWithPath("members[].memberStatus").type(JsonFieldType.STRING).description("그룹 멤버 상태"),
-                fieldWithPath("members[].participantStatus").type(JsonFieldType.STRING).description("챌린지 참가 상태"),
-                fieldWithPath("members[].dailyStatus").type(JsonFieldType.STRING)
+                fieldWithPath(path + "userId").type(JsonFieldType.NUMBER).description("사용자 ID"),
+                fieldWithPath(path + "displayName").type(JsonFieldType.STRING).description("사용자 표시 이름"),
+                fieldWithPath(path + "profileImageUrl").type(JsonFieldType.STRING).description("프로필 이미지 URL").optional(),
+                fieldWithPath(path + "isMe").type(JsonFieldType.BOOLEAN).description("로그인 사용자인지 여부"),
+                fieldWithPath(path + "memberStatus").type(JsonFieldType.STRING).description("그룹 멤버 상태"),
+                fieldWithPath(path + "participantStatus").type(JsonFieldType.STRING).description("챌린지 참가 상태"),
+                fieldWithPath(path + "dailyStatus").type(JsonFieldType.STRING)
                         .description("멤버 일별 상태 (GOAL_ACHIEVED | GOAL_FAILED | NOT_CERTIFIED | NOT_ACTIVE)"),
-                fieldWithPath("members[].includedInGroupResult").type(JsonFieldType.BOOLEAN)
-                        .description("해당 날짜 그룹 인증 분모/분자 계산 대상인지 여부"),
-                fieldWithPath("members[].goals").type(JsonFieldType.ARRAY).description("선택 날짜에 유효한 목표 목록"),
-                fieldWithPath("members[].goals[].userUsageGoalTimeId").type(JsonFieldType.NUMBER)
-                        .description("user_usage_goal_times ID"),
-                fieldWithPath("members[].goals[].usageGoalType").type(JsonFieldType.STRING).description("목표 타입"),
-                fieldWithPath("members[].goals[].goalMinutes").type(JsonFieldType.NUMBER).description("목표 시간(분)"),
-                fieldWithPath("members[].goals[].effectiveDate").type(JsonFieldType.STRING).description("목표 적용 시작일"),
-                fieldWithPath("members[].activityRecord").type(JsonFieldType.VARIES)
-                        .description("선택 날짜의 최종 활동 인증 내용. 인증하지 않았으면 null").optional(),
-                fieldWithPath("members[].activityRecord.id").type(JsonFieldType.NUMBER).description("활동 인증 기록 ID").optional(),
-                fieldWithPath("members[].activityRecord.submittedAt").type(JsonFieldType.STRING)
-                        .description("최종 인증 제출 일시").optional(),
-                fieldWithPath("members[].activityRecord.activityImageUrl").type(JsonFieldType.STRING)
+                fieldWithPath(path + "includedInGroupResult").type(JsonFieldType.BOOLEAN)
+                        .description("해당 날짜 그룹 인증 계산 대상인지 여부"),
+                fieldWithPath(path + "goals").type(JsonFieldType.ARRAY).description("선택 날짜에 유효한 목표 목록"),
+                fieldWithPath(path + "goals[].userUsageGoalTimeId").type(JsonFieldType.NUMBER)
+                        .description("user_usage_goal_times ID").optional(),
+                fieldWithPath(path + "goals[].usageGoalType").type(JsonFieldType.STRING).description("목표 타입").optional(),
+                fieldWithPath(path + "goals[].goalMinutes").type(JsonFieldType.NUMBER).description("목표 시간(분)").optional(),
+                fieldWithPath(path + "goals[].effectiveDate").type(JsonFieldType.STRING).description("목표 적용 시작일").optional(),
+                fieldWithPath(path + "challengeRecordId").type(JsonFieldType.NUMBER)
+                        .description("기존 challenge-records 댓글/리액션/콕 API 호출에 사용하는 챌린지 기록 ID. 상세 조회에서만 제공")
+                        .optional(),
+                fieldWithPath(path + "activityRecord").type(JsonFieldType.VARIES)
+                        .description("선택 날짜의 활동 인증 내용. 인증하지 않았으면 null").optional(),
+                fieldWithPath(path + "activityRecord.submittedAt").type(JsonFieldType.STRING)
+                        .description("인증 제출 일시").optional(),
+                fieldWithPath(path + "activityRecord.activityImageUrl").type(JsonFieldType.STRING)
                         .description("활동 이미지 URL").optional(),
-                fieldWithPath("members[].activityRecord.reflectionText").type(JsonFieldType.STRING)
+                fieldWithPath(path + "activityRecord.reflectionText").type(JsonFieldType.STRING)
                         .description("회고 텍스트").optional(),
-                fieldWithPath("members[].activityRecord.allAchieved").type(JsonFieldType.BOOLEAN)
-                        .description("인증의 모든 detail이 목표를 달성했는지 여부").optional(),
-                fieldWithPath("members[].activityRecord.details").type(JsonFieldType.ARRAY)
+                fieldWithPath(path + "activityRecord.allAchieved").type(JsonFieldType.BOOLEAN)
+                        .description("모든 목표 달성 여부").optional(),
+                fieldWithPath(path + "activityRecord.details").type(JsonFieldType.ARRAY)
                         .description("목표 타입별 사용 시간과 달성 여부").optional(),
-                fieldWithPath("members[].activityRecord.details[].usageGoalType").type(JsonFieldType.STRING)
+                fieldWithPath(path + "activityRecord.details[].usageGoalType").type(JsonFieldType.STRING)
                         .description("목표 타입").optional(),
-                fieldWithPath("members[].activityRecord.details[].usedMinutes").type(JsonFieldType.NUMBER)
+                fieldWithPath(path + "activityRecord.details[].usedMinutes").type(JsonFieldType.NUMBER)
                         .description("인증 시 제출된 사용 시간(분)").optional(),
-                fieldWithPath("members[].activityRecord.details[].goalMinutes").type(JsonFieldType.NUMBER)
+                fieldWithPath(path + "activityRecord.details[].goalMinutes").type(JsonFieldType.NUMBER)
                         .description("인증 날짜에 유효했던 목표 시간(분)").optional(),
-                fieldWithPath("members[].activityRecord.details[].isAchieved").type(JsonFieldType.BOOLEAN)
+                fieldWithPath(path + "activityRecord.details[].isAchieved").type(JsonFieldType.BOOLEAN)
                         .description("해당 목표 타입의 달성 여부").optional(),
-                fieldWithPath("members[].activityRecord.reactionCount").type(JsonFieldType.NUMBER)
-                        .description("해당 인증에 달린 반응 수").optional(),
-                fieldWithPath("members[].activityRecord.commentCount").type(JsonFieldType.NUMBER)
-                        .description("해당 인증에 달린 댓글 수").optional()
+                fieldWithPath(path + "reactionCount").type(JsonFieldType.NUMBER).description("리액션 수"),
+                fieldWithPath(path + "commentCount").type(JsonFieldType.NUMBER).description("댓글 수"),
+                fieldWithPath(path + "pokeCount").type(JsonFieldType.NUMBER).description("받은 콕 수"),
+                fieldWithPath(path + "isPoked").type(JsonFieldType.BOOLEAN).description("현재 사용자가 콕 찔렀는지 여부"),
+                fieldWithPath(path + "reactions").type(JsonFieldType.OBJECT)
+                        .description("상세 조회에서만 제공하는 리액션 요약").optional(),
+                fieldWithPath(path + "reactions.totalCount").type(JsonFieldType.NUMBER)
+                        .description("리액션 목록 수").optional(),
+                fieldWithPath(path + "reactions.summary").type(JsonFieldType.ARRAY)
+                        .description("리액션 목록").optional(),
+                fieldWithPath(path + "reactions.summary[].reactionBody").type(JsonFieldType.STRING)
+                        .description("리액션 타입").optional(),
+                fieldWithPath(path + "reactions.summary[].userId").type(JsonFieldType.NUMBER)
+                        .description("리액션 작성자 ID").optional(),
+                fieldWithPath(path + "reactions.summary[].displayName").type(JsonFieldType.STRING)
+                        .description("리액션 작성자 표시 이름").optional(),
+                fieldWithPath(path + "reactions.summary[].profileImageUrl").type(JsonFieldType.STRING)
+                        .description("리액션 작성자 프로필 이미지 URL").optional()
         };
     }
 }

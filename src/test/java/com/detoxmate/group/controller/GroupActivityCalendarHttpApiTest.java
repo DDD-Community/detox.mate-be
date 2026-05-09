@@ -104,20 +104,37 @@ class GroupActivityCalendarHttpApiTest {
                 "/groups/" + fixture.group().getId() + "/activity-calendar",
                 bearer
         );
-        HttpResponse<String> historyResponse = sendGet(
-                "/groups/" + fixture.group().getId() + "/activity-calendar/days/2026-04-13",
+        HttpResponse<String> activityFeedResponse = sendGet(
+                "/groups/" + fixture.group().getId() + "/activity-feed/days/2026-04-13",
+                bearer
+        );
+        HttpResponse<String> activityFeedMemberResponse = sendGet(
+                "/groups/" + fixture.group().getId()
+                        + "/activity-feed/days/2026-04-13/members/" + fixture.certifiedGroupMemberId(),
                 bearer
         );
 
         assertThat(calendarResponse.statusCode()).isEqualTo(200);
         assertThat(calendarResponse.body()).contains("\"firstVerificationDate\":\"2026-04-12\"");
-        assertThat(historyResponse.statusCode()).isEqualTo(200);
-        assertThat(historyResponse.body()).contains(
+        assertThat(activityFeedResponse.statusCode()).isEqualTo(200);
+        assertThat(activityFeedResponse.body()).contains(
                 "\"dayStatus\":\"CONFIRMED\"",
-                "\"result\":\"HALF\"",
-                "\"displayName\":\"서연\"",
-                "\"dailyStatus\":\"NOT_ACTIVE\""
+                "\"dailyStatus\":\"GOAL_ACHIEVED\"",
+                "\"reactionCount\":0",
+                "\"commentCount\":0",
+                "\"isPoked\":false"
         );
+        assertThat(activityFeedResponse.body()).doesNotContain("challengeRecordId", "challengeStatus");
+        assertThat(activityFeedMemberResponse.statusCode()).isEqualTo(200);
+        assertThat(activityFeedMemberResponse.body()).contains(
+                "\"groupMemberId\":" + fixture.certifiedGroupMemberId(),
+                "\"displayName\":\"지수\"",
+                "\"dailyStatus\":\"GOAL_ACHIEVED\"",
+                "\"challengeRecordId\":",
+                "\"reactionCount\":0",
+                "\"commentCount\":0"
+        );
+        assertThat(activityFeedMemberResponse.body()).doesNotContain("challengeStatus");
     }
 
     private HttpResponse<String> sendGet(String path, String bearer) throws Exception {
@@ -150,7 +167,7 @@ class GroupActivityCalendarHttpApiTest {
 
         certify(challenge, certifiedParticipant, certifiedUser, certifiedGoal, LocalDate.of(2026, 4, 13));
 
-        return new CalendarFixture(group, currentUser);
+        return new CalendarFixture(group, currentUser, certifiedParticipant.getGroupMemberId());
     }
 
     private GroupChallengeParticipant saveParticipant(
@@ -235,7 +252,7 @@ class GroupActivityCalendarHttpApiTest {
         challengeRecordRepository.saveAndFlush(challengeRecord);
     }
 
-    private record CalendarFixture(Group group, User currentUser) {
+    private record CalendarFixture(Group group, User currentUser, Long certifiedGroupMemberId) {
     }
 
     @TestConfiguration
