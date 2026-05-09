@@ -1,7 +1,12 @@
 package com.detoxmate.feed.service;
 
 import com.detoxmate.activityrecord.domain.ActivityRecord;
+import com.detoxmate.activityrecord.domain.UsageGoalType;
+import com.detoxmate.activityrecord.domain.UserUsageGoalTime;
 import com.detoxmate.activityrecord.repository.ActivityRecordRepository;
+import com.detoxmate.activityrecord.repository.UsageGoalTypeRepository;
+import com.detoxmate.activityrecord.repository.UserUsageGoalTimeRepository;
+import com.detoxmate.activityrecord.dto.UsageGoalTypeCode;
 import com.detoxmate.challengerecord.domain.ChallengeRecord;
 import com.detoxmate.challengerecord.domain.ChallengeRecordCertificationResult;
 import com.detoxmate.challengerecord.repository.ChallengeRecordRepository;
@@ -30,11 +35,15 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 
@@ -79,6 +88,15 @@ class FeedServiceTest {
     @Autowired
     PokeRepository pokeRepository;
 
+    @Autowired
+    UsageGoalTypeRepository usageGoalTypeRepository;
+
+    @Autowired
+    UserUsageGoalTimeRepository userUsageGoalTimeRepository;
+
+    @Autowired
+    JdbcTemplate jdbcTemplate;
+
     @Test
     @DisplayName("챌린지 개요를 조회하면 홈 피드 카드용 챌린지 기록을 생성하지 않는다")
     void getGroupChallengeOverview_doesNotCreateChallengeRecords() {
@@ -105,6 +123,39 @@ class FeedServiceTest {
         assertThat(response.status()).isEqualTo("RECRUITING");
         assertThat(response.streakCount()).isZero();
         assertThat(challengeRecordRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("챌린지 개요는 캘린더 정책으로 계산한 그룹 스트릭을 반환한다")
+    void getGroupChallengeOverview_returnsCalculatedStreakCount() {
+        // given
+        UsageGoalType totalUsage = usageGoalTypeRepository.save(UsageGoalType.create(1L, UsageGoalTypeCode.TOTAL_USAGE));
+        Group group = groupRepository.save(Group.createNew("수능방", "ABCDE"));
+        GroupChallenge challenge = groupChallengeRepository.save(GroupChallenge.createFirst(group.getId()));
+
+        User currentUser = userRepository.save(User.createNew("나"));
+        User targetUser = userRepository.save(User.createNew("민준"));
+
+        LocalDateTime joinedAt = LocalDateTime.of(2026, 4, 10, 10, 0);
+        GroupChallengeParticipant currentParticipant =
+                saveParticipant(group.getId(), challenge.getId(), currentUser, joinedAt);
+        GroupChallengeParticipant targetParticipant =
+                saveParticipant(group.getId(), challenge.getId(), targetUser, joinedAt.plusMinutes(1));
+
+        UserUsageGoalTime currentGoal = saveGoal(currentUser, totalUsage, 80, LocalDateTime.of(2026, 4, 11, 9, 0));
+        UserUsageGoalTime targetGoal = saveGoal(targetUser, totalUsage, 120, LocalDateTime.of(2026, 4, 11, 9, 0));
+
+        certify(challenge.getId(), currentParticipant, currentUser, currentGoal, LocalDate.of(2026, 4, 14));
+        certify(challenge.getId(), targetParticipant, targetUser, targetGoal, LocalDate.of(2026, 4, 15));
+
+        // when
+        GroupChallengeOverviewResponse response = feedService.getGroupChallengeOverview(
+                challenge.getId(),
+                currentUser.getId()
+        );
+
+        // then
+        assertThat(response.streakCount()).isEqualTo(2);
     }
 
     @Test
@@ -325,6 +376,70 @@ class FeedServiceTest {
         GroupMember groupMember = groupMemberRepository.save(GroupMember.createMember(user.getId(), groupId));
 
         return participantRepository.save(GroupChallengeParticipant.join(groupMember.getId(), groupChallengeId));
+    }
+
+    private GroupChallengeParticipant saveParticipant(
+            Long groupId,
+            Long groupChallengeId,
+            User user,
+            LocalDateTime joinedAt
+    ) {
+        GroupMember groupMember = GroupMember.createMember(user.getId(), groupId);
+        ReflectionTestUtils.setField(groupMember, "joinedAt", joinedAt);
+        GroupMember savedGroupMember = groupMemberRepository.save(groupMember);
+
+        GroupChallengeParticipant participant = GroupChallengeParticipant.join(savedGroupMember.getId(), groupChallengeId);
+        ReflectionTestUtils.setField(participant, "joinedAt", joinedAt);
+        return participantRepository.save(participant);
+    }
+
+    private UserUsageGoalTime saveGoal(
+            User user,
+            UsageGoalType usageGoalType,
+            int goalMinutes,
+            LocalDateTime setAt
+    ) {
+        UserUsageGoalTime goal = userUsageGoalTimeRepository.saveAndFlush(
+                UserUsageGoalTime.create(user, usageGoalType, goalMinutes)
+        );
+        jdbcTemplate.update(
+                "UPDATE user_usage_goal_times SET created_at = ?, updated_at = ? WHERE user_usage_goal_times_id = ?",
+                Timestamp.valueOf(setAt),
+                Timestamp.valueOf(setAt),
+                goal.getId()
+        );
+        ReflectionTestUtils.setField(goal, "createdAt", setAt);
+        ReflectionTestUtils.setField(goal, "updatedAt", setAt);
+        return goal;
+    }
+
+    private void certify(
+            Long groupChallengeId,
+            GroupChallengeParticipant participant,
+            User user,
+            UserUsageGoalTime goal,
+            LocalDate recordDate
+    ) {
+        ActivityRecord activityRecord = ActivityRecord.create(
+                user,
+                participant,
+                "activity/" + user.getId() + "/" + recordDate + ".png",
+                "인증 완료"
+        );
+        activityRecord.addDetail(goal, 60, true);
+        ActivityRecord savedActivityRecord = activityRecordRepository.save(activityRecord);
+
+        ChallengeRecord challengeRecord = ChallengeRecord.create(
+                groupChallengeId,
+                participant.getId(),
+                recordDate
+        );
+        challengeRecord.certify(
+                savedActivityRecord.getId(),
+                participant.getId(),
+                ChallengeRecordCertificationResult.SUCCESS
+        );
+        challengeRecordRepository.save(challengeRecord);
     }
 
 

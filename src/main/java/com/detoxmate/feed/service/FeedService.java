@@ -7,13 +7,16 @@ import com.detoxmate.challengerecordstatuscount.domain.ChallengeRecordStatusCoun
 import com.detoxmate.common.MemberActivityOrder;
 import com.detoxmate.common.exception.CustomException;
 import com.detoxmate.common.exception.feed.FeedErrorCode;
+import com.detoxmate.feed.dto.response.FeedDetailResponse;
 import com.detoxmate.feed.dto.response.GroupChallengeOverviewResponse;
+import com.detoxmate.feed.dto.response.GroupChallengeRecordFeedResponse;
 import com.detoxmate.feed.dto.response.HomeFeedChallengeInfo;
 import com.detoxmate.feed.dto.response.HomeFeedMemberCard;
 import com.detoxmate.feed.dto.response.HomeFeedResponse;
 import com.detoxmate.feed.util.FeedQueryReader;
 import com.detoxmate.feed.util.GroupChallengeFeedSource;
 import com.detoxmate.group.dto.GroupChallengeParticipantResponse;
+import com.detoxmate.group.service.GroupActivityCalendarService;
 import com.detoxmate.group.service.GroupChallengeParticipantService;
 import com.detoxmate.poke.domain.Poke;
 import com.detoxmate.poke.service.PokeService;
@@ -38,6 +41,9 @@ public class FeedService {
     private final ChallengeRecordService challengeRecordService;
     private final GroupChallengeParticipantService participantService;
     private final PokeService pokeService;
+    private final GroupActivityCalendarService groupActivityCalendarService;
+    private final FeedDetailService feedDetailService;
+    private final GroupChallengeRecordFeedService groupChallengeRecordFeedService;
     private final Clock clock;
 
     @Transactional(readOnly = true)
@@ -54,7 +60,7 @@ public class FeedService {
                 source.challenge().getStatus().name(),
                 source.challenge().getStartAt(),
                 source.challenge().getEndAt(),
-                0
+                groupActivityCalendarService.getStreakDays(groupChallengeId, currentUserId)
         );
     }
 
@@ -95,6 +101,25 @@ public class FeedService {
                 toChallengeInfo(source),
                 members
         );
+    }
+
+    public GroupChallengeRecordFeedResponse getTodayChallengeRecordFeed(
+            Long groupChallengeId,
+            Long currentUserId
+    ) {
+        return groupChallengeRecordFeedService.getTodayFeed(groupChallengeId, currentUserId);
+    }
+
+    public GroupChallengeRecordFeedResponse getHistoryChallengeRecordFeed(
+            Long groupChallengeId,
+            LocalDate date,
+            Long currentUserId
+    ) {
+        return groupChallengeRecordFeedService.getHistoryFeed(groupChallengeId, date, currentUserId);
+    }
+
+    public FeedDetailResponse getFeedDetail(Long challengeRecordId, Long currentUserId) {
+        return feedDetailService.getFeedDetail(challengeRecordId, currentUserId);
     }
 
     private HomeFeedChallengeInfo toChallengeInfo(GroupChallengeFeedSource source) {

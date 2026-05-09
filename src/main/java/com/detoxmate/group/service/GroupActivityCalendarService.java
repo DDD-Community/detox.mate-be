@@ -1,58 +1,34 @@
 package com.detoxmate.group.service;
 
-import com.detoxmate.activityrecord.domain.ActivityRecord;
-import com.detoxmate.activityrecord.domain.ActivityRecordDetail;
 import com.detoxmate.activityrecord.domain.UserUsageGoalTime;
-import com.detoxmate.activityrecord.repository.ActivityRecordRepository;
 import com.detoxmate.activityrecord.repository.UserUsageGoalTimeRepository;
 import com.detoxmate.challengerecord.domain.ChallengeRecord;
 import com.detoxmate.challengerecord.repository.ChallengeRecordRepository;
-import com.detoxmate.challengerecord.service.ChallengeRecordService;
-import com.detoxmate.challengerecordstatuscount.domain.ChallengeRecordStatusCount;
-import com.detoxmate.challengerecordstatuscount.repository.ChallengeRecordStatusCountRepository;
-import com.detoxmate.common.MemberActivityOrder;
 import com.detoxmate.common.exception.CustomException;
 import com.detoxmate.common.exception.group.GroupActivityCalendarErrorCode;
-import com.detoxmate.group.activity.CalendarDayStatus;
 import com.detoxmate.group.activity.GroupActivityCalendarSummary;
 import com.detoxmate.group.activity.GroupActivityParticipant;
 import com.detoxmate.group.activity.GroupActivityVerificationPolicy;
-import com.detoxmate.group.activity.GroupDailyVerification;
 import com.detoxmate.group.activity.MemberDailyGoal;
-import com.detoxmate.group.activity.MemberDailyStatus;
 import com.detoxmate.group.domain.GroupChallenge;
-import com.detoxmate.group.dto.ActivityRecordDetailHistoryResponse;
 import com.detoxmate.group.dto.GroupActivityCalendarResponse;
 import com.detoxmate.group.dto.GroupActivityCalendarSummaryResponse;
-import com.detoxmate.group.dto.GroupActivityFeedResponse;
 import com.detoxmate.group.dto.GroupActivityParticipantRow;
-import com.detoxmate.group.dto.GroupDailyVerificationSummaryResponse;
-import com.detoxmate.group.dto.MemberDailyGoalResponse;
 import com.detoxmate.group.repository.GroupChallengeParticipantRepository;
 import com.detoxmate.group.repository.GroupChallengeRepository;
 import com.detoxmate.group.repository.GroupMemberRepository;
 import com.detoxmate.group.repository.GroupRepository;
-import com.detoxmate.poke.domain.Poke;
-import com.detoxmate.poke.service.PokeService;
-import com.detoxmate.reaction.domain.Reaction;
-import com.detoxmate.reaction.service.ReactionService;
-import com.detoxmate.upload.service.ImageReadUrlBuilder;
-import com.detoxmate.user.dto.MyProfileResponse;
-import com.detoxmate.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -69,22 +45,15 @@ public class GroupActivityCalendarService {
     private final GroupChallengeParticipantRepository participantRepository;
     private final UserUsageGoalTimeRepository userUsageGoalTimeRepository;
     private final ChallengeRecordRepository challengeRecordRepository;
-    private final ChallengeRecordService challengeRecordService;
-    private final ActivityRecordRepository activityRecordRepository;
-    private final ChallengeRecordStatusCountRepository statusCountRepository;
-    private final PokeService pokeService;
-    private final ReactionService reactionService;
-    private final UserService userService;
-    private final ImageReadUrlBuilder imageReadUrlBuilder;
     private final GroupActivityVerificationPolicy verificationPolicy;
     private final Clock clock;
 
-    public GroupActivityCalendarResponse getCalendar(Long groupId, Long currentUserId) {
-        GroupActivityContext activity = loadActivityContext(groupId, currentUserId);
+    public GroupActivityCalendarResponse getCalendar(Long groupChallengeId, Long currentUserId) {
+        GroupActivityContext activity = loadActivityContextByChallengeId(groupChallengeId, currentUserId);
         LocalDate today = today();
         LocalDate firstVerificationDate = firstVerificationDate(activity, today);
         Map<LocalDate, Set<Long>> certifiedParticipantIdsByDate = certifiedParticipantIdsByDate(
-                activity.challenge().getId(),
+                groupChallengeId,
                 firstVerificationDate,
                 today
         );
@@ -105,91 +74,30 @@ public class GroupActivityCalendarService {
         );
 
         return new GroupActivityCalendarResponse(
-                groupId,
+                activity.challenge().getGroupId(),
                 firstVerificationDate,
                 streakDays,
                 toSummaryResponse(summary)
         );
     }
 
-    @Transactional
-    public GroupActivityFeedResponse getActivityFeed(Long groupId, LocalDate date, Long currentUserId) {
-        GroupActivityDayContext activityDay = loadActivityDayContext(groupId, date, currentUserId);
-
-        return new GroupActivityFeedResponse(
-                groupId,
-                date,
-                toDailySummary(activityDay),
-                toMemberResponses(activityDay)
-        );
-    }
-
-    @Transactional
-    public GroupActivityFeedResponse.MemberResponse getActivityFeedMember(
-            Long groupId,
-            LocalDate date,
-            Long groupMemberId,
-            Long currentUserId
-    ) {
-        GroupActivityDayContext activityDay = loadActivityDayContext(groupId, date, currentUserId);
-
-        return activityDay.activity().participantRows().stream()
-                .filter(row -> Objects.equals(row.groupMemberId(), groupMemberId))
-                .map(row -> toMemberResponse(row, activityDay, true))
-                .findFirst()
-                .orElseThrow(() -> new CustomException(GroupActivityCalendarErrorCode.GROUP_MEMBER_NOT_FOUND));
-    }
-
-    private GroupActivityDayContext loadActivityDayContext(Long groupId, LocalDate date, Long currentUserId) {
-        GroupActivityContext activity = loadActivityContext(groupId, currentUserId);
+    public int getStreakDays(Long groupChallengeId, Long currentUserId) {
+        GroupActivityContext activity = loadActivityContextByChallengeId(groupChallengeId, currentUserId);
         LocalDate today = today();
         LocalDate firstVerificationDate = firstVerificationDate(activity, today);
-        CalendarDayStatus dayStatus = dayStatus(date, today, firstVerificationDate);
-        ensureChallengeRecordsForInProgressDay(activity, date, dayStatus);
-        List<ChallengeRecord> challengeRecords = challengeRecordRepository.findAllByGroupChallengeDate(
-                activity.challenge().getId(),
-                date
-        );
-        Set<Long> certifiedParticipantIds = certifiedParticipantIds(challengeRecords);
-
-        return new GroupActivityDayContext(
-                activity,
-                date,
-                currentUserId,
-                dayStatus,
-                certifiedParticipantIds,
-                challengeRecordByParticipantId(challengeRecords),
-                activityRecordById(challengeRecords),
-                statusCountByRecordId(challengeRecords),
-                pokedRecords(challengeRecords, currentUserId),
-                participantById(activity.participants())
-        );
-    }
-
-    private LocalDate firstVerificationDate(GroupActivityContext activity, LocalDate today) {
-        return verificationPolicy.firstVerificationDate(
-                activity.participants(),
-                activity.goals(),
+        Map<LocalDate, Set<Long>> certifiedParticipantIdsByDate = certifiedParticipantIdsByDate(
+                groupChallengeId,
+                firstVerificationDate,
                 today
         );
-    }
 
-    private void ensureChallengeRecordsForInProgressDay(
-            GroupActivityContext activity,
-            LocalDate date,
-            CalendarDayStatus dayStatus
-    ) {
-        if (dayStatus != CalendarDayStatus.IN_PROGRESS) {
-            return;
-        }
-
-        activity.participants().stream()
-                .filter(participant -> verificationPolicy.includedInGroupResult(participant, activity.goals(), date))
-                .forEach(participant -> challengeRecordService.create(
-                        activity.challenge().getId(),
-                        participant.participantId(),
-                        date
-                ));
+        return verificationPolicy.streakDays(
+                today,
+                firstVerificationDate,
+                activity.participants(),
+                activity.goals(),
+                certifiedParticipantIdsByDate
+        );
     }
 
     private GroupActivityContext loadActivityContext(Long groupId, Long currentUserId) {
@@ -199,6 +107,20 @@ public class GroupActivityCalendarService {
 
         GroupChallenge challenge = groupChallengeRepository.findTopByGroupIdOrderByChallengeNoDesc(groupId)
                 .orElseThrow(() -> new CustomException(GroupActivityCalendarErrorCode.GROUP_CHALLENGE_NOT_FOUND));
+        return loadActivityContext(challenge);
+    }
+
+    private GroupActivityContext loadActivityContextByChallengeId(Long groupChallengeId, Long currentUserId) {
+        GroupChallenge challenge = groupChallengeRepository.findById(groupChallengeId)
+                .orElseThrow(() -> new CustomException(GroupActivityCalendarErrorCode.GROUP_CHALLENGE_NOT_FOUND));
+        groupRepository.findById(challenge.getGroupId())
+                .orElseThrow(() -> new CustomException(GroupActivityCalendarErrorCode.GROUP_NOT_FOUND));
+        validateGroupAccess(challenge.getGroupId(), currentUserId);
+
+        return loadActivityContext(challenge);
+    }
+
+    private GroupActivityContext loadActivityContext(GroupChallenge challenge) {
         List<GroupActivityParticipantRow> participantRows =
                 participantRepository.findActivityParticipantRowsByGroupChallengeId(challenge.getId());
         List<GroupActivityParticipant> participants = participantRows.stream()
@@ -212,6 +134,14 @@ public class GroupActivityCalendarService {
     private void validateGroupAccess(Long groupId, Long currentUserId) {
         groupMemberRepository.findByUserIdAndGroupIdAndStatus(currentUserId, groupId, ACTIVE_MEMBER_STATUS)
                 .orElseThrow(() -> new CustomException(GroupActivityCalendarErrorCode.GROUP_ACCESS_DENIED));
+    }
+
+    private LocalDate firstVerificationDate(GroupActivityContext activity, LocalDate today) {
+        return verificationPolicy.firstVerificationDate(
+                activity.participants(),
+                activity.goals(),
+                today
+        );
     }
 
     private List<MemberDailyGoal> memberDailyGoals(List<GroupActivityParticipantRow> participantRows) {
@@ -280,325 +210,6 @@ public class GroupActivityCalendarService {
                 ));
     }
 
-    private Set<Long> certifiedParticipantIds(Collection<ChallengeRecord> challengeRecords) {
-        return challengeRecords.stream()
-                .filter(ChallengeRecord::isCertified)
-                .map(ChallengeRecord::getGroupChallengeParticipantId)
-                .collect(Collectors.toSet());
-    }
-
-    private GroupDailyVerificationSummaryResponse toDailySummary(
-            LocalDate date,
-            CalendarDayStatus dayStatus,
-            List<GroupActivityParticipant> participants,
-            List<MemberDailyGoal> goals,
-            Set<Long> certifiedParticipantIds
-    ) {
-        if (dayStatus == CalendarDayStatus.NOT_STARTED || dayStatus == CalendarDayStatus.FUTURE) {
-            return new GroupDailyVerificationSummaryResponse(
-                    date,
-                    dayStatus.name(),
-                    null,
-                    0,
-                    0,
-                    0
-            );
-        }
-
-        GroupDailyVerification verification = verificationPolicy.verifyConfirmedDate(
-                date,
-                participants,
-                goals,
-                certifiedParticipantIds
-        );
-
-        return new GroupDailyVerificationSummaryResponse(
-                date,
-                dayStatus.name(),
-                dayStatus == CalendarDayStatus.CONFIRMED ? verification.result().name() : null,
-                verification.activeMemberCount(),
-                verification.certifiedMemberCount(),
-                verification.requiredCount()
-        );
-    }
-
-    private GroupDailyVerificationSummaryResponse toDailySummary(GroupActivityDayContext activityDay) {
-        return toDailySummary(
-                activityDay.date(),
-                activityDay.dayStatus(),
-                activityDay.activity().participants(),
-                activityDay.activity().goals(),
-                activityDay.certifiedParticipantIds()
-        );
-    }
-
-    private List<GroupActivityFeedResponse.MemberResponse> toMemberResponses(GroupActivityDayContext activityDay) {
-        return activityDay.activity().participantRows().stream()
-                .map(row -> toMemberResponse(row, activityDay, false))
-                .sorted(MemberActivityOrder.latestCertifiedThenDisplayName(
-                        this::activitySubmittedAt,
-                        GroupActivityFeedResponse.MemberResponse::displayName
-                ))
-                .toList();
-    }
-
-    private GroupActivityFeedResponse.MemberResponse toMemberResponse(
-            GroupActivityParticipantRow row,
-            GroupActivityDayContext activityDay,
-            boolean includeReactions
-    ) {
-        GroupActivityParticipant participant = activityDay.participantById().get(row.groupChallengeParticipantId());
-        ChallengeRecord challengeRecord = activityDay.challengeRecordByParticipantId()
-                .get(row.groupChallengeParticipantId());
-        boolean includedInGroupResult = includedInGroupResult(activityDay, participant);
-        GroupActivityFeedResponse.ActivityRecordResponse activityRecord = toActivityRecordResponse(
-                challengeRecord,
-                activityDay.activityRecordById()
-        );
-        MemberDailyStatus dailyStatus = dailyStatus(includedInGroupResult, challengeRecord);
-        ChallengeRecordStatusCount statusCount = challengeRecord == null
-                ? null
-                : activityDay.statusCountByRecordId().get(challengeRecord.getId());
-
-        return new GroupActivityFeedResponse.MemberResponse(
-                row.groupMemberId(),
-                row.groupChallengeParticipantId(),
-                row.userId(),
-                row.displayName(),
-                imageReadUrlBuilder.build(row.profileImageObjectKey()),
-                Objects.equals(row.userId(), activityDay.currentUserId()),
-                row.memberStatus(),
-                row.participantStatus(),
-                dailyStatus.name(),
-                includedInGroupResult,
-                toGoalResponses(verificationPolicy.effectiveGoals(
-                        row.userId(),
-                        activityDay.activity().goals(),
-                        activityDay.date()
-                )),
-                challengeRecord == null ? null : challengeRecord.getId(),
-                activityRecord,
-                reactionCount(statusCount),
-                commentCount(challengeRecord, statusCount),
-                pokeCount(statusCount),
-                isPoked(challengeRecord, row.userId(), activityDay),
-                includeReactions ? pokeable(challengeRecord) : null,
-                includeReactions ? toPokedUsers(challengeRecord) : null,
-                includeReactions ? toReactionSummary(challengeRecord) : null
-        );
-    }
-
-    private Boolean pokeable(ChallengeRecord challengeRecord) {
-        return challengeRecord != null
-                && challengeRecord.isBeforeRecord()
-                && challengeRecord.isToday(today());
-    }
-
-    private List<GroupActivityFeedResponse.PokedUserResponse> toPokedUsers(ChallengeRecord challengeRecord) {
-        if (challengeRecord == null || !challengeRecord.isBeforeRecord()) {
-            return List.of();
-        }
-
-        List<Poke> pokes = pokeService.getPokesForChallengeRecord(challengeRecord.getId());
-        Map<Long, MyProfileResponse> profiles = userService.getProfilesByIds(
-                pokes.stream()
-                        .map(Poke::getSenderUserId)
-                        .collect(Collectors.toSet())
-        );
-
-        return pokes.stream()
-                .map(poke -> toPokedUserResponse(poke, profiles.get(poke.getSenderUserId())))
-                .toList();
-    }
-
-    private GroupActivityFeedResponse.PokedUserResponse toPokedUserResponse(
-            Poke poke,
-            MyProfileResponse profile
-    ) {
-        return new GroupActivityFeedResponse.PokedUserResponse(
-                poke.getSenderUserId(),
-                profile == null ? null : profile.displayName(),
-                profile == null ? null : profile.profileImageUrl()
-        );
-    }
-
-    private GroupActivityFeedResponse.ReactionSummaryResponse toReactionSummary(ChallengeRecord challengeRecord) {
-        if (challengeRecord == null || !challengeRecord.isCertified()) {
-            return new GroupActivityFeedResponse.ReactionSummaryResponse(0, List.of());
-        }
-
-        List<Reaction> reactions = reactionService.getReactionsForChallengeRecord(challengeRecord.getId());
-        Map<Long, MyProfileResponse> profiles = userService.getProfilesByIds(
-                reactions.stream()
-                        .map(Reaction::getUserId)
-                        .collect(Collectors.toSet())
-        );
-        List<GroupActivityFeedResponse.ReactionResponse> summary = reactions.stream()
-                .map(reaction -> toReactionResponse(reaction, profiles.get(reaction.getUserId())))
-                .toList();
-
-        return new GroupActivityFeedResponse.ReactionSummaryResponse(summary.size(), summary);
-    }
-
-    private GroupActivityFeedResponse.ReactionResponse toReactionResponse(
-            Reaction reaction,
-            MyProfileResponse profile
-    ) {
-        return new GroupActivityFeedResponse.ReactionResponse(
-                reaction.getBody().name(),
-                reaction.getUserId(),
-                profile == null ? null : profile.displayName(),
-                profile == null ? null : profile.profileImageUrl()
-        );
-    }
-
-    private boolean includedInGroupResult(
-            GroupActivityDayContext activityDay,
-            GroupActivityParticipant participant
-    ) {
-        return (activityDay.dayStatus() == CalendarDayStatus.CONFIRMED
-                || activityDay.dayStatus() == CalendarDayStatus.IN_PROGRESS)
-                && participant != null
-                && verificationPolicy.includedInGroupResult(
-                        participant,
-                        activityDay.activity().goals(),
-                        activityDay.date()
-                );
-    }
-
-    private Map<Long, ActivityRecord> activityRecordById(List<ChallengeRecord> challengeRecords) {
-        List<Long> activityRecordIds = challengeRecords.stream()
-                .filter(ChallengeRecord::isCertified)
-                .map(ChallengeRecord::getActivityRecordId)
-                .filter(Objects::nonNull)
-                .distinct()
-                .toList();
-
-        if (activityRecordIds.isEmpty()) {
-            return Map.of();
-        }
-
-        return activityRecordRepository.findAllById(activityRecordIds).stream()
-                .collect(Collectors.toMap(ActivityRecord::getId, Function.identity()));
-    }
-
-    private Map<Long, ChallengeRecord> challengeRecordByParticipantId(List<ChallengeRecord> challengeRecords) {
-        return challengeRecords.stream()
-                .collect(Collectors.toMap(
-                        ChallengeRecord::getGroupChallengeParticipantId,
-                        Function.identity(),
-                        (first, second) -> first
-                ));
-    }
-
-    private Map<Long, GroupActivityParticipant> participantById(List<GroupActivityParticipant> participants) {
-        return participants.stream()
-                .collect(Collectors.toMap(GroupActivityParticipant::participantId, Function.identity()));
-    }
-
-    private Map<Long, ChallengeRecordStatusCount> statusCountByRecordId(List<ChallengeRecord> challengeRecords) {
-        List<Long> challengeRecordIds = challengeRecords.stream()
-                .map(ChallengeRecord::getId)
-                .filter(Objects::nonNull)
-                .toList();
-
-        if (challengeRecordIds.isEmpty()) {
-            return Map.of();
-        }
-
-        return statusCountRepository.findAllByChallengeRecordIdIn(challengeRecordIds).stream()
-                .collect(Collectors.toMap(ChallengeRecordStatusCount::getChallengeRecordId, Function.identity()));
-    }
-
-    private Set<PokeKey> pokedRecords(List<ChallengeRecord> challengeRecords, Long currentUserId) {
-        List<Long> beforeRecordIds = challengeRecords.stream()
-                .filter(ChallengeRecord::isBeforeRecord)
-                .map(ChallengeRecord::getId)
-                .toList();
-
-        return pokeService.getPokesByChallengeRecordsAndSender(beforeRecordIds, currentUserId).stream()
-                .map(PokeKey::from)
-                .collect(Collectors.toSet());
-    }
-
-    private boolean isPoked(
-            ChallengeRecord challengeRecord,
-            Long receiverUserId,
-            GroupActivityDayContext activityDay
-    ) {
-        return challengeRecord != null
-                && challengeRecord.isBeforeRecord()
-                && receiverUserId != null
-                && activityDay.pokedRecords().contains(new PokeKey(challengeRecord.getId(), receiverUserId));
-    }
-
-    private GroupActivityFeedResponse.ActivityRecordResponse toActivityRecordResponse(
-            ChallengeRecord challengeRecord,
-            Map<Long, ActivityRecord> activityRecordById
-    ) {
-        if (challengeRecord == null || !challengeRecord.isCertified()) {
-            return null;
-        }
-
-        ActivityRecord activityRecord = activityRecordById.get(challengeRecord.getActivityRecordId());
-        if (activityRecord == null) {
-            throw new CustomException(GroupActivityCalendarErrorCode.ACTIVITY_RECORD_NOT_FOUND);
-        }
-
-        List<ActivityRecordDetailHistoryResponse> details = activityRecord.getDetails().stream()
-                .map(this::toActivityRecordDetail)
-                .toList();
-
-        return new GroupActivityFeedResponse.ActivityRecordResponse(
-                activityRecord.getCreatedAt(),
-                imageReadUrlBuilder.build(activityRecord.getActivityImageObjectKey()),
-                activityRecord.getReflectionText(),
-                details.stream().allMatch(ActivityRecordDetailHistoryResponse::isAchieved),
-                details
-        );
-    }
-
-    private ActivityRecordDetailHistoryResponse toActivityRecordDetail(ActivityRecordDetail detail) {
-        return new ActivityRecordDetailHistoryResponse(
-                detail.getUsageGoalType().getCode(),
-                detail.getUseMinutes(),
-                detail.getUserUsageGoalTime().getGoalMinutes(),
-                detail.isAchieved()
-        );
-    }
-
-    private List<MemberDailyGoalResponse> toGoalResponses(List<MemberDailyGoal> goals) {
-        return goals.stream()
-                .map(goal -> new MemberDailyGoalResponse(
-                        goal.id(),
-                        goal.usageGoalType(),
-                        goal.goalMinutes(),
-                        goal.effectiveDate()
-                ))
-                .toList();
-    }
-
-    private MemberDailyStatus dailyStatus(boolean includedInGroupResult, ChallengeRecord challengeRecord) {
-        if (!includedInGroupResult) {
-            return MemberDailyStatus.NOT_ACTIVE;
-        }
-        if (challengeRecord == null || !challengeRecord.isCertified()) {
-            return MemberDailyStatus.NOT_CERTIFIED;
-        }
-        if (challengeRecord.isCertificationSucceeded()) {
-            return MemberDailyStatus.GOAL_ACHIEVED;
-        }
-        return MemberDailyStatus.GOAL_FAILED;
-    }
-
-    private LocalDateTime activitySubmittedAt(GroupActivityFeedResponse.MemberResponse member) {
-        if (member.activityRecord() == null) {
-            return null;
-        }
-
-        return member.activityRecord().submittedAt();
-    }
-
     private GroupActivityCalendarSummaryResponse toSummaryResponse(GroupActivityCalendarSummary summary) {
         return new GroupActivityCalendarSummaryResponse(
                 summary.startDate(),
@@ -607,39 +218,6 @@ public class GroupActivityCalendarService {
                 summary.halfCount(),
                 summary.resetCount()
         );
-    }
-
-    private CalendarDayStatus dayStatus(LocalDate date, LocalDate today, LocalDate firstVerificationDate) {
-        if (date.isAfter(today)) {
-            return CalendarDayStatus.FUTURE;
-        }
-        if (firstVerificationDate == null || date.isBefore(firstVerificationDate)) {
-            return CalendarDayStatus.NOT_STARTED;
-        }
-        if (date.isEqual(today)) {
-            return CalendarDayStatus.IN_PROGRESS;
-        }
-        return CalendarDayStatus.CONFIRMED;
-    }
-
-    private int reactionCount(ChallengeRecordStatusCount statusCount) {
-        return statusCount == null ? 0 : statusCount.getReactionCount();
-    }
-
-    private int commentCount(ChallengeRecord challengeRecord, ChallengeRecordStatusCount statusCount) {
-        if (statusCount == null) {
-            return 0;
-        }
-
-        if (challengeRecord != null && challengeRecord.isBeforeRecord()) {
-            return statusCount.getBeforeCommentCount();
-        }
-
-        return statusCount.getAfterCommentCount();
-    }
-
-    private int pokeCount(ChallengeRecordStatusCount statusCount) {
-        return statusCount == null ? 0 : statusCount.getPokeCount();
     }
 
     private LocalDate today() {
@@ -652,26 +230,5 @@ public class GroupActivityCalendarService {
             List<GroupActivityParticipant> participants,
             List<MemberDailyGoal> goals
     ) {
-    }
-
-    private record GroupActivityDayContext(
-            GroupActivityContext activity,
-            LocalDate date,
-            Long currentUserId,
-            CalendarDayStatus dayStatus,
-            Set<Long> certifiedParticipantIds,
-            Map<Long, ChallengeRecord> challengeRecordByParticipantId,
-            Map<Long, ActivityRecord> activityRecordById,
-            Map<Long, ChallengeRecordStatusCount> statusCountByRecordId,
-            Set<PokeKey> pokedRecords,
-            Map<Long, GroupActivityParticipant> participantById
-    ) {
-    }
-
-    private record PokeKey(Long challengeRecordId, Long receiverUserId) {
-
-        private static PokeKey from(Poke poke) {
-            return new PokeKey(poke.getChallengeRecordId(), poke.getReceiverUserId());
-        }
     }
 }

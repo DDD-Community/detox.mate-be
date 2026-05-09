@@ -117,11 +117,11 @@ class GroupActivityCalendarApiTest {
     JdbcTemplate jdbcTemplate;
 
     @Test
-    @DisplayName("GET /groups/{groupId}/activity-calendar — 첫 인증 시작일 이후 누적 요약과 스트릭을 반환한다")
+    @DisplayName("GET /group-challenges/{groupChallengeId}/activity-calendar — 첫 인증 시작일 이후 누적 요약과 스트릭을 반환한다")
     void getActivityCalendar_returnsCumulativeSummarySinceFirstVerificationDate() throws Exception {
         CalendarFixture fixture = saveCalendarFixture();
 
-        mockMvc.perform(get("/groups/{groupId}/activity-calendar", fixture.group().getId())
+        mockMvc.perform(get("/group-challenges/{groupChallengeId}/activity-calendar", fixture.challenge().getId())
                         .header(HttpHeaders.AUTHORIZATION, bearer(fixture.currentUser().getId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.groupId").value(fixture.group().getId()))
@@ -135,15 +135,12 @@ class GroupActivityCalendarApiTest {
     }
 
     @Test
-    @DisplayName("GET /groups/{groupId}/activity-feed/days/{date} — 일별 활동 피드는 기존 challenge-records API와 연동할 기록 ID를 제공한다")
-    void getActivityFeed_returnsChallengeRecordIdForExistingRecord() throws Exception {
+    @DisplayName("GET /group-challenges/{groupChallengeId}/challenge-records?date={date} — 히스토리 피드는 기존 challenge-records API와 연동할 기록 ID를 제공한다")
+    void getChallengeRecordsHistory_returnsChallengeRecordIdForExistingRecord() throws Exception {
         CalendarFixture fixture = saveCalendarFixture();
 
-        mockMvc.perform(get(
-                        "/groups/{groupId}/activity-feed/days/{date}",
-                        fixture.group().getId(),
-                        "2026-04-13"
-                )
+        mockMvc.perform(get("/group-challenges/{groupChallengeId}/challenge-records", fixture.challenge().getId())
+                        .queryParam("date", "2026-04-13")
                         .header(HttpHeaders.AUTHORIZATION, bearer(fixture.currentUser().getId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.groupId").value(fixture.group().getId()))
@@ -184,24 +181,20 @@ class GroupActivityCalendarApiTest {
     }
 
     @Test
-    @DisplayName("GET /groups/{groupId}/activity-feed/days/{date} — 오늘 활동 피드는 빈 기록을 만들고 기존 API 연동 ID를 제공한다")
-    void getActivityFeed_todayCreatesEmptyRecordsAndExposesRecordIds() throws Exception {
+    @DisplayName("GET /group-challenges/{groupChallengeId}/challenge-records/today — 홈 피드는 활성 멤버만 조회하고 빈 기록을 만든다")
+    void getChallengeRecordsToday_returnsActiveMembersAndCreatesEmptyRecords() throws Exception {
         CalendarFixture fixture = saveCalendarFixture();
 
         assertThat(challengeRecordRepository.findAllByGroupChallengeDate(fixture.challenge().getId(), TODAY))
                 .isEmpty();
 
-        mockMvc.perform(get(
-                        "/groups/{groupId}/activity-feed/days/{date}",
-                        fixture.group().getId(),
-                        TODAY
-                )
+        mockMvc.perform(get("/group-challenges/{groupChallengeId}/challenge-records/today", fixture.challenge().getId())
                         .header(HttpHeaders.AUTHORIZATION, bearer(fixture.currentUser().getId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.dailySummary.dayStatus").value("IN_PROGRESS"))
                 .andExpect(jsonPath("$.dailySummary.result").doesNotExist())
                 .andExpect(jsonPath("$.dailySummary.activeMemberCount").value(3))
-                .andExpect(jsonPath("$.members.length()").value(4))
+                .andExpect(jsonPath("$.members.length()").value(3))
                 .andExpect(jsonPath("$.members[0].displayName").value("나"))
                 .andExpect(jsonPath("$.members[0].dailyStatus").value("NOT_CERTIFIED"))
                 .andExpect(jsonPath("$.members[0].challengeRecordId").isNumber())
@@ -212,9 +205,8 @@ class GroupActivityCalendarApiTest {
                 .andExpect(jsonPath("$.members[0].pokeCount").value(0))
                 .andExpect(jsonPath("$.members[0].isPoked").value(false))
                 .andExpect(jsonPath("$.members[1].displayName").value("민준"))
-                .andExpect(jsonPath("$.members[2].displayName").value("서연"))
-                .andExpect(jsonPath("$.members[2].dailyStatus").value("NOT_ACTIVE"))
-                .andExpect(jsonPath("$.members[3].displayName").value("지수"));
+                .andExpect(jsonPath("$.members[2].displayName").value("지수"))
+                .andExpect(jsonPath("$.members[?(@.dailyStatus == 'NOT_ACTIVE')]").isEmpty());
 
         List<ChallengeRecord> todayRecords = challengeRecordRepository.findAllByGroupChallengeDate(
                 fixture.challenge().getId(),
@@ -228,79 +220,89 @@ class GroupActivityCalendarApiTest {
     }
 
     @Test
-    @DisplayName("GET /groups/{groupId}/activity-feed/days/{date}/members/{groupMemberId} — 인증 후 멤버 상세는 카드 인터페이스와 리액션을 반환한다")
-    void getActivityFeedMember_afterRecordReturnsCardDetailWithReactions() throws Exception {
+    @DisplayName("GET /group-challenges/{groupChallengeId}/challenge-records?date={today} — 히스토리 피드는 오늘 날짜를 거부한다")
+    void getChallengeRecordsHistory_todayReturnsBadRequest() throws Exception {
         CalendarFixture fixture = saveCalendarFixture();
-        Long minjunGroupMemberId = groupMemberIdOf(fixture.challenge(), "민준");
 
-        mockMvc.perform(get(
-                        "/groups/{groupId}/activity-feed/days/{date}/members/{groupMemberId}",
-                        fixture.group().getId(),
-                        "2026-04-13",
-                        minjunGroupMemberId
-                )
+        mockMvc.perform(get("/group-challenges/{groupChallengeId}/challenge-records", fixture.challenge().getId())
+                        .queryParam("date", TODAY.toString())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(fixture.currentUser().getId())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("FEED_HISTORY_DATE_MUST_BE_PAST"));
+    }
+
+    @Test
+    @DisplayName("GET /group-challenges/{groupChallengeId}/challenge-records?date={future} — 히스토리 피드는 미래 날짜를 거부한다")
+    void getChallengeRecordsHistory_futureReturnsBadRequest() throws Exception {
+        CalendarFixture fixture = saveCalendarFixture();
+
+        mockMvc.perform(get("/group-challenges/{groupChallengeId}/challenge-records", fixture.challenge().getId())
+                        .queryParam("date", TODAY.plusDays(1).toString())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(fixture.currentUser().getId())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("FEED_HISTORY_DATE_MUST_BE_PAST"));
+    }
+
+    @Test
+    @DisplayName("히스토리 피드 카드의 challengeRecordId로 기존 피드 상세를 조회한다")
+    void getFeedDetail_fromHistoryChallengeRecordIdReturnsExistingDetail() throws Exception {
+        CalendarFixture fixture = saveCalendarFixture();
+
+        MvcResult historyResult = mockMvc.perform(
+                        get("/group-challenges/{groupChallengeId}/challenge-records", fixture.challenge().getId())
+                                .queryParam("date", "2026-04-13")
+                                .header(HttpHeaders.AUTHORIZATION, bearer(fixture.currentUser().getId())))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        Number challengeRecordId = JsonPath.read(
+                historyResult.getResponse().getContentAsString(),
+                "$.members[0].challengeRecordId"
+        );
+
+        mockMvc.perform(get("/challenge-records/{challengeRecordId}", challengeRecordId.longValue())
                         .header(HttpHeaders.AUTHORIZATION, bearer(fixture.currentUser().getId())))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.groupMemberId").value(minjunGroupMemberId))
-                .andExpect(jsonPath("$.displayName").value("민준"))
-                .andExpect(jsonPath("$.memberStatus").value("ACTIVE"))
-                .andExpect(jsonPath("$.participantStatus").value("JOINED"))
-                .andExpect(jsonPath("$.dailyStatus").value("GOAL_FAILED"))
-                .andExpect(jsonPath("$.includedInGroupResult").value(true))
-                .andExpect(jsonPath("$.goals[0].effectiveDate").value("2026-04-12"))
-                .andExpect(jsonPath("$.challengeRecordId").isNumber())
-                .andExpect(jsonPath("$.challengeStatus").doesNotExist())
-                .andExpect(jsonPath("$.activityRecord.id").doesNotExist())
-                .andExpect(jsonPath("$.activityRecord.allAchieved").value(false))
-                .andExpect(jsonPath("$.activityRecord.details[0].usageGoalType").value("TOTAL_USAGE"))
-                .andExpect(jsonPath("$.activityRecord.reactionCount").doesNotExist())
-                .andExpect(jsonPath("$.activityRecord.commentCount").doesNotExist())
-                .andExpect(jsonPath("$.reactionCount").value(22))
+                .andExpect(jsonPath("$.challengeRecordId").value(challengeRecordId.longValue()))
+                .andExpect(jsonPath("$.groupChallengeId").value(fixture.challenge().getId()))
+                .andExpect(jsonPath("$.activityRecordId").isNumber())
+                .andExpect(jsonPath("$.challengeStatus").value("AFTER_RECORD_FAIL"))
+                .andExpect(jsonPath("$.recordDate").value("2026-04-13"))
+                .andExpect(jsonPath("$.author.displayName").value("민준"))
+                .andExpect(jsonPath("$.activityCreatedAt").exists())
+                .andExpect(jsonPath("$.activityImageUrl").exists())
+                .andExpect(jsonPath("$.oneLineReview").value("릴스 무한루프에 빠졌어요..."))
+                .andExpect(jsonPath("$.goalStatus").value("FAIL"))
+                .andExpect(jsonPath("$.snapshotGoalMinutes").value(120))
+                .andExpect(jsonPath("$.details[0].usageGoalTypeCode").value("TOTAL_USAGE"))
+                .andExpect(jsonPath("$.details[0].usedMinutes").value(365))
                 .andExpect(jsonPath("$.reactions.totalCount").value(2))
                 .andExpect(jsonPath("$.reactions.summary[0].reactionBody").value("MUSCLE"))
                 .andExpect(jsonPath("$.reactions.summary[0].displayName").value("지수"))
                 .andExpect(jsonPath("$.reactions.summary[1].reactionBody").value("CLAP"))
                 .andExpect(jsonPath("$.reactions.summary[1].displayName").value("나"))
-                .andExpect(jsonPath("$.comments").doesNotExist())
                 .andExpect(jsonPath("$.commentCount").value(10))
                 .andExpect(jsonPath("$.pokeCount").value(0))
-                .andExpect(jsonPath("$.isPoked").value(false))
                 .andExpect(jsonPath("$.pokeable").value(false))
+                .andExpect(jsonPath("$.poked").value(false))
                 .andExpect(jsonPath("$.pokedUsers").isEmpty());
     }
 
     @Test
-    @DisplayName("GET /groups/{groupId}/activity-feed/days/{date}/members/{groupMemberId} — 오늘 인증 전 상세는 카드 인터페이스와 콕/댓글 연동 정보를 반환한다")
-    void getActivityFeedMember_todayBeforeRecordReturnsCardDetailWithPokesAndComments() throws Exception {
+    @DisplayName("홈 피드 카드의 challengeRecordId로 인증 전 상세와 댓글/콕 API를 연동한다")
+    void getFeedDetail_fromTodayChallengeRecordIdSupportsPokesAndComments() throws Exception {
         CalendarFixture fixture = saveCalendarFixture();
         GroupActivityParticipantRow minjunRow = participantRowOf(fixture.challenge(), "민준");
 
-        MvcResult initialDetailResult = mockMvc.perform(get(
-                        "/groups/{groupId}/activity-feed/days/{date}/members/{groupMemberId}",
-                        fixture.group().getId(),
-                        TODAY,
-                        minjunRow.groupMemberId()
-                )
+        MvcResult todayResult = mockMvc.perform(
+                        get("/group-challenges/{groupChallengeId}/challenge-records/today", fixture.challenge().getId())
                         .header(HttpHeaders.AUTHORIZATION, bearer(fixture.currentUser().getId())))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.groupMemberId").value(minjunRow.groupMemberId()))
-                .andExpect(jsonPath("$.displayName").value("민준"))
-                .andExpect(jsonPath("$.dailyStatus").value("NOT_CERTIFIED"))
-                .andExpect(jsonPath("$.challengeRecordId").isNumber())
-                .andExpect(jsonPath("$.challengeStatus").doesNotExist())
-                .andExpect(jsonPath("$.activityRecord").doesNotExist())
-                .andExpect(jsonPath("$.reactions.totalCount").value(0))
-                .andExpect(jsonPath("$.reactions.summary").isEmpty())
-                .andExpect(jsonPath("$.commentCount").value(0))
-                .andExpect(jsonPath("$.pokeCount").value(0))
-                .andExpect(jsonPath("$.isPoked").value(false))
-                .andExpect(jsonPath("$.pokeable").value(true))
-                .andExpect(jsonPath("$.pokedUsers").isEmpty())
                 .andReturn();
 
         Number challengeRecordId = JsonPath.read(
-                initialDetailResult.getResponse().getContentAsString(),
-                "$.challengeRecordId"
+                todayResult.getResponse().getContentAsString(),
+                "$.members[1].challengeRecordId"
         );
 
         statusCountRepository.increasePokeCount(challengeRecordId.longValue());
@@ -327,26 +329,33 @@ class GroupActivityCalendarApiTest {
                 .andExpect(jsonPath("$.totalCount").value(1))
                 .andExpect(jsonPath("$.items[0].commentBody").value("인증 기다리고 있어요"));
 
-        mockMvc.perform(get(
-                        "/groups/{groupId}/activity-feed/days/{date}/members/{groupMemberId}",
-                        fixture.group().getId(),
-                        TODAY,
-                        minjunRow.groupMemberId()
-                )
+        mockMvc.perform(get("/challenge-records/{challengeRecordId}", challengeRecordId.longValue())
                         .header(HttpHeaders.AUTHORIZATION, bearer(fixture.currentUser().getId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.challengeRecordId").value(challengeRecordId.longValue()))
-                .andExpect(jsonPath("$.dailyStatus").value("NOT_CERTIFIED"))
-                .andExpect(jsonPath("$.activityRecord").doesNotExist())
+                .andExpect(jsonPath("$.challengeStatus").value("BEFORE_RECORD"))
+                .andExpect(jsonPath("$.recordDate").value("2026-04-16"))
+                .andExpect(jsonPath("$.author.displayName").value("민준"))
+                .andExpect(jsonPath("$.activityRecordId").doesNotExist())
+                .andExpect(jsonPath("$.activityCreatedAt").doesNotExist())
+                .andExpect(jsonPath("$.activityImageUrl").doesNotExist())
+                .andExpect(jsonPath("$.oneLineReview").doesNotExist())
+                .andExpect(jsonPath("$.goalStatus").doesNotExist())
+                .andExpect(jsonPath("$.snapshotGoalMinutes").doesNotExist())
+                .andExpect(jsonPath("$.details").isEmpty())
+                .andExpect(jsonPath("$.reactions.totalCount").value(0))
+                .andExpect(jsonPath("$.reactions.summary").isEmpty())
                 .andExpect(jsonPath("$.commentCount").value(1))
                 .andExpect(jsonPath("$.pokeCount").value(1))
-                .andExpect(jsonPath("$.isPoked").value(true))
                 .andExpect(jsonPath("$.pokeable").value(true))
+                .andExpect(jsonPath("$.poked").value(true))
                 .andExpect(jsonPath("$.pokedUsers[0].displayName").value("나"));
     }
 
     private CalendarFixture saveCalendarFixture() {
         UsageGoalType totalUsage = usageGoalTypeRepository.save(UsageGoalType.create(1L, UsageGoalTypeCode.TOTAL_USAGE));
+        saveUnusedGroupChallenges();
+
         Group group = groupRepository.save(Group.createNew("수능방", "ABCDE"));
         GroupChallenge challenge = groupChallengeRepository.save(GroupChallenge.createFirst(group.getId()));
 
@@ -395,6 +404,12 @@ class GroupActivityCalendarApiTest {
         certify(challenge, minjunParticipant, minjun, minjunGoal, LocalDate.of(2026, 4, 15), 80, true);
 
         return new CalendarFixture(group, challenge, currentUser);
+    }
+
+    private void saveUnusedGroupChallenges() {
+        Group unusedGroup = groupRepository.save(Group.createNew("미사용 방", "UNUSD"));
+        groupChallengeRepository.save(GroupChallenge.createFirst(unusedGroup.getId()));
+        groupChallengeRepository.save(GroupChallenge.createFirst(unusedGroup.getId()));
     }
 
     private GroupChallengeParticipant saveParticipant(

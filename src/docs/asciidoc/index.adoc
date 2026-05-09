@@ -90,34 +90,7 @@ operation::groups/members/get-by-id-forbidden[snippets='http-request,request-hea
 
 === Get Group Activity Calendar Summary
 
-operation::groups/activity-calendar/get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
-
-== Group Activity Feed API
-
-=== Activity Feed Detail Policy
-
-`GET /groups/{groupId}/activity-feed/days/{date}/members/{groupMemberId}`는 일별 피드 목록의 멤버 카드와 같은 응답 인터페이스를 사용한다.
-상세 조회는 목록 응답에 `reactions`, `pokeable`, `pokedUsers` 같은 상세 전용 필드만 추가한다.
-
-`challengeRecordId`는 기존 `/challenge-records/{challengeRecordId}` 하위 댓글, 리액션, 콕 API와 연동하기 위한 ID다.
-신규 활동 피드 상세에서는 서버 내부 상태명인 `challengeStatus`를 응답하지 않는다.
-
-인증 전 상세(`dailyStatus=NOT_CERTIFIED`, `activityRecord=null`)도 조회 가능해야 한다.
-오늘 진행 중인 날짜라면 상세 조회 시점에 인증 전 챌린지 기록이 보장되고, FE는 응답의 `challengeRecordId`로 기존 댓글 API를 그대로 사용한다.
-이때 `commentCount`는 인증 전 댓글 수이고, 콕 정보는 `pokeCount`, `isPoked`, `pokeable`, `pokedUsers`로 내려간다.
-인증 전에는 리액션 대상 인증 기록이 없으므로 `reactions.totalCount=0`, `reactions.summary=[]`를 반환한다.
-
-인증 후 상세는 같은 카드 인터페이스에 `activityRecord`와 `reactions`를 채워 반환한다.
-댓글은 동일하게 기존 댓글 API를 사용하며, 이때 `commentCount`는 인증 후 댓글 수다.
-인증 후에는 콕을 새로 보낼 수 없으므로 `pokeable=false`, `pokedUsers=[]`를 반환한다.
-
-=== Get Group Daily Activity Feed
-
-operation::groups/activity-feed/day-get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
-
-=== Get Group Daily Activity Feed Member
-
-operation::groups/activity-feed/member-get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+operation::group-challenges/activity-calendar/get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
 
 == Group Challenge API
 
@@ -166,6 +139,14 @@ operation::uploads/presigned-urls-invalid-request[snippets='http-request,request
   === Get Home Feed (Deprecated)
 
   operation::group-challenges/home-feed-get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+
+  === Get Today's Challenge Record Feed
+
+  operation::group-challenges/challenge-records-today-get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+
+  === Get History Challenge Record Feed
+
+  operation::group-challenges/challenge-records-history-get[snippets='http-request,request-headers,path-parameters,query-parameters,http-response,response-fields']
 
   === Get Feed Detail
 

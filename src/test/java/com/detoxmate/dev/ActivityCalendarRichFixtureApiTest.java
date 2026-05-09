@@ -46,9 +46,10 @@ class ActivityCalendarRichFixtureApiTest {
     void seedActivityCalendarRichFixture() throws Exception {
         JsonNode fixture = createFixture();
         long groupId = fixture.get("groupId").asLong();
+        long groupChallengeId = fixture.get("groupChallengeId").asLong();
         String accessToken = fixture.get("users").get(0).get("accessToken").asText();
 
-        mockMvc.perform(get("/groups/{groupId}/activity-calendar", groupId)
+        mockMvc.perform(get("/group-challenges/{groupChallengeId}/activity-calendar", groupChallengeId)
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.groupId").value(groupId))
@@ -58,11 +59,8 @@ class ActivityCalendarRichFixtureApiTest {
                 .andExpect(jsonPath("$.summary.halfCount").value(3))
                 .andExpect(jsonPath("$.summary.resetCount").value(0));
 
-        mockMvc.perform(get(
-                        "/groups/{groupId}/activity-feed/days/{date}",
-                        groupId,
-                        fixture.get("checkDates").get("halfDay").asText()
-                )
+        mockMvc.perform(get("/group-challenges/{groupChallengeId}/challenge-records", groupChallengeId)
+                        .queryParam("date", fixture.get("checkDates").get("halfDay").asText())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.dailySummary.result").value("HALF"))
@@ -71,11 +69,8 @@ class ActivityCalendarRichFixtureApiTest {
                 .andExpect(jsonPath("$.dailySummary.requiredCount").value(1))
                 .andExpect(jsonPath("$.members.length()").value(3));
 
-        mockMvc.perform(get(
-                                "/groups/{groupId}/activity-feed/days/{date}",
-                                groupId,
-                                fixture.get("checkDates").get("allDay").asText()
-                        )
+        mockMvc.perform(get("/group-challenges/{groupChallengeId}/challenge-records", groupChallengeId)
+                        .queryParam("date", fixture.get("checkDates").get("allDay").asText())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.dailySummary.result").value("ALL"))
@@ -83,11 +78,7 @@ class ActivityCalendarRichFixtureApiTest {
                 .andExpect(jsonPath("$.dailySummary.certifiedMemberCount").value(1))
                 .andExpect(jsonPath("$.members.length()").value(3));
 
-        mockMvc.perform(get(
-                        "/groups/{groupId}/activity-feed/days/{date}",
-                        groupId,
-                        fixture.get("today").asText()
-                )
+        mockMvc.perform(get("/group-challenges/{groupChallengeId}/challenge-records/today", groupChallengeId)
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.dailySummary.dayStatus").value("IN_PROGRESS"))

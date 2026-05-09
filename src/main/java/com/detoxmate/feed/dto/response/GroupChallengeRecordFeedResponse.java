@@ -1,13 +1,16 @@
-package com.detoxmate.group.dto;
+package com.detoxmate.feed.dto.response;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.detoxmate.group.dto.ActivityRecordDetailHistoryResponse;
+import com.detoxmate.group.dto.GroupDailyVerificationSummaryResponse;
+import com.detoxmate.group.dto.MemberDailyGoalResponse;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public record GroupActivityFeedResponse(
+public record GroupChallengeRecordFeedResponse(
         Long groupId,
         LocalDate date,
         GroupDailyVerificationSummaryResponse dailySummary,

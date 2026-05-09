@@ -21,6 +21,7 @@ import com.detoxmate.group.repository.GroupMemberRepository;
 import com.detoxmate.group.repository.GroupRepository;
 import com.detoxmate.user.domain.User;
 import com.detoxmate.user.repository.UserRepository;
+import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -101,16 +102,11 @@ class GroupActivityCalendarHttpApiTest {
         String bearer = "Bearer " + jwtTokenProvider.createAccessToken(fixture.currentUser().getId());
 
         HttpResponse<String> calendarResponse = sendGet(
-                "/groups/" + fixture.group().getId() + "/activity-calendar",
+                "/group-challenges/" + fixture.challenge().getId() + "/activity-calendar",
                 bearer
         );
         HttpResponse<String> activityFeedResponse = sendGet(
-                "/groups/" + fixture.group().getId() + "/activity-feed/days/2026-04-13",
-                bearer
-        );
-        HttpResponse<String> activityFeedMemberResponse = sendGet(
-                "/groups/" + fixture.group().getId()
-                        + "/activity-feed/days/2026-04-13/members/" + fixture.certifiedGroupMemberId(),
+                "/group-challenges/" + fixture.challenge().getId() + "/challenge-records?date=2026-04-13",
                 bearer
         );
 
@@ -126,16 +122,20 @@ class GroupActivityCalendarHttpApiTest {
                 "\"isPoked\":false"
         );
         assertThat(activityFeedResponse.body()).doesNotContain("challengeStatus");
-        assertThat(activityFeedMemberResponse.statusCode()).isEqualTo(200);
-        assertThat(activityFeedMemberResponse.body()).contains(
-                "\"groupMemberId\":" + fixture.certifiedGroupMemberId(),
-                "\"displayName\":\"지수\"",
-                "\"dailyStatus\":\"GOAL_ACHIEVED\"",
-                "\"challengeRecordId\":",
-                "\"reactionCount\":0",
-                "\"commentCount\":0"
+
+        Number challengeRecordId = JsonPath.read(activityFeedResponse.body(), "$.members[0].challengeRecordId");
+        HttpResponse<String> feedDetailResponse = sendGet(
+                "/challenge-records/" + challengeRecordId.longValue(),
+                bearer
         );
-        assertThat(activityFeedMemberResponse.body()).doesNotContain("challengeStatus");
+
+        assertThat(feedDetailResponse.statusCode()).isEqualTo(200);
+        assertThat(feedDetailResponse.body()).contains(
+                "\"challengeRecordId\":" + challengeRecordId.longValue(),
+                "\"displayName\":\"지수\"",
+                "\"challengeStatus\":\"AFTER_RECORD_SUCCESS\"",
+                "\"activityRecordId\":"
+        );
     }
 
     private HttpResponse<String> sendGet(String path, String bearer) throws Exception {
@@ -168,7 +168,7 @@ class GroupActivityCalendarHttpApiTest {
 
         certify(challenge, certifiedParticipant, certifiedUser, certifiedGoal, LocalDate.of(2026, 4, 13));
 
-        return new CalendarFixture(group, currentUser, certifiedParticipant.getGroupMemberId());
+        return new CalendarFixture(group, challenge, currentUser);
     }
 
     private GroupChallengeParticipant saveParticipant(
@@ -253,7 +253,7 @@ class GroupActivityCalendarHttpApiTest {
         challengeRecordRepository.saveAndFlush(challengeRecord);
     }
 
-    private record CalendarFixture(Group group, User currentUser, Long certifiedGroupMemberId) {
+    private record CalendarFixture(Group group, GroupChallenge challenge, User currentUser) {
     }
 
     @TestConfiguration
