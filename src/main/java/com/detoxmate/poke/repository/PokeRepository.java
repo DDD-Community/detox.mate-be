@@ -28,5 +28,12 @@ public interface PokeRepository extends JpaRepository<Poke, Long> {
     """)
     List<Poke> findAllByChallengeRecordOrderByLatest(Long challengeRecordId);
 
+    @Query("""
+    select p
+    from Poke p
+    where p.challengeRecordId in :challengeRecordIds
+      and p.senderUserId = :senderUserId
+    """)
+    List<Poke> findAllByChallengeRecordIdInAndSenderUserId(List<Long> challengeRecordIds, Long senderUserId);
 
 }

@@ -99,5 +99,31 @@ class PokeRepositoryTest {
                 .containsExactly(secondToday.getId(), firstToday.getId(), old.getId());
     }
 
+    @Test
+    @DisplayName("여러 챌린지 기록에서 특정 sender가 찌른 콕만 조회한다")
+    void findAllByChallengeRecordIdInAndSenderUserId_returnsPokesForSender() {
+        // given
+        Poke first = pokeRepository.save(
+                Poke.create(CHALLENGE_RECORD_ID, SENDER_USER_ID, RECEIVER_USER_ID, POKE_DATE)
+        );
+        Poke second = pokeRepository.save(
+                Poke.create(OTHER_CHALLENGE_RECORD_ID, SENDER_USER_ID, OTHER_RECEIVER_USER_ID, POKE_DATE)
+        );
+        pokeRepository.save(
+                Poke.create(CHALLENGE_RECORD_ID, 40L, OTHER_RECEIVER_USER_ID, POKE_DATE)
+        );
+
+        // when
+        List<Poke> pokes = pokeRepository.findAllByChallengeRecordIdInAndSenderUserId(
+                List.of(CHALLENGE_RECORD_ID, OTHER_CHALLENGE_RECORD_ID),
+                SENDER_USER_ID
+        );
+
+        // then
+        assertThat(pokes)
+                .extracting(Poke::getId)
+                .containsExactlyInAnyOrder(first.getId(), second.getId());
+    }
+
 
 }
