@@ -84,13 +84,13 @@ class ActivityCalendarSqlFixtureApiTest {
     }
 
     @Test
-    @DisplayName("SQL reset fixture는 여러 번 호출해도 같은 fixture 상태로 재생성된다")
+    @DisplayName("SQL reset fixture는 여러 번 호출해도 ID 충돌 없이 fixture 상태로 재생성된다")
     void resetActivityCalendarSqlFixtureIsIdempotent() throws Exception {
         JsonNode first = resetFixture();
         JsonNode second = resetFixture();
 
         assertThat(second.get("inviteCode").asText()).isEqualTo("ACR01");
-        assertThat(second.get("groupId").asLong()).isEqualTo(first.get("groupId").asLong());
+        assertThat(second.get("groupId").asLong()).isNotEqualTo(first.get("groupId").asLong());
         assertThat(second.get("summary").get("streakDays").asInt()).isEqualTo(8);
     }
 

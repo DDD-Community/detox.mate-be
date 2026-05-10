@@ -40,22 +40,20 @@ public class ActivityCalendarSqlFixtureService {
     private static final String FIXTURE_NAME = "activity-calendar-rich";
     private static final String FIXTURE_PATH = "dev-fixtures/activity-calendar-rich/";
     private static final String INVITE_CODE = "ACR01";
-    private static final long ME_USER_ID = -910000001L;
-    private static final long JISOO_USER_ID = -910000002L;
-    private static final long MINJUN_USER_ID = -910000003L;
 
     private final JdbcTemplate jdbcTemplate;
     private final JwtTokenProvider jwtTokenProvider;
     private final Clock clock;
 
     @Transactional
-    public ActivityCalendarRichFixtureResponse reset() {
+    public synchronized ActivityCalendarRichFixtureResponse reset() {
         FixtureDates dates = FixtureDates.from(LocalDate.now(clock.withZone(KST)));
         Map<String, String> tokens = tokens(dates);
         tokens.put("__GROUPS_TABLE__", groupsTableName());
 
         executeSql("delete.sql", tokens);
         executeSql("seed.sql", tokens);
+        advanceIdentityColumns();
 
         return response(dates);
     }
@@ -104,18 +102,24 @@ public class ActivityCalendarSqlFixtureService {
                 new FixtureSummaryResponse(5, 3, 0, 8),
                 new FixtureCheckDatesResponse(dates.dMinus8(), dates.dMinus5(), dates.today()),
                 List.of(
-                        user("me", ME_USER_ID),
-                        user("member", JISOO_USER_ID),
-                        user("member", MINJUN_USER_ID)
+                        user("me", groupId, "캘린더 나"),
+                        user("member", groupId, "캘린더 지수"),
+                        user("member", groupId, "캘린더 민준")
                 )
         );
     }
 
-    private FixtureUserResponse user(String role, Long userId) {
-        String displayName = jdbcTemplate.queryForObject(
-                "SELECT display_name FROM users WHERE user_id = ?",
-                String.class,
-                userId
+    private FixtureUserResponse user(String role, Long groupId, String displayName) {
+        Long userId = jdbcTemplate.queryForObject(
+                """
+                        SELECT u.user_id
+                        FROM users u
+                        JOIN group_members gm ON gm.user_id = u.user_id
+                        WHERE gm.group_id = ? AND u.display_name = ?
+                        """,
+                Long.class,
+                groupId,
+                displayName
         );
         return new FixtureUserResponse(role, userId, displayName, jwtTokenProvider.createAccessToken(userId));
     }
@@ -134,8 +138,68 @@ public class ActivityCalendarSqlFixtureService {
         return "`groups`";
     }
 
+    private void advanceIdentityColumns() {
+        advanceIdentityColumn("users", "user_id");
+        advanceIdentityColumn(groupsTableName(), "group_id");
+        advanceIdentityColumn("group_challenges", "group_challenge_id");
+        advanceIdentityColumn("group_members", "group_member_id");
+        advanceIdentityColumn("group_challenge_participants", "group_challenge_participant_id");
+        advanceIdentityColumn("user_usage_goal_times", "user_usage_goal_times_id");
+        advanceIdentityColumn("activity_record", "activity_record_id");
+        advanceIdentityColumn("activity_record_detail", "activity_record_detail_id");
+        advanceIdentityColumn("challenge_record", "challenge_record_id");
+        advanceIdentityColumn("challenge_record_status", "challenge_record_status_id");
+    }
+
+    private void advanceIdentityColumn(String tableName, String columnName) {
+        long nextId = nextId(tableName, columnName);
+        String productName = databaseProductName();
+        if (productName != null && productName.contains("H2")) {
+            jdbcTemplate.execute("ALTER TABLE " + tableName + " ALTER COLUMN " + columnName + " RESTART WITH " + nextId);
+            return;
+        }
+        jdbcTemplate.execute("ALTER TABLE " + tableName + " AUTO_INCREMENT = " + nextId);
+    }
+
+    private long nextId(String tableName, String columnName) {
+        Long nextId = jdbcTemplate.queryForObject(
+                "SELECT COALESCE(MAX(" + columnName + "), 0) + 1 FROM " + tableName,
+                Long.class
+        );
+        if (nextId == null) {
+            throw new IllegalStateException("fixture ID를 할당할 수 없습니다: " + tableName + "." + columnName);
+        }
+        return nextId;
+    }
+
+    private String databaseProductName() {
+        return jdbcTemplate.execute((Connection connection) -> {
+            try {
+                return connection.getMetaData().getDatabaseProductName();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("DB product name을 확인할 수 없습니다.", exception);
+            }
+        });
+    }
+
     private Map<String, String> tokens(FixtureDates dates) {
+        FixtureIds ids = FixtureIds.next(jdbcTemplate, groupsTableName());
         Map<String, String> tokens = new LinkedHashMap<>();
+        tokens.put("__TOTAL_USAGE_GOAL_TYPE_ID__", String.valueOf(ids.totalUsageGoalTypeId()));
+        tokens.put("__ME_USER_ID__", String.valueOf(ids.meUserId()));
+        tokens.put("__JISOO_USER_ID__", String.valueOf(ids.jisooUserId()));
+        tokens.put("__MINJUN_USER_ID__", String.valueOf(ids.minjunUserId()));
+        tokens.put("__GROUP_ID__", String.valueOf(ids.groupId()));
+        tokens.put("__GROUP_CHALLENGE_ID__", String.valueOf(ids.groupChallengeId()));
+        tokens.put("__ME_GROUP_MEMBER_ID__", String.valueOf(ids.meGroupMemberId()));
+        tokens.put("__JISOO_GROUP_MEMBER_ID__", String.valueOf(ids.jisooGroupMemberId()));
+        tokens.put("__MINJUN_GROUP_MEMBER_ID__", String.valueOf(ids.minjunGroupMemberId()));
+        tokens.put("__ME_PARTICIPANT_ID__", String.valueOf(ids.meParticipantId()));
+        tokens.put("__JISOO_PARTICIPANT_ID__", String.valueOf(ids.jisooParticipantId()));
+        tokens.put("__MINJUN_PARTICIPANT_ID__", String.valueOf(ids.minjunParticipantId()));
+        tokens.put("__ME_GOAL_ID__", String.valueOf(ids.meGoalId()));
+        tokens.put("__JISOO_GOAL_ID__", String.valueOf(ids.jisooGoalId()));
+        tokens.put("__MINJUN_GOAL_ID__", String.valueOf(ids.minjunGoalId()));
         tokens.put("__ME_JOINED_AT__", dateTime(dates.dMinus10(), LocalTime.of(10, 0)));
         tokens.put("__JISOO_JOINED_AT__", dateTime(dates.dMinus8(), LocalTime.of(10, 0)));
         tokens.put("__MINJUN_JOINED_AT__", dateTime(dates.dMinus6(), LocalTime.of(10, 0)));
@@ -150,6 +214,12 @@ public class ActivityCalendarSqlFixtureService {
             tokens.put("__D_MINUS_" + daysAgo + "_ME_AT__", dateTime(date, LocalTime.of(20, 30)));
             tokens.put("__D_MINUS_" + daysAgo + "_JISOO_AT__", dateTime(date, LocalTime.of(20, 20)));
             tokens.put("__D_MINUS_" + daysAgo + "_MINJUN_AT__", dateTime(date, LocalTime.of(20, 10)));
+        }
+        for (int index = 1; index <= 15; index++) {
+            tokens.put("__ACTIVITY_RECORD_" + index + "_ID__", String.valueOf(ids.activityRecordId(index)));
+            tokens.put("__CHALLENGE_RECORD_" + index + "_ID__", String.valueOf(ids.challengeRecordId(index)));
+            tokens.put("__ACTIVITY_RECORD_DETAIL_" + index + "_ID__", String.valueOf(ids.activityRecordDetailId(index)));
+            tokens.put("__CHALLENGE_RECORD_STATUS_" + index + "_ID__", String.valueOf(ids.challengeRecordStatusId(index)));
         }
 
         return tokens;
@@ -182,6 +252,95 @@ public class ActivityCalendarSqlFixtureService {
                     today.minusDays(6),
                     today.minusDays(5)
             );
+        }
+    }
+
+    private record FixtureIds(
+            long totalUsageGoalTypeId,
+            long meUserId,
+            long jisooUserId,
+            long minjunUserId,
+            long groupId,
+            long groupChallengeId,
+            long meGroupMemberId,
+            long jisooGroupMemberId,
+            long minjunGroupMemberId,
+            long meParticipantId,
+            long jisooParticipantId,
+            long minjunParticipantId,
+            long meGoalId,
+            long jisooGoalId,
+            long minjunGoalId,
+            long activityRecordBaseId,
+            long challengeRecordBaseId,
+            long activityRecordDetailBaseId,
+            long challengeRecordStatusBaseId
+    ) {
+        private static FixtureIds next(JdbcTemplate jdbcTemplate, String groupsTableName) {
+            long userId = nextId(jdbcTemplate, "users", "user_id");
+            long groupMemberId = nextId(jdbcTemplate, "group_members", "group_member_id");
+            long participantId = nextId(jdbcTemplate, "group_challenge_participants", "group_challenge_participant_id");
+            long goalId = nextId(jdbcTemplate, "user_usage_goal_times", "user_usage_goal_times_id");
+
+            return new FixtureIds(
+                    totalUsageGoalTypeId(jdbcTemplate),
+                    userId,
+                    userId + 1,
+                    userId + 2,
+                    nextId(jdbcTemplate, groupsTableName, "group_id"),
+                    nextId(jdbcTemplate, "group_challenges", "group_challenge_id"),
+                    groupMemberId,
+                    groupMemberId + 1,
+                    groupMemberId + 2,
+                    participantId,
+                    participantId + 1,
+                    participantId + 2,
+                    goalId,
+                    goalId + 1,
+                    goalId + 2,
+                    nextId(jdbcTemplate, "activity_record", "activity_record_id"),
+                    nextId(jdbcTemplate, "challenge_record", "challenge_record_id"),
+                    nextId(jdbcTemplate, "activity_record_detail", "activity_record_detail_id"),
+                    nextId(jdbcTemplate, "challenge_record_status", "challenge_record_status_id")
+            );
+        }
+
+        private static long totalUsageGoalTypeId(JdbcTemplate jdbcTemplate) {
+            List<Long> existingIds = jdbcTemplate.query(
+                    "SELECT usage_goal_type_id FROM usage_goal_type WHERE description = 'TOTAL_USAGE' ORDER BY usage_goal_type_id LIMIT 1",
+                    (rs, rowNum) -> rs.getLong(1)
+            );
+            if (!existingIds.isEmpty()) {
+                return existingIds.get(0);
+            }
+            return nextId(jdbcTemplate, "usage_goal_type", "usage_goal_type_id");
+        }
+
+        private static long nextId(JdbcTemplate jdbcTemplate, String tableName, String columnName) {
+            Long nextId = jdbcTemplate.queryForObject(
+                    "SELECT COALESCE(MAX(" + columnName + "), 0) + 1 FROM " + tableName,
+                    Long.class
+            );
+            if (nextId == null) {
+                throw new IllegalStateException("fixture ID를 할당할 수 없습니다: " + tableName + "." + columnName);
+            }
+            return nextId;
+        }
+
+        private long activityRecordId(int index) {
+            return activityRecordBaseId + index - 1;
+        }
+
+        private long challengeRecordId(int index) {
+            return challengeRecordBaseId + index - 1;
+        }
+
+        private long activityRecordDetailId(int index) {
+            return activityRecordDetailBaseId + index - 1;
+        }
+
+        private long challengeRecordStatusId(int index) {
+            return challengeRecordStatusBaseId + index - 1;
         }
     }
 }

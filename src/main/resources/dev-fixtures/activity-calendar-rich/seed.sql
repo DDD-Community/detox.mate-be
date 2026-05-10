@@ -1,16 +1,16 @@
 INSERT INTO usage_goal_type (usage_goal_type_id, description)
-SELECT -910000001, 'TOTAL_USAGE'
+SELECT __TOTAL_USAGE_GOAL_TYPE_ID__, 'TOTAL_USAGE'
 WHERE NOT EXISTS (
     SELECT 1 FROM usage_goal_type WHERE description = 'TOTAL_USAGE'
 );
 
 INSERT INTO users (user_id, display_name, created_at, updated_at, profile_image_object_key) VALUES
-(-910000001, '캘린더 나', '__ME_JOINED_AT__', '__ME_JOINED_AT__', 'profiles/fixtures/calendar-me.png'),
-(-910000002, '캘린더 지수', '__JISOO_JOINED_AT__', '__JISOO_JOINED_AT__', 'profiles/fixtures/calendar-jisoo.png'),
-(-910000003, '캘린더 민준', '__MINJUN_JOINED_AT__', '__MINJUN_JOINED_AT__', 'profiles/fixtures/calendar-minjun.png');
+(__ME_USER_ID__, '캘린더 나', '__ME_JOINED_AT__', '__ME_JOINED_AT__', 'profiles/fixtures/calendar-me.png'),
+(__JISOO_USER_ID__, '캘린더 지수', '__JISOO_JOINED_AT__', '__JISOO_JOINED_AT__', 'profiles/fixtures/calendar-jisoo.png'),
+(__MINJUN_USER_ID__, '캘린더 민준', '__MINJUN_JOINED_AT__', '__MINJUN_JOINED_AT__', 'profiles/fixtures/calendar-minjun.png');
 
 INSERT INTO __GROUPS_TABLE__ (group_id, name, invite_code, created_at, updated_at) VALUES
-(-910000001, '캘린더시드', 'ACR01', '__ME_JOINED_AT__', '__ME_JOINED_AT__');
+(__GROUP_ID__, '캘린더시드', 'ACR01', '__ME_JOINED_AT__', '__ME_JOINED_AT__');
 
 INSERT INTO group_challenges (
     group_challenge_id,
@@ -22,7 +22,7 @@ INSERT INTO group_challenges (
     created_at,
     updated_at
 ) VALUES
-(-910000001, -910000001, 1, 'ACTIVE', '__FIRST_VERIFICATION_AT__', NULL, '__ME_JOINED_AT__', '__FIRST_VERIFICATION_AT__');
+(__GROUP_CHALLENGE_ID__, __GROUP_ID__, 1, 'ACTIVE', '__FIRST_VERIFICATION_AT__', NULL, '__ME_JOINED_AT__', '__FIRST_VERIFICATION_AT__');
 
 INSERT INTO group_members (
     group_member_id,
@@ -35,9 +35,9 @@ INSERT INTO group_members (
     created_at,
     updated_at
 ) VALUES
-(-910000001, -910000001, -910000001, 'OWNER', 'ACTIVE', '__ME_JOINED_AT__', NULL, '__ME_JOINED_AT__', '__ME_JOINED_AT__'),
-(-910000002, -910000001, -910000002, 'MEMBER', 'ACTIVE', '__JISOO_JOINED_AT__', NULL, '__JISOO_JOINED_AT__', '__JISOO_JOINED_AT__'),
-(-910000003, -910000001, -910000003, 'MEMBER', 'ACTIVE', '__MINJUN_JOINED_AT__', NULL, '__MINJUN_JOINED_AT__', '__MINJUN_JOINED_AT__');
+(__ME_GROUP_MEMBER_ID__, __GROUP_ID__, __ME_USER_ID__, 'OWNER', 'ACTIVE', '__ME_JOINED_AT__', NULL, '__ME_JOINED_AT__', '__ME_JOINED_AT__'),
+(__JISOO_GROUP_MEMBER_ID__, __GROUP_ID__, __JISOO_USER_ID__, 'MEMBER', 'ACTIVE', '__JISOO_JOINED_AT__', NULL, '__JISOO_JOINED_AT__', '__JISOO_JOINED_AT__'),
+(__MINJUN_GROUP_MEMBER_ID__, __GROUP_ID__, __MINJUN_USER_ID__, 'MEMBER', 'ACTIVE', '__MINJUN_JOINED_AT__', NULL, '__MINJUN_JOINED_AT__', '__MINJUN_JOINED_AT__');
 
 INSERT INTO group_challenge_participants (
     group_challenge_participant_id,
@@ -50,9 +50,9 @@ INSERT INTO group_challenge_participants (
     created_at,
     updated_at
 ) VALUES
-(-910000001, -910000001, -910000001, 'JOINED', '__ME_JOINED_AT__', NULL, NULL, '__ME_JOINED_AT__', '__ME_JOINED_AT__'),
-(-910000002, -910000001, -910000002, 'JOINED', '__JISOO_JOINED_AT__', NULL, NULL, '__JISOO_JOINED_AT__', '__JISOO_JOINED_AT__'),
-(-910000003, -910000001, -910000003, 'JOINED', '__MINJUN_JOINED_AT__', NULL, NULL, '__MINJUN_JOINED_AT__', '__MINJUN_JOINED_AT__');
+(__ME_PARTICIPANT_ID__, __GROUP_CHALLENGE_ID__, __ME_GROUP_MEMBER_ID__, 'JOINED', '__ME_JOINED_AT__', NULL, NULL, '__ME_JOINED_AT__', '__ME_JOINED_AT__'),
+(__JISOO_PARTICIPANT_ID__, __GROUP_CHALLENGE_ID__, __JISOO_GROUP_MEMBER_ID__, 'JOINED', '__JISOO_JOINED_AT__', NULL, NULL, '__JISOO_JOINED_AT__', '__JISOO_JOINED_AT__'),
+(__MINJUN_PARTICIPANT_ID__, __GROUP_CHALLENGE_ID__, __MINJUN_GROUP_MEMBER_ID__, 'JOINED', '__MINJUN_JOINED_AT__', NULL, NULL, '__MINJUN_JOINED_AT__', '__MINJUN_JOINED_AT__');
 
 INSERT INTO user_usage_goal_times (
     user_usage_goal_times_id,
@@ -62,9 +62,9 @@ INSERT INTO user_usage_goal_times (
     user_id,
     updated_at
 ) VALUES
-(-910000001, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), 120, '__ME_GOAL_SET_AT__', -910000001, '__ME_GOAL_SET_AT__'),
-(-910000002, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), 120, '__JISOO_GOAL_SET_AT__', -910000002, '__JISOO_GOAL_SET_AT__'),
-(-910000003, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), 120, '__MINJUN_GOAL_SET_AT__', -910000003, '__MINJUN_GOAL_SET_AT__');
+(__ME_GOAL_ID__, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), 120, '__ME_GOAL_SET_AT__', __ME_USER_ID__, '__ME_GOAL_SET_AT__'),
+(__JISOO_GOAL_ID__, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), 120, '__JISOO_GOAL_SET_AT__', __JISOO_USER_ID__, '__JISOO_GOAL_SET_AT__'),
+(__MINJUN_GOAL_ID__, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), 120, '__MINJUN_GOAL_SET_AT__', __MINJUN_USER_ID__, '__MINJUN_GOAL_SET_AT__');
 
 INSERT INTO activity_record (
     activity_record_id,
@@ -74,21 +74,21 @@ INSERT INTO activity_record (
     reflection_text,
     created_at
 ) VALUES
-(-910001001, -910000001, -910000001, 'activity-records/fixtures/calendar-me/__D_MINUS_8__.png', '오늘도 목표 시간 안에서 잘 버텼어요.', '__D_MINUS_8_ME_AT__'),
-(-910001002, -910000001, -910000001, 'activity-records/fixtures/calendar-me/__D_MINUS_7__.png', '오늘도 목표 시간 안에서 잘 버텼어요.', '__D_MINUS_7_ME_AT__'),
-(-910001003, -910000001, -910000001, 'activity-records/fixtures/calendar-me/__D_MINUS_6__.png', '오늘도 목표 시간 안에서 잘 버텼어요.', '__D_MINUS_6_ME_AT__'),
-(-910001004, -910000002, -910000002, 'activity-records/fixtures/calendar-jisoo/__D_MINUS_6__.png', '오늘도 목표 시간 안에서 잘 버텼어요.', '__D_MINUS_6_JISOO_AT__'),
-(-910001005, -910000001, -910000001, 'activity-records/fixtures/calendar-me/__D_MINUS_5__.png', '오늘도 목표 시간 안에서 잘 버텼어요.', '__D_MINUS_5_ME_AT__'),
-(-910001006, -910000001, -910000001, 'activity-records/fixtures/calendar-me/__D_MINUS_4__.png', '오늘도 목표 시간 안에서 잘 버텼어요.', '__D_MINUS_4_ME_AT__'),
-(-910001007, -910000002, -910000002, 'activity-records/fixtures/calendar-jisoo/__D_MINUS_4__.png', '오늘도 목표 시간 안에서 잘 버텼어요.', '__D_MINUS_4_JISOO_AT__'),
-(-910001008, -910000003, -910000003, 'activity-records/fixtures/calendar-minjun/__D_MINUS_4__.png', '오늘도 목표 시간 안에서 잘 버텼어요.', '__D_MINUS_4_MINJUN_AT__'),
-(-910001009, -910000002, -910000002, 'activity-records/fixtures/calendar-jisoo/__D_MINUS_3__.png', '오늘도 목표 시간 안에서 잘 버텼어요.', '__D_MINUS_3_JISOO_AT__'),
-(-910001010, -910000003, -910000003, 'activity-records/fixtures/calendar-minjun/__D_MINUS_3__.png', '오늘도 목표 시간 안에서 잘 버텼어요.', '__D_MINUS_3_MINJUN_AT__'),
-(-910001011, -910000001, -910000001, 'activity-records/fixtures/calendar-me/__D_MINUS_2__.png', '오늘도 목표 시간 안에서 잘 버텼어요.', '__D_MINUS_2_ME_AT__'),
-(-910001012, -910000002, -910000002, 'activity-records/fixtures/calendar-jisoo/__D_MINUS_2__.png', '오늘도 목표 시간 안에서 잘 버텼어요.', '__D_MINUS_2_JISOO_AT__'),
-(-910001013, -910000003, -910000003, 'activity-records/fixtures/calendar-minjun/__D_MINUS_2__.png', '오늘도 목표 시간 안에서 잘 버텼어요.', '__D_MINUS_2_MINJUN_AT__'),
-(-910001014, -910000001, -910000001, 'activity-records/fixtures/calendar-me/__D_MINUS_1__.png', '오늘도 목표 시간 안에서 잘 버텼어요.', '__D_MINUS_1_ME_AT__'),
-(-910001015, -910000002, -910000002, 'activity-records/fixtures/calendar-jisoo/__D_MINUS_1__.png', '오늘도 목표 시간 안에서 잘 버텼어요.', '__D_MINUS_1_JISOO_AT__');
+(__ACTIVITY_RECORD_1_ID__, __ME_USER_ID__, __ME_PARTICIPANT_ID__, 'activity-records/fixtures/calendar-me/__D_MINUS_8__.png', '오늘도 목표 시간 안에서 잘 버텼어요.', '__D_MINUS_8_ME_AT__'),
+(__ACTIVITY_RECORD_2_ID__, __ME_USER_ID__, __ME_PARTICIPANT_ID__, 'activity-records/fixtures/calendar-me/__D_MINUS_7__.png', '오늘도 목표 시간 안에서 잘 버텼어요.', '__D_MINUS_7_ME_AT__'),
+(__ACTIVITY_RECORD_3_ID__, __ME_USER_ID__, __ME_PARTICIPANT_ID__, 'activity-records/fixtures/calendar-me/__D_MINUS_6__.png', '오늘도 목표 시간 안에서 잘 버텼어요.', '__D_MINUS_6_ME_AT__'),
+(__ACTIVITY_RECORD_4_ID__, __JISOO_USER_ID__, __JISOO_PARTICIPANT_ID__, 'activity-records/fixtures/calendar-jisoo/__D_MINUS_6__.png', '오늘도 목표 시간 안에서 잘 버텼어요.', '__D_MINUS_6_JISOO_AT__'),
+(__ACTIVITY_RECORD_5_ID__, __ME_USER_ID__, __ME_PARTICIPANT_ID__, 'activity-records/fixtures/calendar-me/__D_MINUS_5__.png', '오늘도 목표 시간 안에서 잘 버텼어요.', '__D_MINUS_5_ME_AT__'),
+(__ACTIVITY_RECORD_6_ID__, __ME_USER_ID__, __ME_PARTICIPANT_ID__, 'activity-records/fixtures/calendar-me/__D_MINUS_4__.png', '오늘도 목표 시간 안에서 잘 버텼어요.', '__D_MINUS_4_ME_AT__'),
+(__ACTIVITY_RECORD_7_ID__, __JISOO_USER_ID__, __JISOO_PARTICIPANT_ID__, 'activity-records/fixtures/calendar-jisoo/__D_MINUS_4__.png', '오늘도 목표 시간 안에서 잘 버텼어요.', '__D_MINUS_4_JISOO_AT__'),
+(__ACTIVITY_RECORD_8_ID__, __MINJUN_USER_ID__, __MINJUN_PARTICIPANT_ID__, 'activity-records/fixtures/calendar-minjun/__D_MINUS_4__.png', '오늘도 목표 시간 안에서 잘 버텼어요.', '__D_MINUS_4_MINJUN_AT__'),
+(__ACTIVITY_RECORD_9_ID__, __JISOO_USER_ID__, __JISOO_PARTICIPANT_ID__, 'activity-records/fixtures/calendar-jisoo/__D_MINUS_3__.png', '오늘도 목표 시간 안에서 잘 버텼어요.', '__D_MINUS_3_JISOO_AT__'),
+(__ACTIVITY_RECORD_10_ID__, __MINJUN_USER_ID__, __MINJUN_PARTICIPANT_ID__, 'activity-records/fixtures/calendar-minjun/__D_MINUS_3__.png', '오늘도 목표 시간 안에서 잘 버텼어요.', '__D_MINUS_3_MINJUN_AT__'),
+(__ACTIVITY_RECORD_11_ID__, __ME_USER_ID__, __ME_PARTICIPANT_ID__, 'activity-records/fixtures/calendar-me/__D_MINUS_2__.png', '오늘도 목표 시간 안에서 잘 버텼어요.', '__D_MINUS_2_ME_AT__'),
+(__ACTIVITY_RECORD_12_ID__, __JISOO_USER_ID__, __JISOO_PARTICIPANT_ID__, 'activity-records/fixtures/calendar-jisoo/__D_MINUS_2__.png', '오늘도 목표 시간 안에서 잘 버텼어요.', '__D_MINUS_2_JISOO_AT__'),
+(__ACTIVITY_RECORD_13_ID__, __MINJUN_USER_ID__, __MINJUN_PARTICIPANT_ID__, 'activity-records/fixtures/calendar-minjun/__D_MINUS_2__.png', '오늘도 목표 시간 안에서 잘 버텼어요.', '__D_MINUS_2_MINJUN_AT__'),
+(__ACTIVITY_RECORD_14_ID__, __ME_USER_ID__, __ME_PARTICIPANT_ID__, 'activity-records/fixtures/calendar-me/__D_MINUS_1__.png', '오늘도 목표 시간 안에서 잘 버텼어요.', '__D_MINUS_1_ME_AT__'),
+(__ACTIVITY_RECORD_15_ID__, __JISOO_USER_ID__, __JISOO_PARTICIPANT_ID__, 'activity-records/fixtures/calendar-jisoo/__D_MINUS_1__.png', '오늘도 목표 시간 안에서 잘 버텼어요.', '__D_MINUS_1_JISOO_AT__');
 
 INSERT INTO activity_record_detail (
     activity_record_detail_id,
@@ -99,21 +99,21 @@ INSERT INTO activity_record_detail (
     is_achieved,
     created_at
 ) VALUES
-(-910003001, 90, -910001001, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), -910000001, true, '__D_MINUS_8_ME_AT__'),
-(-910003002, 90, -910001002, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), -910000001, true, '__D_MINUS_7_ME_AT__'),
-(-910003003, 90, -910001003, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), -910000001, true, '__D_MINUS_6_ME_AT__'),
-(-910003004, 80, -910001004, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), -910000002, true, '__D_MINUS_6_JISOO_AT__'),
-(-910003005, 90, -910001005, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), -910000001, true, '__D_MINUS_5_ME_AT__'),
-(-910003006, 90, -910001006, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), -910000001, true, '__D_MINUS_4_ME_AT__'),
-(-910003007, 80, -910001007, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), -910000002, true, '__D_MINUS_4_JISOO_AT__'),
-(-910003008, 100, -910001008, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), -910000003, true, '__D_MINUS_4_MINJUN_AT__'),
-(-910003009, 80, -910001009, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), -910000002, true, '__D_MINUS_3_JISOO_AT__'),
-(-910003010, 100, -910001010, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), -910000003, true, '__D_MINUS_3_MINJUN_AT__'),
-(-910003011, 90, -910001011, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), -910000001, true, '__D_MINUS_2_ME_AT__'),
-(-910003012, 80, -910001012, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), -910000002, true, '__D_MINUS_2_JISOO_AT__'),
-(-910003013, 100, -910001013, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), -910000003, true, '__D_MINUS_2_MINJUN_AT__'),
-(-910003014, 90, -910001014, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), -910000001, true, '__D_MINUS_1_ME_AT__'),
-(-910003015, 80, -910001015, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), -910000002, true, '__D_MINUS_1_JISOO_AT__');
+(__ACTIVITY_RECORD_DETAIL_1_ID__, 90, __ACTIVITY_RECORD_1_ID__, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), __ME_GOAL_ID__, true, '__D_MINUS_8_ME_AT__'),
+(__ACTIVITY_RECORD_DETAIL_2_ID__, 90, __ACTIVITY_RECORD_2_ID__, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), __ME_GOAL_ID__, true, '__D_MINUS_7_ME_AT__'),
+(__ACTIVITY_RECORD_DETAIL_3_ID__, 90, __ACTIVITY_RECORD_3_ID__, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), __ME_GOAL_ID__, true, '__D_MINUS_6_ME_AT__'),
+(__ACTIVITY_RECORD_DETAIL_4_ID__, 80, __ACTIVITY_RECORD_4_ID__, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), __JISOO_GOAL_ID__, true, '__D_MINUS_6_JISOO_AT__'),
+(__ACTIVITY_RECORD_DETAIL_5_ID__, 90, __ACTIVITY_RECORD_5_ID__, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), __ME_GOAL_ID__, true, '__D_MINUS_5_ME_AT__'),
+(__ACTIVITY_RECORD_DETAIL_6_ID__, 90, __ACTIVITY_RECORD_6_ID__, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), __ME_GOAL_ID__, true, '__D_MINUS_4_ME_AT__'),
+(__ACTIVITY_RECORD_DETAIL_7_ID__, 80, __ACTIVITY_RECORD_7_ID__, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), __JISOO_GOAL_ID__, true, '__D_MINUS_4_JISOO_AT__'),
+(__ACTIVITY_RECORD_DETAIL_8_ID__, 100, __ACTIVITY_RECORD_8_ID__, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), __MINJUN_GOAL_ID__, true, '__D_MINUS_4_MINJUN_AT__'),
+(__ACTIVITY_RECORD_DETAIL_9_ID__, 80, __ACTIVITY_RECORD_9_ID__, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), __JISOO_GOAL_ID__, true, '__D_MINUS_3_JISOO_AT__'),
+(__ACTIVITY_RECORD_DETAIL_10_ID__, 100, __ACTIVITY_RECORD_10_ID__, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), __MINJUN_GOAL_ID__, true, '__D_MINUS_3_MINJUN_AT__'),
+(__ACTIVITY_RECORD_DETAIL_11_ID__, 90, __ACTIVITY_RECORD_11_ID__, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), __ME_GOAL_ID__, true, '__D_MINUS_2_ME_AT__'),
+(__ACTIVITY_RECORD_DETAIL_12_ID__, 80, __ACTIVITY_RECORD_12_ID__, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), __JISOO_GOAL_ID__, true, '__D_MINUS_2_JISOO_AT__'),
+(__ACTIVITY_RECORD_DETAIL_13_ID__, 100, __ACTIVITY_RECORD_13_ID__, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), __MINJUN_GOAL_ID__, true, '__D_MINUS_2_MINJUN_AT__'),
+(__ACTIVITY_RECORD_DETAIL_14_ID__, 90, __ACTIVITY_RECORD_14_ID__, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), __ME_GOAL_ID__, true, '__D_MINUS_1_ME_AT__'),
+(__ACTIVITY_RECORD_DETAIL_15_ID__, 80, __ACTIVITY_RECORD_15_ID__, (SELECT MIN(usage_goal_type_id) FROM usage_goal_type WHERE description = 'TOTAL_USAGE'), __JISOO_GOAL_ID__, true, '__D_MINUS_1_JISOO_AT__');
 
 INSERT INTO challenge_record (
     challenge_record_id,
@@ -125,21 +125,21 @@ INSERT INTO challenge_record (
     created_at,
     updated_at
 ) VALUES
-(-910002001, -910000001, -910000001, '__D_MINUS_8__', -910001001, 'AFTER_RECORD_SUCCESS', '__D_MINUS_8_ME_AT__', '__D_MINUS_8_ME_AT__'),
-(-910002002, -910000001, -910000001, '__D_MINUS_7__', -910001002, 'AFTER_RECORD_SUCCESS', '__D_MINUS_7_ME_AT__', '__D_MINUS_7_ME_AT__'),
-(-910002003, -910000001, -910000001, '__D_MINUS_6__', -910001003, 'AFTER_RECORD_SUCCESS', '__D_MINUS_6_ME_AT__', '__D_MINUS_6_ME_AT__'),
-(-910002004, -910000001, -910000002, '__D_MINUS_6__', -910001004, 'AFTER_RECORD_SUCCESS', '__D_MINUS_6_JISOO_AT__', '__D_MINUS_6_JISOO_AT__'),
-(-910002005, -910000001, -910000001, '__D_MINUS_5__', -910001005, 'AFTER_RECORD_SUCCESS', '__D_MINUS_5_ME_AT__', '__D_MINUS_5_ME_AT__'),
-(-910002006, -910000001, -910000001, '__D_MINUS_4__', -910001006, 'AFTER_RECORD_SUCCESS', '__D_MINUS_4_ME_AT__', '__D_MINUS_4_ME_AT__'),
-(-910002007, -910000001, -910000002, '__D_MINUS_4__', -910001007, 'AFTER_RECORD_SUCCESS', '__D_MINUS_4_JISOO_AT__', '__D_MINUS_4_JISOO_AT__'),
-(-910002008, -910000001, -910000003, '__D_MINUS_4__', -910001008, 'AFTER_RECORD_SUCCESS', '__D_MINUS_4_MINJUN_AT__', '__D_MINUS_4_MINJUN_AT__'),
-(-910002009, -910000001, -910000002, '__D_MINUS_3__', -910001009, 'AFTER_RECORD_SUCCESS', '__D_MINUS_3_JISOO_AT__', '__D_MINUS_3_JISOO_AT__'),
-(-910002010, -910000001, -910000003, '__D_MINUS_3__', -910001010, 'AFTER_RECORD_SUCCESS', '__D_MINUS_3_MINJUN_AT__', '__D_MINUS_3_MINJUN_AT__'),
-(-910002011, -910000001, -910000001, '__D_MINUS_2__', -910001011, 'AFTER_RECORD_SUCCESS', '__D_MINUS_2_ME_AT__', '__D_MINUS_2_ME_AT__'),
-(-910002012, -910000001, -910000002, '__D_MINUS_2__', -910001012, 'AFTER_RECORD_SUCCESS', '__D_MINUS_2_JISOO_AT__', '__D_MINUS_2_JISOO_AT__'),
-(-910002013, -910000001, -910000003, '__D_MINUS_2__', -910001013, 'AFTER_RECORD_SUCCESS', '__D_MINUS_2_MINJUN_AT__', '__D_MINUS_2_MINJUN_AT__'),
-(-910002014, -910000001, -910000001, '__D_MINUS_1__', -910001014, 'AFTER_RECORD_SUCCESS', '__D_MINUS_1_ME_AT__', '__D_MINUS_1_ME_AT__'),
-(-910002015, -910000001, -910000002, '__D_MINUS_1__', -910001015, 'AFTER_RECORD_SUCCESS', '__D_MINUS_1_JISOO_AT__', '__D_MINUS_1_JISOO_AT__');
+(__CHALLENGE_RECORD_1_ID__, __GROUP_CHALLENGE_ID__, __ME_PARTICIPANT_ID__, '__D_MINUS_8__', __ACTIVITY_RECORD_1_ID__, 'AFTER_RECORD_SUCCESS', '__D_MINUS_8_ME_AT__', '__D_MINUS_8_ME_AT__'),
+(__CHALLENGE_RECORD_2_ID__, __GROUP_CHALLENGE_ID__, __ME_PARTICIPANT_ID__, '__D_MINUS_7__', __ACTIVITY_RECORD_2_ID__, 'AFTER_RECORD_SUCCESS', '__D_MINUS_7_ME_AT__', '__D_MINUS_7_ME_AT__'),
+(__CHALLENGE_RECORD_3_ID__, __GROUP_CHALLENGE_ID__, __ME_PARTICIPANT_ID__, '__D_MINUS_6__', __ACTIVITY_RECORD_3_ID__, 'AFTER_RECORD_SUCCESS', '__D_MINUS_6_ME_AT__', '__D_MINUS_6_ME_AT__'),
+(__CHALLENGE_RECORD_4_ID__, __GROUP_CHALLENGE_ID__, __JISOO_PARTICIPANT_ID__, '__D_MINUS_6__', __ACTIVITY_RECORD_4_ID__, 'AFTER_RECORD_SUCCESS', '__D_MINUS_6_JISOO_AT__', '__D_MINUS_6_JISOO_AT__'),
+(__CHALLENGE_RECORD_5_ID__, __GROUP_CHALLENGE_ID__, __ME_PARTICIPANT_ID__, '__D_MINUS_5__', __ACTIVITY_RECORD_5_ID__, 'AFTER_RECORD_SUCCESS', '__D_MINUS_5_ME_AT__', '__D_MINUS_5_ME_AT__'),
+(__CHALLENGE_RECORD_6_ID__, __GROUP_CHALLENGE_ID__, __ME_PARTICIPANT_ID__, '__D_MINUS_4__', __ACTIVITY_RECORD_6_ID__, 'AFTER_RECORD_SUCCESS', '__D_MINUS_4_ME_AT__', '__D_MINUS_4_ME_AT__'),
+(__CHALLENGE_RECORD_7_ID__, __GROUP_CHALLENGE_ID__, __JISOO_PARTICIPANT_ID__, '__D_MINUS_4__', __ACTIVITY_RECORD_7_ID__, 'AFTER_RECORD_SUCCESS', '__D_MINUS_4_JISOO_AT__', '__D_MINUS_4_JISOO_AT__'),
+(__CHALLENGE_RECORD_8_ID__, __GROUP_CHALLENGE_ID__, __MINJUN_PARTICIPANT_ID__, '__D_MINUS_4__', __ACTIVITY_RECORD_8_ID__, 'AFTER_RECORD_SUCCESS', '__D_MINUS_4_MINJUN_AT__', '__D_MINUS_4_MINJUN_AT__'),
+(__CHALLENGE_RECORD_9_ID__, __GROUP_CHALLENGE_ID__, __JISOO_PARTICIPANT_ID__, '__D_MINUS_3__', __ACTIVITY_RECORD_9_ID__, 'AFTER_RECORD_SUCCESS', '__D_MINUS_3_JISOO_AT__', '__D_MINUS_3_JISOO_AT__'),
+(__CHALLENGE_RECORD_10_ID__, __GROUP_CHALLENGE_ID__, __MINJUN_PARTICIPANT_ID__, '__D_MINUS_3__', __ACTIVITY_RECORD_10_ID__, 'AFTER_RECORD_SUCCESS', '__D_MINUS_3_MINJUN_AT__', '__D_MINUS_3_MINJUN_AT__'),
+(__CHALLENGE_RECORD_11_ID__, __GROUP_CHALLENGE_ID__, __ME_PARTICIPANT_ID__, '__D_MINUS_2__', __ACTIVITY_RECORD_11_ID__, 'AFTER_RECORD_SUCCESS', '__D_MINUS_2_ME_AT__', '__D_MINUS_2_ME_AT__'),
+(__CHALLENGE_RECORD_12_ID__, __GROUP_CHALLENGE_ID__, __JISOO_PARTICIPANT_ID__, '__D_MINUS_2__', __ACTIVITY_RECORD_12_ID__, 'AFTER_RECORD_SUCCESS', '__D_MINUS_2_JISOO_AT__', '__D_MINUS_2_JISOO_AT__'),
+(__CHALLENGE_RECORD_13_ID__, __GROUP_CHALLENGE_ID__, __MINJUN_PARTICIPANT_ID__, '__D_MINUS_2__', __ACTIVITY_RECORD_13_ID__, 'AFTER_RECORD_SUCCESS', '__D_MINUS_2_MINJUN_AT__', '__D_MINUS_2_MINJUN_AT__'),
+(__CHALLENGE_RECORD_14_ID__, __GROUP_CHALLENGE_ID__, __ME_PARTICIPANT_ID__, '__D_MINUS_1__', __ACTIVITY_RECORD_14_ID__, 'AFTER_RECORD_SUCCESS', '__D_MINUS_1_ME_AT__', '__D_MINUS_1_ME_AT__'),
+(__CHALLENGE_RECORD_15_ID__, __GROUP_CHALLENGE_ID__, __JISOO_PARTICIPANT_ID__, '__D_MINUS_1__', __ACTIVITY_RECORD_15_ID__, 'AFTER_RECORD_SUCCESS', '__D_MINUS_1_JISOO_AT__', '__D_MINUS_1_JISOO_AT__');
 
 INSERT INTO challenge_record_status (
     challenge_record_status_id,
@@ -150,18 +150,18 @@ INSERT INTO challenge_record_status (
     poke_count,
     created_at
 ) VALUES
-(-910004001, -910002001, 0, 0, 0, 0, '__D_MINUS_8_ME_AT__'),
-(-910004002, -910002002, 0, 0, 0, 0, '__D_MINUS_7_ME_AT__'),
-(-910004003, -910002003, 0, 0, 0, 0, '__D_MINUS_6_ME_AT__'),
-(-910004004, -910002004, 0, 0, 0, 0, '__D_MINUS_6_JISOO_AT__'),
-(-910004005, -910002005, 0, 0, 0, 0, '__D_MINUS_5_ME_AT__'),
-(-910004006, -910002006, 0, 0, 0, 0, '__D_MINUS_4_ME_AT__'),
-(-910004007, -910002007, 0, 0, 0, 0, '__D_MINUS_4_JISOO_AT__'),
-(-910004008, -910002008, 0, 0, 0, 0, '__D_MINUS_4_MINJUN_AT__'),
-(-910004009, -910002009, 0, 0, 0, 0, '__D_MINUS_3_JISOO_AT__'),
-(-910004010, -910002010, 0, 0, 0, 0, '__D_MINUS_3_MINJUN_AT__'),
-(-910004011, -910002011, 0, 0, 0, 0, '__D_MINUS_2_ME_AT__'),
-(-910004012, -910002012, 0, 0, 0, 0, '__D_MINUS_2_JISOO_AT__'),
-(-910004013, -910002013, 0, 0, 0, 0, '__D_MINUS_2_MINJUN_AT__'),
-(-910004014, -910002014, 0, 0, 0, 0, '__D_MINUS_1_ME_AT__'),
-(-910004015, -910002015, 0, 0, 0, 0, '__D_MINUS_1_JISOO_AT__');
+(__CHALLENGE_RECORD_STATUS_1_ID__, __CHALLENGE_RECORD_1_ID__, 0, 0, 0, 0, '__D_MINUS_8_ME_AT__'),
+(__CHALLENGE_RECORD_STATUS_2_ID__, __CHALLENGE_RECORD_2_ID__, 0, 0, 0, 0, '__D_MINUS_7_ME_AT__'),
+(__CHALLENGE_RECORD_STATUS_3_ID__, __CHALLENGE_RECORD_3_ID__, 0, 0, 0, 0, '__D_MINUS_6_ME_AT__'),
+(__CHALLENGE_RECORD_STATUS_4_ID__, __CHALLENGE_RECORD_4_ID__, 0, 0, 0, 0, '__D_MINUS_6_JISOO_AT__'),
+(__CHALLENGE_RECORD_STATUS_5_ID__, __CHALLENGE_RECORD_5_ID__, 0, 0, 0, 0, '__D_MINUS_5_ME_AT__'),
+(__CHALLENGE_RECORD_STATUS_6_ID__, __CHALLENGE_RECORD_6_ID__, 0, 0, 0, 0, '__D_MINUS_4_ME_AT__'),
+(__CHALLENGE_RECORD_STATUS_7_ID__, __CHALLENGE_RECORD_7_ID__, 0, 0, 0, 0, '__D_MINUS_4_JISOO_AT__'),
+(__CHALLENGE_RECORD_STATUS_8_ID__, __CHALLENGE_RECORD_8_ID__, 0, 0, 0, 0, '__D_MINUS_4_MINJUN_AT__'),
+(__CHALLENGE_RECORD_STATUS_9_ID__, __CHALLENGE_RECORD_9_ID__, 0, 0, 0, 0, '__D_MINUS_3_JISOO_AT__'),
+(__CHALLENGE_RECORD_STATUS_10_ID__, __CHALLENGE_RECORD_10_ID__, 0, 0, 0, 0, '__D_MINUS_3_MINJUN_AT__'),
+(__CHALLENGE_RECORD_STATUS_11_ID__, __CHALLENGE_RECORD_11_ID__, 0, 0, 0, 0, '__D_MINUS_2_ME_AT__'),
+(__CHALLENGE_RECORD_STATUS_12_ID__, __CHALLENGE_RECORD_12_ID__, 0, 0, 0, 0, '__D_MINUS_2_JISOO_AT__'),
+(__CHALLENGE_RECORD_STATUS_13_ID__, __CHALLENGE_RECORD_13_ID__, 0, 0, 0, 0, '__D_MINUS_2_MINJUN_AT__'),
+(__CHALLENGE_RECORD_STATUS_14_ID__, __CHALLENGE_RECORD_14_ID__, 0, 0, 0, 0, '__D_MINUS_1_ME_AT__'),
+(__CHALLENGE_RECORD_STATUS_15_ID__, __CHALLENGE_RECORD_15_ID__, 0, 0, 0, 0, '__D_MINUS_1_JISOO_AT__');
