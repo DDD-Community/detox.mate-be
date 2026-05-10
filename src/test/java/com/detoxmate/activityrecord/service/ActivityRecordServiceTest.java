@@ -48,6 +48,7 @@ class ActivityRecordServiceTest {
     private static final String TEST_IMAGE_BASE_URL = "https://example.com/media";
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
     private static final LocalDate TODAY = LocalDate.of(2026, 4, 27);
+    private static final LocalDateTime TODAY_START = TODAY.atStartOfDay();
 
     private final UserUsageGoalTimeRepository userUsageGoalTimeRepository = mock(UserUsageGoalTimeRepository.class);
     private final ActivityRecordRepository activityRecordRepository = mock(ActivityRecordRepository.class);
@@ -76,8 +77,11 @@ class ActivityRecordServiceTest {
                 detailRequest(UsageGoalTypeCode.TOTAL_USAGE, 30)
         );
 
-        when(userUsageGoalTimeRepository.findAllByUser_IdAndUsageGoalType_CodeIn(1L, List.of(UsageGoalTypeCode.TOTAL_USAGE)))
-                .thenReturn(List.of(userUsageGoalTime(UsageGoalTypeCode.TOTAL_USAGE, 60, LocalDateTime.of(2026, 4, 26, 9, 0))));
+        givenEffectiveGoalTimes(
+                1L,
+                List.of(UsageGoalTypeCode.TOTAL_USAGE),
+                List.of(userUsageGoalTime(UsageGoalTypeCode.TOTAL_USAGE, 60, LocalDateTime.of(2026, 4, 26, 9, 0)))
+        );
 
         // when
         ActivityRecordAchievementCheckResponse response = activityRecordService.checkAchievement(1L, request);
@@ -97,11 +101,14 @@ class ActivityRecordServiceTest {
         );
 
         // When
-        when(userUsageGoalTimeRepository.findAllByUser_IdAndUsageGoalType_CodeIn(1L, List.of(UsageGoalTypeCode.TOTAL_USAGE)))
-                .thenReturn(List.of(
+        givenEffectiveGoalTimes(
+                1L,
+                List.of(UsageGoalTypeCode.TOTAL_USAGE),
+                List.of(
                         userUsageGoalTime(UsageGoalTypeCode.TOTAL_USAGE, 30, LocalDateTime.of(2026, 4, 26, 9, 0)),
                         userUsageGoalTime(UsageGoalTypeCode.TOTAL_USAGE, 60, LocalDateTime.of(2026, 4, 26, 10, 0))
-                ));
+                )
+        );
 
         ActivityRecordAchievementCheckResponse response = activityRecordService.checkAchievement(1L, request);
 
@@ -117,8 +124,7 @@ class ActivityRecordServiceTest {
                 detailRequest(UsageGoalTypeCode.TOTAL_USAGE, 50)
         );
 
-        when(userUsageGoalTimeRepository.findAllByUser_IdAndUsageGoalType_CodeIn(1L, List.of(UsageGoalTypeCode.TOTAL_USAGE)))
-                .thenReturn(List.of());
+        givenEffectiveGoalTimes(1L, List.of(UsageGoalTypeCode.TOTAL_USAGE), List.of());
 
         assertThatThrownBy(() -> activityRecordService.checkAchievement(1L, request))
                 .isInstanceOf(ResponseStatusException.class)
@@ -137,8 +143,11 @@ class ActivityRecordServiceTest {
                 List.of(detailRequest(UsageGoalTypeCode.TOTAL_USAGE, 80))
         );
 
-        when(userUsageGoalTimeRepository.findAllByUser_IdAndUsageGoalType_CodeIn(1L, List.of(UsageGoalTypeCode.TOTAL_USAGE)))
-                .thenReturn(List.of(userUsageGoalTime(UsageGoalTypeCode.TOTAL_USAGE, 60, LocalDateTime.of(2026, 4, 26, 9, 0))));
+        givenEffectiveGoalTimes(
+                1L,
+                List.of(UsageGoalTypeCode.TOTAL_USAGE),
+                List.of(userUsageGoalTime(UsageGoalTypeCode.TOTAL_USAGE, 60, LocalDateTime.of(2026, 4, 26, 9, 0)))
+        );
 
         assertThatThrownBy(() -> activityRecordService.create(1L, request))
                 .isInstanceOf(ResponseStatusException.class)
@@ -146,6 +155,48 @@ class ActivityRecordServiceTest {
                     ResponseStatusException responseStatusException = (ResponseStatusException) exception;
                     assertThat(responseStatusException.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
                 });
+    }
+
+    @Test
+    void 달성_확인은_인증일_전날까지_생성된_목표만_사용한다() {
+        ActivityRecordAchievementCheckRequest request = achievementCheckRequest(
+                detailRequest(UsageGoalTypeCode.TOTAL_USAGE, 80)
+        );
+
+        givenEffectiveGoalTimes(
+                1L,
+                List.of(UsageGoalTypeCode.TOTAL_USAGE),
+                List.of(userUsageGoalTime(UsageGoalTypeCode.TOTAL_USAGE, 120, LocalDateTime.of(2026, 4, 26, 9, 0)))
+        );
+
+        ActivityRecordAchievementCheckResponse response = activityRecordService.checkAchievement(1L, request);
+
+        assertThat(response.details()).hasSize(1);
+        assertThat(response.details().getFirst().goalMinutes()).isEqualTo(120);
+        assertThat(response.details().getFirst().isAchieved()).isTrue();
+        assertThat(response.allAchieved()).isTrue();
+    }
+
+    @Test
+    void 당일_생성된_목표만_있으면_활동기록을_저장하지_않고_400_에러를_반환한다() {
+        ActivityRecordCreateRequest request = new ActivityRecordCreateRequest(
+                "activity-records/sample.png",
+                null,
+                10L,
+                List.of(detailRequest(UsageGoalTypeCode.TOTAL_USAGE, 50))
+        );
+
+        givenEffectiveGoalTimes(1L, List.of(UsageGoalTypeCode.TOTAL_USAGE), List.of());
+
+        assertThatThrownBy(() -> activityRecordService.create(1L, request))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(exception -> {
+                    ResponseStatusException responseStatusException = (ResponseStatusException) exception;
+                    assertThat(responseStatusException.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+                });
+
+        verify(activityRecordRepository, never()).save(any());
+        verifyNoInteractions(challengeRecordService);
     }
 
     @Test
@@ -160,13 +211,14 @@ class ActivityRecordServiceTest {
                 )
         );
 
-        when(userUsageGoalTimeRepository.findAllByUser_IdAndUsageGoalType_CodeIn(
+        givenEffectiveGoalTimes(
                 1L,
-                List.of(UsageGoalTypeCode.TOTAL_USAGE, UsageGoalTypeCode.INSTAGRAM)
-        )).thenReturn(List.of(
-                userUsageGoalTime(UsageGoalTypeCode.TOTAL_USAGE, 60, LocalDateTime.of(2026, 4, 26, 9, 0)),
-                userUsageGoalTime(UsageGoalTypeCode.INSTAGRAM, 30, LocalDateTime.of(2026, 4, 26, 9, 0))
-        ));
+                List.of(UsageGoalTypeCode.TOTAL_USAGE, UsageGoalTypeCode.INSTAGRAM),
+                List.of(
+                        userUsageGoalTime(UsageGoalTypeCode.TOTAL_USAGE, 60, LocalDateTime.of(2026, 4, 26, 9, 0)),
+                        userUsageGoalTime(UsageGoalTypeCode.INSTAGRAM, 30, LocalDateTime.of(2026, 4, 26, 9, 0))
+                )
+        );
 
         givenParticipantOwnedByUser(10L, 1L);
         givenUser(1L);
@@ -201,13 +253,14 @@ class ActivityRecordServiceTest {
                 )
         );
 
-        when(userUsageGoalTimeRepository.findAllByUser_IdAndUsageGoalType_CodeIn(
+        givenEffectiveGoalTimes(
                 1L,
-                List.of(UsageGoalTypeCode.TOTAL_USAGE, UsageGoalTypeCode.INSTAGRAM)
-        )).thenReturn(List.of(
-                userUsageGoalTime(UsageGoalTypeCode.TOTAL_USAGE, 60, LocalDateTime.of(2026, 4, 26, 9, 0)),
-                userUsageGoalTime(UsageGoalTypeCode.INSTAGRAM, 30, LocalDateTime.of(2026, 4, 26, 9, 0))
-        ));
+                List.of(UsageGoalTypeCode.TOTAL_USAGE, UsageGoalTypeCode.INSTAGRAM),
+                List.of(
+                        userUsageGoalTime(UsageGoalTypeCode.TOTAL_USAGE, 60, LocalDateTime.of(2026, 4, 26, 9, 0)),
+                        userUsageGoalTime(UsageGoalTypeCode.INSTAGRAM, 30, LocalDateTime.of(2026, 4, 26, 9, 0))
+                )
+        );
 
         givenParticipantOwnedByUser(10L, 1L);
         givenUser(1L);
@@ -230,8 +283,11 @@ class ActivityRecordServiceTest {
                 List.of(detailRequest(UsageGoalTypeCode.TOTAL_USAGE, 30))
         );
 
-        when(userUsageGoalTimeRepository.findAllByUser_IdAndUsageGoalType_CodeIn(1L, List.of(UsageGoalTypeCode.TOTAL_USAGE)))
-                .thenReturn(List.of(userUsageGoalTime(UsageGoalTypeCode.TOTAL_USAGE, 60, LocalDateTime.of(2026, 4, 26, 9, 0))));
+        givenEffectiveGoalTimes(
+                1L,
+                List.of(UsageGoalTypeCode.TOTAL_USAGE),
+                List.of(userUsageGoalTime(UsageGoalTypeCode.TOTAL_USAGE, 60, LocalDateTime.of(2026, 4, 26, 9, 0)))
+        );
         givenParticipantOwnedByUser(10L, 1L);
         givenUser(1L);
         givenSavedActivityRecord(123L, LocalDateTime.of(2026, 4, 27, 21, 30));
@@ -257,8 +313,12 @@ class ActivityRecordServiceTest {
                 List.of(detailRequest(UsageGoalTypeCode.TOTAL_USAGE, 80))
         );
 
-        when(userUsageGoalTimeRepository.findAllByUser_IdAndUsageGoalType_CodeIn(1L, List.of(UsageGoalTypeCode.TOTAL_USAGE)))
-                .thenReturn(List.of(userUsageGoalTime(UsageGoalTypeCode.TOTAL_USAGE, 60, LocalDateTime.of(2026, 4, 26, 9, 0))));
+        givenEffectiveGoalTimes(
+                1L,
+                List.of(UsageGoalTypeCode.TOTAL_USAGE),
+                List.of(userUsageGoalTime(UsageGoalTypeCode.TOTAL_USAGE, 60, LocalDateTime.of(2026, 4, 26, 9, 0)))
+        );
+
         givenParticipantOwnedByUser(10L, 1L);
         givenUser(1L);
         givenSavedActivityRecord(123L, LocalDateTime.of(2026, 4, 27, 21, 30));
@@ -275,6 +335,43 @@ class ActivityRecordServiceTest {
     }
 
     @Test
+    void 최종_저장은_인증일_전날까지_생성된_목표를_저장_상세와_성공판정에_사용한다() {
+        ActivityRecordCreateRequest request = new ActivityRecordCreateRequest(
+                "activity-records/sample.png",
+                null,
+                10L,
+                List.of(detailRequest(UsageGoalTypeCode.TOTAL_USAGE, 80))
+        );
+        UserUsageGoalTime effectiveGoal =
+                userUsageGoalTime(UsageGoalTypeCode.TOTAL_USAGE, 120, LocalDateTime.of(2026, 4, 26, 9, 0));
+
+        givenEffectiveGoalTimes(1L, List.of(UsageGoalTypeCode.TOTAL_USAGE), List.of(effectiveGoal));
+        givenParticipantOwnedByUser(10L, 1L);
+        givenUser(1L);
+        givenSavedActivityRecord(123L, LocalDateTime.of(2026, 4, 27, 21, 30));
+        givenTodayChallengeRecord(456L);
+
+        activityRecordService.create(1L, request);
+        ArgumentCaptor<ActivityRecord> captor = ArgumentCaptor.forClass(ActivityRecord.class);
+
+        verify(activityRecordRepository).save(captor.capture());
+        assertThat(captor.getValue().getDetails())
+                .singleElement()
+                .satisfies(detail -> {
+                    assertThat(detail.getUserUsageGoalTime()).isSameAs(effectiveGoal);
+                    assertThat(detail.getUseMinutes()).isEqualTo(80);
+                    assertThat(detail.isAchieved()).isTrue();
+                });
+
+        verify(challengeRecordService).certify(
+                456L,
+                123L,
+                10L,
+                ChallengeRecordCertificationResult.SUCCESS
+        );
+    }
+
+    @Test
     void 최종_저장시_요청한_participant가_현재_사용자의_참여가_아니면_403_에러를_반환한다() {
         ActivityRecordCreateRequest request = new ActivityRecordCreateRequest(
                 "activity-records/sample.png",
@@ -283,8 +380,11 @@ class ActivityRecordServiceTest {
                 List.of(detailRequest(UsageGoalTypeCode.TOTAL_USAGE, 30))
         );
 
-        when(userUsageGoalTimeRepository.findAllByUser_IdAndUsageGoalType_CodeIn(1L, List.of(UsageGoalTypeCode.TOTAL_USAGE)))
-                .thenReturn(List.of(userUsageGoalTime(UsageGoalTypeCode.TOTAL_USAGE, 60, LocalDateTime.of(2026, 4, 26, 9, 0))));
+        givenEffectiveGoalTimes(
+                1L,
+                List.of(UsageGoalTypeCode.TOTAL_USAGE),
+                List.of(userUsageGoalTime(UsageGoalTypeCode.TOTAL_USAGE, 60, LocalDateTime.of(2026, 4, 26, 9, 0)))
+        );
         when(groupChallengeParticipantRepository.findById(10L))
                 .thenReturn(Optional.of(groupChallengeParticipant(10L)));
         when(groupChallengeParticipantRepository.existsActiveByIdAndUserId(10L, 1L)).thenReturn(false);
@@ -318,6 +418,18 @@ class ActivityRecordServiceTest {
         UserUsageGoalTime goalTime = UserUsageGoalTime.create(user, usageGoalType, goalMinutes);
         ReflectionTestUtils.setField(goalTime, "createdAt", createdAt);
         return goalTime;
+    }
+
+    private void givenEffectiveGoalTimes(
+            Long userId,
+            List<UsageGoalTypeCode> usageGoalTypes,
+            List<UserUsageGoalTime> goalTimes
+    ) {
+        when(userUsageGoalTimeRepository.findAllByUser_IdAndUsageGoalType_CodeInAndCreatedAtBefore(
+                userId,
+                usageGoalTypes,
+                TODAY_START
+        )).thenReturn(goalTimes);
     }
 
     private User user(Long id) {

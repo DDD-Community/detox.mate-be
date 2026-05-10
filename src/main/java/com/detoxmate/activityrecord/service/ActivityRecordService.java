@@ -27,6 +27,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Clock;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
@@ -55,12 +56,11 @@ public class ActivityRecordService {
             Long userId,
             ActivityRecordAchievementCheckRequest request
     ) {
+        LocalDate recordDate = today();
         List<ActivityRecordDetailRequest> details = request.details();
         List<UsageGoalTypeCode> requestedTypes = requestedTypes(details);
 
-        LatestGoalTimes latestGoalTimes = LatestGoalTimes.from(
-                userUsageGoalTimeRepository.findAllByUser_IdAndUsageGoalType_CodeIn(userId, requestedTypes)
-        );
+        LatestGoalTimes latestGoalTimes = effectiveGoalTimes(userId, requestedTypes, recordDate);
         List<ActivityRecordDetailResult> results = toDetailResults(details, latestGoalTimes);
 
         validateGoalTimesFound(results);
@@ -69,12 +69,11 @@ public class ActivityRecordService {
 
     @Transactional
     public ActivityRecordCreateResponse create(Long userId, ActivityRecordCreateRequest request) {
+        LocalDate recordDate = today();
         List<ActivityRecordDetailRequest> details = request.details();
         List<UsageGoalTypeCode> requestedTypes = requestedTypes(details);
 
-        LatestGoalTimes latestGoalTimes = LatestGoalTimes.from(
-                userUsageGoalTimeRepository.findAllByUser_IdAndUsageGoalType_CodeIn(userId, requestedTypes)
-        );
+        LatestGoalTimes latestGoalTimes = effectiveGoalTimes(userId, requestedTypes, recordDate);
         List<ActivityRecordDetailResult> results = toDetailResults(details, latestGoalTimes);
 
         validateGoalTimesFound(results);
@@ -93,8 +92,23 @@ public class ActivityRecordService {
         );
 
         ActivityRecord savedActivityRecord = activityRecordRepository.save(activityRecord);
-        certifyChallengeRecord(savedActivityRecord, groupChallengeParticipant, results);
+        certifyChallengeRecord(savedActivityRecord, groupChallengeParticipant, results, recordDate);
         return toCreateResponse(savedActivityRecord, results);
+    }
+
+    private LatestGoalTimes effectiveGoalTimes(
+            Long userId,
+            List<UsageGoalTypeCode> requestedTypes,
+            LocalDate recordDate
+    ) {
+        LocalDateTime exclusiveUpperBound = recordDate.atStartOfDay();
+        return LatestGoalTimes.from(
+                userUsageGoalTimeRepository.findAllByUser_IdAndUsageGoalType_CodeInAndCreatedAtBefore(
+                        userId,
+                        requestedTypes,
+                        exclusiveUpperBound
+                )
+        );
     }
 
     private List<UsageGoalTypeCode> requestedTypes(List<ActivityRecordDetailRequest> details) {
@@ -196,12 +210,13 @@ public class ActivityRecordService {
     private void certifyChallengeRecord(
             ActivityRecord savedActivityRecord,
             GroupChallengeParticipant groupChallengeParticipant,
-            List<ActivityRecordDetailResult> results
+            List<ActivityRecordDetailResult> results,
+            LocalDate recordDate
     ) {
         ChallengeRecord challengeRecord = challengeRecordService.create(
                 groupChallengeParticipant.getGroupChallengeId(),
                 groupChallengeParticipant.getId(),
-                today()
+                recordDate
         );
 
         challengeRecordService.certify(
