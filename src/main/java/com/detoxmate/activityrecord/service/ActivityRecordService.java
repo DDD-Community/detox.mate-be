@@ -50,7 +50,11 @@ public class ActivityRecordService {
     private final ChallengeRecordService challengeRecordService;
     private final Clock clock;
 
-    public ActivityRecordAchievementCheckResponse checkAchievement(Long userId, ActivityRecordAchievementCheckRequest request) {
+    @Transactional(readOnly = true)
+    public ActivityRecordAchievementCheckResponse checkAchievement(
+            Long userId,
+            ActivityRecordAchievementCheckRequest request
+    ) {
         List<ActivityRecordDetailRequest> details = request.details();
         List<UsageGoalTypeCode> requestedTypes = requestedTypes(details);
 
