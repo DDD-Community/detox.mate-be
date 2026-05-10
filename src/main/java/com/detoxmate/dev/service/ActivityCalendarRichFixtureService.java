@@ -84,7 +84,7 @@ public class ActivityCalendarRichFixtureService {
         LocalDate dMinus1 = today.minusDays(1);
         UsageGoalType totalUsage = totalUsageGoalType();
         Group group = groupRepository.saveAndFlush(Group.createNew(GROUP_NAME, INVITE_CODE));
-        GroupChallenge challenge = saveActiveChallenge(group, firstVerificationDate.atStartOfDay());
+        GroupChallenge challenge = saveActiveChallenge(group, firstVerificationDate.minusDays(1).atStartOfDay());
 
         FixtureMember me = saveFixtureMember(group, challenge, "me", "캘린더 나", true, today.minusDays(10).atTime(10, 0));
         FixtureMember jisu = saveFixtureMember(group, challenge, "member", "캘린더 지수", false, dMinus8.atTime(10, 0));

@@ -206,7 +206,7 @@ public class ActivityCalendarSqlFixtureService {
         tokens.put("__ME_GOAL_SET_AT__", dateTime(dates.dMinus9(), LocalTime.of(9, 0)));
         tokens.put("__JISOO_GOAL_SET_AT__", dateTime(dates.dMinus7(), LocalTime.of(9, 0)));
         tokens.put("__MINJUN_GOAL_SET_AT__", dateTime(dates.dMinus5(), LocalTime.of(9, 0)));
-        tokens.put("__FIRST_VERIFICATION_AT__", dateTime(dates.dMinus8(), LocalTime.MIDNIGHT));
+        tokens.put("__CHALLENGE_START_AT__", dateTime(dates.dMinus9(), LocalTime.MIDNIGHT));
 
         for (int daysAgo = 1; daysAgo <= 8; daysAgo++) {
             LocalDate date = dates.today().minusDays(daysAgo);

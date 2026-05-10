@@ -151,7 +151,9 @@ class GroupActivityCalendarHttpApiTest {
     private CalendarFixture saveCalendarFixture() {
         UsageGoalType totalUsage = usageGoalTypeRepository.save(UsageGoalType.create(1L, UsageGoalTypeCode.TOTAL_USAGE));
         Group group = groupRepository.save(Group.createNew("실호출", "HTTPC"));
-        GroupChallenge challenge = groupChallengeRepository.save(GroupChallenge.createFirst(group.getId()));
+        GroupChallenge challenge = GroupChallenge.createFirst(group.getId());
+        challenge.activate(LocalDateTime.of(2026, 4, 11, 0, 0));
+        groupChallengeRepository.save(challenge);
 
         User certifiedUser = userRepository.save(User.createNew("지수", "profiles/jisu.png"));
         User currentUser = userRepository.save(User.createNew("나", "profiles/me.png"));

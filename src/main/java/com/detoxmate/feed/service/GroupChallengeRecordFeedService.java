@@ -210,8 +210,17 @@ public class GroupChallengeRecordFeedService {
         return verificationPolicy.firstVerificationDate(
                 activity.participants(),
                 activity.goals(),
+                challengeStartDate(activity.challenge()),
                 today
         );
+    }
+
+    private LocalDate challengeStartDate(GroupChallenge challenge) {
+        if (challenge.getStartAt() == null) {
+            return null;
+        }
+
+        return challenge.getStartAt().toLocalDate();
     }
 
     private List<MemberDailyGoal> memberDailyGoals(List<GroupActivityParticipantRow> participantRows) {

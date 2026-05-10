@@ -358,7 +358,9 @@ class GroupActivityCalendarApiTest {
         saveUnusedGroupChallenges();
 
         Group group = groupRepository.save(Group.createNew("수능방", "ABCDE"));
-        GroupChallenge challenge = groupChallengeRepository.save(GroupChallenge.createFirst(group.getId()));
+        GroupChallenge challenge = GroupChallenge.createFirst(group.getId());
+        challenge.activate(LocalDateTime.of(2026, 4, 11, 0, 0));
+        groupChallengeRepository.save(challenge);
 
         User jisu = userRepository.save(User.createNew("지수", "profiles/jisu.png"));
         User minjun = userRepository.save(User.createNew("민준", "profiles/minjun.png"));

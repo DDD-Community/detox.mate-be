@@ -17,17 +17,18 @@ public class GroupActivityVerificationPolicy {
     public LocalDate firstVerificationDate(
             List<GroupActivityParticipant> participants,
             List<MemberDailyGoal> goals,
+            LocalDate challengeStartDate,
             LocalDate today
     ) {
         // 참여자나 목표 이력이 없으면 유효한 활동중 멤버를 만들 수 없으므로 시작일을 산정하지 않는다.
-        if (participants.isEmpty() || goals.isEmpty()) {
+        if (participants.isEmpty() || goals.isEmpty() || challengeStartDate == null) {
             return null;
         }
 
-        // 합류 당일과 목표 설정 당일은 제외되므로, 둘 다 다음날부터 후보가 된다.
-        LocalDate firstCandidate = firstCandidateDate(participants, goals);
-        // 목표 적용일이 미래라면, 아직 오지 않은 시작 예정일도 산정할 수 있게 탐색 범위에 포함한다.
-        LocalDate lastCandidate = lastCandidateDate(goals, today);
+        // 합류 당일, 목표 설정 당일, 챌린지 시작 당일은 제외되므로 모두 다음날부터 후보가 된다.
+        LocalDate firstCandidate = firstCandidateDate(participants, goals, challengeStartDate);
+        // 시작 후보일이 미래라면, 아직 오지 않은 시작 예정일도 산정할 수 있게 탐색 범위에 포함한다.
+        LocalDate lastCandidate = firstCandidate.isAfter(today) ? firstCandidate : today;
 
         for (LocalDate date = firstCandidate; !date.isAfter(lastCandidate); date = date.plusDays(1)) {
             // 그룹 인증 평가는 활동중 멤버가 1명 이상 존재할 수 있는 첫 날짜부터 시작한다.
@@ -204,7 +205,11 @@ public class GroupActivityVerificationPolicy {
         return (activeMemberCount + 1) / 2;
     }
 
-    private LocalDate firstCandidateDate(List<GroupActivityParticipant> participants, List<MemberDailyGoal> goals) {
+    private LocalDate firstCandidateDate(
+            List<GroupActivityParticipant> participants,
+            List<MemberDailyGoal> goals,
+            LocalDate challengeStartDate
+    ) {
         LocalDate firstParticipantDate = participants.stream()
                 .flatMap(participant -> java.util.stream.Stream.of(
                         participant.memberJoinedAt(),
@@ -220,15 +225,11 @@ public class GroupActivityVerificationPolicy {
                 .min(LocalDate::compareTo)
                 .orElse(LocalDate.MAX);
 
-        return firstParticipantDate.isBefore(firstGoalDate) ? firstParticipantDate : firstGoalDate;
-    }
+        LocalDate firstChallengeDate = challengeStartDate.plusDays(1);
 
-    private LocalDate lastCandidateDate(List<MemberDailyGoal> goals, LocalDate today) {
-        return goals.stream()
-                .map(MemberDailyGoal::effectiveDate)
+        return java.util.stream.Stream.of(firstParticipantDate, firstGoalDate, firstChallengeDate)
                 .max(LocalDate::compareTo)
-                .filter(date -> date.isAfter(today))
-                .orElse(today);
+                .orElse(LocalDate.MAX);
     }
 
     private MemberDailyGoal laterGoal(MemberDailyGoal left, MemberDailyGoal right) {

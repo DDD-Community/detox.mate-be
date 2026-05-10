@@ -131,7 +131,9 @@ class FeedServiceTest {
         // given
         UsageGoalType totalUsage = usageGoalTypeRepository.save(UsageGoalType.create(1L, UsageGoalTypeCode.TOTAL_USAGE));
         Group group = groupRepository.save(Group.createNew("수능방", "ABCDE"));
-        GroupChallenge challenge = groupChallengeRepository.save(GroupChallenge.createFirst(group.getId()));
+        GroupChallenge challenge = GroupChallenge.createFirst(group.getId());
+        challenge.activate(LocalDateTime.of(2026, 4, 11, 0, 0));
+        groupChallengeRepository.save(challenge);
 
         User currentUser = userRepository.save(User.createNew("나"));
         User targetUser = userRepository.save(User.createNew("민준"));

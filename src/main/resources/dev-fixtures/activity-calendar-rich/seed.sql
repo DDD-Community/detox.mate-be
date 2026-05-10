@@ -22,7 +22,7 @@ INSERT INTO group_challenges (
     created_at,
     updated_at
 ) VALUES
-(__GROUP_CHALLENGE_ID__, __GROUP_ID__, 1, 'ACTIVE', '__FIRST_VERIFICATION_AT__', NULL, '__ME_JOINED_AT__', '__FIRST_VERIFICATION_AT__');
+(__GROUP_CHALLENGE_ID__, __GROUP_ID__, 1, 'ACTIVE', '__CHALLENGE_START_AT__', NULL, '__ME_JOINED_AT__', '__CHALLENGE_START_AT__');
 
 INSERT INTO group_members (
     group_member_id,

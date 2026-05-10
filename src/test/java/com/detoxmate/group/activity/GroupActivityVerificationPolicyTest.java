@@ -84,7 +84,7 @@ class GroupActivityVerificationPolicyTest {
     }
 
     @Test
-    @DisplayName("목표는 설정 다음날부터 활동중 멤버 조건에 포함된다")
+    @DisplayName("참여 후 다음날과 목표 설정 다음날 중 늦은 날짜부터 첫 인증 시작일을 산정한다")
     void firstVerificationDate_startsAfterGoalSetDate() {
         List<GroupActivityParticipant> participants = List.of(
                 participant(1L, 1L, LocalDate.of(2026, 4, 10), null),
@@ -98,10 +98,71 @@ class GroupActivityVerificationPolicyTest {
         LocalDate firstVerificationDate = policy.firstVerificationDate(
                 participants,
                 goals,
+                LocalDate.of(2026, 4, 9),
                 LocalDate.of(2026, 4, 20)
         );
 
         assertThat(firstVerificationDate).isEqualTo(LocalDate.of(2026, 4, 13));
+    }
+
+    @Test
+    @DisplayName("목표가 이미 유효해도 참여 다음날부터 첫 인증 시작일을 산정한다")
+    void firstVerificationDate_startsAfterParticipantJoinedDateWhenGoalAlreadyEffective() {
+        List<GroupActivityParticipant> participants = List.of(
+                participant(1L, 1L, LocalDate.of(2026, 4, 13), null)
+        );
+        List<MemberDailyGoal> goals = List.of(
+                goal(1L, LocalDate.of(2026, 4, 10))
+        );
+
+        LocalDate firstVerificationDate = policy.firstVerificationDate(
+                participants,
+                goals,
+                LocalDate.of(2026, 4, 9),
+                LocalDate.of(2026, 4, 20)
+        );
+
+        assertThat(firstVerificationDate).isEqualTo(LocalDate.of(2026, 4, 14));
+    }
+
+    @Test
+    @DisplayName("참여와 목표가 이미 유효해도 챌린지 시작 다음날부터 첫 인증 시작일을 산정한다")
+    void firstVerificationDate_startsAfterChallengeStartDateWhenParticipantAndGoalAlreadyEffective() {
+        List<GroupActivityParticipant> participants = List.of(
+                participant(1L, 1L, LocalDate.of(2026, 4, 10), null)
+        );
+        List<MemberDailyGoal> goals = List.of(
+                goal(1L, LocalDate.of(2026, 4, 10))
+        );
+
+        LocalDate firstVerificationDate = policy.firstVerificationDate(
+                participants,
+                goals,
+                LocalDate.of(2026, 4, 13),
+                LocalDate.of(2026, 4, 20)
+        );
+
+        assertThat(firstVerificationDate).isEqualTo(LocalDate.of(2026, 4, 14));
+    }
+
+    @Test
+    @DisplayName("챌린지 시작일이 없으면 첫 인증 시작일을 산정하지 않는다")
+    void firstVerificationDate_returnsNullWhenChallengeStartDateIsNull() {
+        List<GroupActivityParticipant> participants = List.of(
+                participant(1L, 1L, LocalDate.of(2026, 4, 10), null)
+        );
+        List<MemberDailyGoal> goals = List.of(
+                goal(1L, LocalDate.of(2026, 4, 10))
+        );
+
+        LocalDate firstVerificationDate = policy.firstVerificationDate(
+                participants,
+                goals,
+                null,
+                LocalDate.of(2026, 4, 20)
+        );
+
+        assertThat(firstVerificationDate).isNull();
     }
 
     @Test
@@ -117,6 +178,7 @@ class GroupActivityVerificationPolicyTest {
         LocalDate firstVerificationDate = policy.firstVerificationDate(
                 participants,
                 goals,
+                LocalDate.of(2026, 4, 9),
                 LocalDate.of(2026, 4, 20)
         );
 
