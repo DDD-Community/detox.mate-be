@@ -10,13 +10,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Profile({"local", "dev", "test"})
 @RestController
-@RequestMapping("/dev/fixtures/activity-calendar-rich")
+@RequestMapping("/dev/fixtures")
 @RequiredArgsConstructor
 public class ActivityCalendarSqlFixtureController {
 
     private final ActivityCalendarSqlFixtureService activityCalendarSqlFixtureService;
 
-    @PostMapping("/reset")
+    @PostMapping("/activity-calendar-rich")
     public ActivityCalendarRichFixtureResponse resetActivityCalendarRich() {
         return activityCalendarSqlFixtureService.reset();
     }

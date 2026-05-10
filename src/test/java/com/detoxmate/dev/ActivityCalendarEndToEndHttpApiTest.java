@@ -58,7 +58,7 @@ class ActivityCalendarEndToEndHttpApiTest {
     void activityCalendarFlow_matchesThroughHttpApis() throws Exception {
         clock.moveTo(TODAY);
 
-        JsonNode fixture = postJson("/dev/fixtures/activity-calendar-rich/reset", null);
+        JsonNode fixture = postJson("/dev/fixtures/activity-calendar-rich", null);
         long groupChallengeId = fixture.get("groupChallengeId").asLong();
         String meBearer = bearer(fixture.get("users").get(0).get("accessToken").asText());
         String memberBearer = bearer(fixture.get("users").get(1).get("accessToken").asText());

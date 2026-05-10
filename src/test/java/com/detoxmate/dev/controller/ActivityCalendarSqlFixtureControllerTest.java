@@ -53,7 +53,7 @@ class ActivityCalendarSqlFixtureControllerTest {
     }
 
     @Test
-    void activity_calendar_rich_fixture를_SQL로_reset한다() throws Exception {
+    void activity_calendar_rich_fixture를_SQL로_생성한다() throws Exception {
         LocalDate today = LocalDate.of(2026, 5, 9);
         when(fixtureService.reset())
                 .thenReturn(new ActivityCalendarRichFixtureResponse(
@@ -73,20 +73,20 @@ class ActivityCalendarSqlFixtureControllerTest {
                 ));
         FieldDescriptor[] responseFieldDescriptors = activityCalendarRichFixtureResponseFields();
 
-        mockMvc.perform(post("/dev/fixtures/activity-calendar-rich/reset"))
+        mockMvc.perform(post("/dev/fixtures/activity-calendar-rich"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.fixture").value("activity-calendar-rich"))
                 .andExpect(jsonPath("$.inviteCode").value("ACR01"))
                 .andExpect(jsonPath("$.summary.streakDays").value(8))
                 .andDo(result -> verify(fixtureService).reset())
-                .andDo(document("dev-fixtures/activity-calendar-rich-reset",
+                .andDo(document("dev-fixtures/activity-calendar-rich",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
                         responseFields(responseFieldDescriptors),
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Dev Fixture")
-                                .summary("Reset activity calendar rich fixture with SQL snapshot")
+                                .summary("Seed activity calendar rich fixture")
                                 .description("local/dev 환경에서 SQL 스냅샷 방식으로 그룹 활동 캘린더 happy case fixture를 삭제 후 재생성한다.")
                                 .responseSchema(schema("ActivityCalendarRichFixtureResponse"))
                                 .responseFields(responseFieldDescriptors)

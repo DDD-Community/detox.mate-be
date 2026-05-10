@@ -29,13 +29,9 @@ operation::dev-auth/test-login-unsupported-key[snippets='http-request,request-fi
 
 == Dev Fixture API
 
-=== Seed Activity Calendar Rich Fixture
+=== Seed Activity Calendar Rich Fixture With SQL Snapshot
 
 operation::dev-fixtures/activity-calendar-rich[snippets='http-request,http-response,response-fields']
-
-=== Reset Activity Calendar Rich Fixture With SQL Snapshot
-
-operation::dev-fixtures/activity-calendar-rich-reset[snippets='http-request,http-response,response-fields']
 
 == User API
 

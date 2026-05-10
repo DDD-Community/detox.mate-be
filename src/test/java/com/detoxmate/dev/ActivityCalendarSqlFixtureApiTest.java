@@ -37,7 +37,7 @@ class ActivityCalendarSqlFixtureApiTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
-    @DisplayName("SQL reset fixture를 생성하면 응답 토큰으로 캘린더 happy case를 조회할 수 있다")
+    @DisplayName("SQL fixture를 생성하면 응답 토큰으로 캘린더 happy case를 조회할 수 있다")
     void resetActivityCalendarSqlFixture() throws Exception {
         JsonNode fixture = resetFixture();
         long groupId = fixture.get("groupId").asLong();
@@ -84,7 +84,7 @@ class ActivityCalendarSqlFixtureApiTest {
     }
 
     @Test
-    @DisplayName("SQL reset fixture는 여러 번 호출해도 ID 충돌 없이 fixture 상태로 재생성된다")
+    @DisplayName("SQL fixture는 여러 번 호출해도 ID 충돌 없이 fixture 상태로 재생성된다")
     void resetActivityCalendarSqlFixtureIsIdempotent() throws Exception {
         JsonNode first = resetFixture();
         JsonNode second = resetFixture();
@@ -95,7 +95,7 @@ class ActivityCalendarSqlFixtureApiTest {
     }
 
     private JsonNode resetFixture() throws Exception {
-        String response = mockMvc.perform(post("/dev/fixtures/activity-calendar-rich/reset"))
+        String response = mockMvc.perform(post("/dev/fixtures/activity-calendar-rich"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.fixture").value("activity-calendar-rich"))
                 .andExpect(jsonPath("$.inviteCode").value("ACR01"))
