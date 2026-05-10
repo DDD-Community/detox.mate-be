@@ -37,7 +37,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class FeedControllerTest {
 
+    private static final String OVERVIEW_URL = "/group-challenges/{groupChallengeId}/overview";
     private static final String HOME_FEED_URL = "/group-challenges/{groupChallengeId}/home";
+    private static final String TODAY_CHALLENGE_RECORDS_URL =
+            "/group-challenges/{groupChallengeId}/challenge-records/today";
+    private static final String GROUP_CHALLENGE_RECORD_DETAIL_URL =
+            "/group-challenges/{groupChallengeId}/challenge-records/{challengeRecordId}";
     private static final String FEED_DETAIL_URL = "/challenge-records/{challengeRecordId}";
 
     @Autowired
@@ -66,6 +71,28 @@ class FeedControllerTest {
 
     @Autowired
     ChallengeRecordStatusCountRepository statusCountRepository;
+
+    @Test
+    @DisplayName("GET /group-challenges/{groupChallengeId}/overview — 홈 상단용 챌린지 개요를 조회한다")
+    void getGroupChallengeOverview_returnsChallengeOverview() throws Exception {
+        // given
+        Group group = groupRepository.save(Group.createNew("수능방", "ABCDE"));
+        GroupChallenge challenge = groupChallengeRepository.save(GroupChallenge.createFirst(group.getId()));
+
+        User currentUser = userRepository.save(User.createNew("나"));
+        saveParticipant(group.getId(), challenge.getId(), currentUser);
+
+        // when & then
+        mockMvc.perform(get(OVERVIEW_URL, challenge.getId())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(currentUser.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.groupChallengeId").value(challenge.getId()))
+                .andExpect(jsonPath("$.groupId").value(group.getId()))
+                .andExpect(jsonPath("$.groupName").value("수능방"))
+                .andExpect(jsonPath("$.challengeNo").value(1))
+                .andExpect(jsonPath("$.status").value("RECRUITING"))
+                .andExpect(jsonPath("$.streakCount").value(0));
+    }
 
     @Test
     @DisplayName("GET /group-challenges/{groupChallengeId}/home — 홈 피드를 조회하면 참여자 카드와 challengeRecordId를 반환한다")
@@ -108,6 +135,116 @@ class FeedControllerTest {
         // when & then
         mockMvc.perform(get(HOME_FEED_URL, challenge.getId()))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("GET /group-challenges/{groupChallengeId}/challenge-records/today — 유효 목표가 없는 활성 멤버는 NOT_ACTIVE로 내려준다")
+    void getTodayChallengeRecords_activeMemberWithoutEffectiveGoalReturnsNotActive() throws Exception {
+        // given
+        Group group = groupRepository.save(Group.createNew("수능방", "ABCDE"));
+        GroupChallenge challenge = groupChallengeRepository.save(GroupChallenge.createFirst(group.getId()));
+
+        User currentUser = userRepository.save(User.createNew("나"));
+        User targetUser = userRepository.save(User.createNew("민준"));
+
+        saveParticipant(group.getId(), challenge.getId(), currentUser);
+        saveParticipant(group.getId(), challenge.getId(), targetUser);
+
+        // when & then
+        mockMvc.perform(get(TODAY_CHALLENGE_RECORDS_URL, challenge.getId())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(currentUser.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.members.length()").value(2))
+                .andExpect(jsonPath("$.members[?(@.displayName == '민준')].includedInGroupResult").value(false))
+                .andExpect(jsonPath("$.members[?(@.displayName == '민준')].dailyStatus").value("NOT_ACTIVE"))
+                .andExpect(jsonPath("$.members[?(@.displayName == '민준')].challengeRecordId").isNotEmpty());
+
+        assertThat(challengeRecordRepository.findAll()).hasSize(2);
+        assertThat(statusCountRepository.findAll()).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("GET /group-challenges/{groupChallengeId}/challenge-records/{challengeRecordId} — 챌린지 기록 피드 상세를 카드 인터페이스로 조회한다")
+    void getGroupChallengeRecordDetail_beforeRecord_returnsCardDetail() throws Exception {
+        // given
+        Group group = groupRepository.save(Group.createNew("수능방", "ABCDE"));
+        GroupChallenge challenge = groupChallengeRepository.save(
+                GroupChallenge.createFirst(group.getId())
+        );
+
+        User currentUser = userRepository.save(User.createNew("나"));
+        User author = userRepository.save(User.createNew("민준"));
+
+        saveParticipant(group.getId(), challenge.getId(), currentUser);
+        GroupChallengeParticipant authorParticipant =
+                saveParticipant(group.getId(), challenge.getId(), author);
+
+        ChallengeRecord challengeRecord = challengeRecordRepository.save(
+                ChallengeRecord.create(
+                        challenge.getId(),
+                        authorParticipant.getId(),
+                        LocalDate.now()
+                )
+        );
+
+        statusCountRepository.save(
+                com.detoxmate.challengerecordstatuscount.domain.ChallengeRecordStatusCount.create(
+                        challengeRecord.getId()
+                )
+        );
+
+        // when & then
+        mockMvc.perform(get(GROUP_CHALLENGE_RECORD_DETAIL_URL, challenge.getId(), challengeRecord.getId())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(currentUser.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userId").value(author.getId()))
+                .andExpect(jsonPath("$.displayName").value("민준"))
+                .andExpect(jsonPath("$.dailyStatus").value("NOT_ACTIVE"))
+                .andExpect(jsonPath("$.challengeRecordId").value(challengeRecord.getId()))
+                .andExpect(jsonPath("$.challengeStatus").doesNotExist())
+                .andExpect(jsonPath("$.author").doesNotExist())
+                .andExpect(jsonPath("$.activityRecord").doesNotExist())
+                .andExpect(jsonPath("$.reactions.totalCount").value(0))
+                .andExpect(jsonPath("$.reactions.summary").isEmpty())
+                .andExpect(jsonPath("$.commentCount").value(0))
+                .andExpect(jsonPath("$.pokeCount").value(0))
+                .andExpect(jsonPath("$.pokeable").value(true))
+                .andExpect(jsonPath("$.isPoked").value(false))
+                .andExpect(jsonPath("$.pokedUsers.length()").value(0));
+    }
+
+    @Test
+    @DisplayName("GET /group-challenges/{groupChallengeId}/challenge-records/{challengeRecordId} — 다른 챌린지 기록이면 403을 반환한다")
+    void getGroupChallengeRecordDetail_mismatchedGroupChallenge_returns403() throws Exception {
+        // given
+        Group group = groupRepository.save(Group.createNew("수능방", "ABCDE"));
+        GroupChallenge challenge = groupChallengeRepository.save(
+                GroupChallenge.createFirst(group.getId())
+        );
+        Group otherGroup = groupRepository.save(Group.createNew("다른방", "FGHIJ"));
+        GroupChallenge otherChallenge = groupChallengeRepository.save(
+                GroupChallenge.createFirst(otherGroup.getId())
+        );
+
+        User currentUser = userRepository.save(User.createNew("나"));
+        User author = userRepository.save(User.createNew("민준"));
+
+        saveParticipant(group.getId(), challenge.getId(), currentUser);
+        GroupChallengeParticipant authorParticipant =
+                saveParticipant(group.getId(), challenge.getId(), author);
+
+        ChallengeRecord challengeRecord = challengeRecordRepository.save(
+                ChallengeRecord.create(
+                        challenge.getId(),
+                        authorParticipant.getId(),
+                        LocalDate.now()
+                )
+        );
+
+        // when & then
+        mockMvc.perform(get(GROUP_CHALLENGE_RECORD_DETAIL_URL, otherChallenge.getId(), challengeRecord.getId())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(currentUser.getId())))
+                .andExpect(status().isForbidden());
     }
 
     @Test

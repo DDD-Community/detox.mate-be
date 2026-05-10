@@ -1,6 +1,7 @@
 package com.detoxmate.group.repository;
 
 import com.detoxmate.group.domain.GroupChallengeParticipant;
+import com.detoxmate.group.dto.GroupActivityParticipantRow;
 import com.detoxmate.group.dto.GroupChallengeParticipantRow;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -15,6 +16,31 @@ public interface GroupChallengeParticipantRepository extends JpaRepository<Group
     Optional<GroupChallengeParticipant> findByGroupChallengeIdAndGroupMemberId(Long groupChallengeId, Long groupMemberId);
 
     @Query("""
+            SELECT new com.detoxmate.group.dto.GroupActivityParticipantRow(
+                gcp.groupChallengeId,
+                gcp.id,
+                gm.id,
+                gm.userId,
+                u.displayName,
+                u.profileImageObjectKey,
+                gm.status,
+                gm.joinedAt,
+                gm.leftAt,
+                gcp.status,
+                gcp.joinedAt,
+                gcp.withdrawnAt
+            )
+            FROM GroupChallengeParticipant gcp
+            JOIN GroupMember gm ON gm.id = gcp.groupMemberId
+            LEFT JOIN User u ON u.id = gm.userId
+            WHERE gcp.groupChallengeId = :groupChallengeId
+            ORDER BY gm.joinedAt ASC, gcp.joinedAt ASC, gcp.id ASC
+            """)
+    List<GroupActivityParticipantRow> findActivityParticipantRowsByGroupChallengeId(
+            @Param("groupChallengeId") Long groupChallengeId
+    );
+
+    @Query("""
             SELECT COUNT(gcp) > 0
             FROM GroupChallengeParticipant gcp
             JOIN GroupMember gm ON gm.id = gcp.groupMemberId
@@ -25,6 +51,25 @@ public interface GroupChallengeParticipantRepository extends JpaRepository<Group
             """)
     boolean existsByGroupChallengeIdAndUserId(@Param("groupChallengeId") Long groupChallengeId,
                                               @Param("userId") Long userId);
+
+    @Query("""
+            SELECT COUNT(gcp) > 0
+            FROM GroupChallengeParticipant gcp
+            JOIN GroupMember gm ON gm.id = gcp.groupMemberId
+            JOIN GroupChallenge gc ON gc.id = gcp.groupChallengeId
+            WHERE gcp.id = :participantId
+              AND gm.userId = :userId
+              AND gcp.status = 'JOINED'
+              AND gm.status = 'ACTIVE'
+              AND gc.status = 'ACTIVE'
+              AND gc.challengeNo = (
+                  SELECT MAX(latest.challengeNo)
+                  FROM GroupChallenge latest
+                  WHERE latest.groupId = gc.groupId
+              )
+            """)
+    boolean existsActiveByIdAndUserId(@Param("participantId") Long participantId,
+                                      @Param("userId") Long userId);
 
     @Query("""
             SELECT new com.detoxmate.group.dto.GroupChallengeParticipantRow(

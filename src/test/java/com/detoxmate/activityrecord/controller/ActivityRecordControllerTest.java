@@ -297,6 +297,31 @@ class ActivityRecordControllerTest {
                         )));
     }
 
+    @Test
+    void activity_record_생성_요청에_groupChallengeParticipantId가_없으면_400_에러를_반환한다() throws Exception {
+        mockMvc.perform(post("/activity-records")
+                        .header("Authorization", "Bearer access-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "activityImageObjectKey": "activity-records/1/2026/04/sample.png",
+                                  "reflectionText": "오늘은 산책했다",
+                                  "details": [
+                                    {
+                                      "usageGoalType": "TOTAL_USAGE",
+                                      "usedMinutes": 80
+                                    }
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.status").value(400));
+
+        verifyNoInteractions(activityRecordService);
+    }
+
     private HeaderDescriptor[] authorizationHeaderDescriptors() {
         return new HeaderDescriptor[] {
                 headerWithName("Authorization").description("Bearer {accessToken} 형식의 서비스 access token")

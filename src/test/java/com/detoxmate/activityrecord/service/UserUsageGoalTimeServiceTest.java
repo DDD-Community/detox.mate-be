@@ -79,18 +79,18 @@ class UserUsageGoalTimeServiceTest {
     @Test
     void 현재_목표시간은_목표타입별_최신_이력만_반환한다() {
         when(userUsageGoalTimeRepository.findAllByUser_Id(1L)).thenReturn(List.of(
-                userUsageGoalTime(UsageGoalTypeCode.TOTAL_USAGE, 30, LocalDateTime.of(2026, 4, 28, 9, 0)),
-                userUsageGoalTime(UsageGoalTypeCode.TOTAL_USAGE, 60, LocalDateTime.of(2026, 4, 29, 9, 0)),
-                userUsageGoalTime(UsageGoalTypeCode.INSTAGRAM, 20, LocalDateTime.of(2026, 4, 29, 10, 0))
+                userUsageGoalTime(101L, UsageGoalTypeCode.TOTAL_USAGE, 30, LocalDateTime.of(2026, 4, 28, 9, 0)),
+                userUsageGoalTime(102L, UsageGoalTypeCode.TOTAL_USAGE, 60, LocalDateTime.of(2026, 4, 29, 9, 0)),
+                userUsageGoalTime(103L, UsageGoalTypeCode.INSTAGRAM, 20, LocalDateTime.of(2026, 4, 29, 10, 0))
         ));
 
         CurrentUsageGoalTimesResponse response = userUsageGoalTimeService.getCurrentGoalTimes(1L);
 
         assertThat(response.goals())
-                .extracting("usageGoalType", "goalMinutes", "setAt")
+                .extracting("id", "usageGoalType", "goalMinutes", "createdAt")
                 .containsExactly(
-                        org.assertj.core.groups.Tuple.tuple(UsageGoalTypeCode.TOTAL_USAGE, 60, LocalDateTime.of(2026, 4, 29, 9, 0)),
-                        org.assertj.core.groups.Tuple.tuple(UsageGoalTypeCode.INSTAGRAM, 20, LocalDateTime.of(2026, 4, 29, 10, 0))
+                        org.assertj.core.groups.Tuple.tuple(102L, UsageGoalTypeCode.TOTAL_USAGE, 60, LocalDateTime.of(2026, 4, 29, 9, 0)),
+                        org.assertj.core.groups.Tuple.tuple(103L, UsageGoalTypeCode.INSTAGRAM, 20, LocalDateTime.of(2026, 4, 29, 10, 0))
                 );
     }
 
@@ -110,12 +110,13 @@ class UserUsageGoalTimeServiceTest {
     }
 
     private UserUsageGoalTime userUsageGoalTime(
+            Long id,
             UsageGoalTypeCode usageGoalTypeCode,
             Integer goalMinutes,
             LocalDateTime createdAt
     ) {
         UserUsageGoalTime goalTime = UserUsageGoalTime.create(user(1L), usageGoalType(1L, usageGoalTypeCode), goalMinutes);
-        ReflectionTestUtils.setField(goalTime, "createdAt", createdAt);
+        setPersistenceFields(goalTime, id, createdAt);
         return goalTime;
     }
 

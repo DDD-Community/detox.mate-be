@@ -5,11 +5,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
@@ -48,6 +50,18 @@ class ChallengeRecordStatusCountRepositoryTest {
         // then
         assertThat(found).isPresent();
         assertThat(found.get().getId()).isEqualTo(statusCount.getId());
+    }
+
+    @Test
+    @DisplayName("같은 챌린지 기록 ID의 집계는 중복 저장할 수 없다")
+    void saveStatusCount_rejectsDuplicateChallengeRecordId() {
+        // given
+        statusCountRepository.saveAndFlush(ChallengeRecordStatusCount.create(CHALLENGE_RECORD_ID));
+
+        // when & then
+        assertThatThrownBy(() -> statusCountRepository.saveAndFlush(
+                ChallengeRecordStatusCount.create(CHALLENGE_RECORD_ID)
+        )).isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test

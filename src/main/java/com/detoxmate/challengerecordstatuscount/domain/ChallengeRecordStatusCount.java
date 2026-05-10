@@ -11,7 +11,13 @@ import java.time.LocalDateTime;
 
 @Entity
 @Getter
-@Table(name = "challenge_record_status")
+@Table(
+        name = "challenge_record_status",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_challenge_record_status_record",
+                columnNames = "challenge_record_id"
+        )
+)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ChallengeRecordStatusCount {
 

@@ -6,6 +6,7 @@ import com.detoxmate.challengerecordstatuscount.repository.ChallengeRecordStatus
 import com.detoxmate.common.exception.CustomException;
 import com.detoxmate.common.exception.challengerecordstatuscount.ChallengeRecordStatusCountErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,9 +26,16 @@ public class ChallengeRecordStatusCountService {
     @Transactional
     public ChallengeRecordStatusCount getOrCreate(Long challengeRecordId) {
         return statusCountRepository.findByChallengeRecordId(challengeRecordId)
-                .orElseGet(() -> statusCountRepository.save(
-                        ChallengeRecordStatusCount.create(challengeRecordId)
-                ));
+                .orElseGet(() -> createOrFindExisting(challengeRecordId));
+    }
+
+    private ChallengeRecordStatusCount createOrFindExisting(Long challengeRecordId) {
+        try {
+            return statusCountRepository.saveAndFlush(ChallengeRecordStatusCount.create(challengeRecordId));
+        } catch (DataIntegrityViolationException exception) {
+            return statusCountRepository.findByChallengeRecordId(challengeRecordId)
+                    .orElseThrow(() -> exception);
+        }
     }
 
     @Transactional

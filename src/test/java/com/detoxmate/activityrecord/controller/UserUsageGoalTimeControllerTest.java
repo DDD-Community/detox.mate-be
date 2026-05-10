@@ -134,17 +134,19 @@ class UserUsageGoalTimeControllerTest {
         FieldDescriptor[] responseFieldDescriptors = currentResponseFields();
 
         when(userUsageGoalTimeService.getCurrentGoalTimes(1L)).thenReturn(new CurrentUsageGoalTimesResponse(List.of(
-                new CurrentUsageGoalTimeResponse(UsageGoalTypeCode.TOTAL_USAGE, 60, LocalDateTime.of(2026, 4, 29, 10, 30)),
-                new CurrentUsageGoalTimeResponse(UsageGoalTypeCode.INSTAGRAM, 30, LocalDateTime.of(2026, 4, 29, 10, 30))
+                new CurrentUsageGoalTimeResponse(101L, UsageGoalTypeCode.TOTAL_USAGE, 60, LocalDateTime.of(2026, 4, 29, 10, 30)),
+                new CurrentUsageGoalTimeResponse(102L, UsageGoalTypeCode.INSTAGRAM, 30, LocalDateTime.of(2026, 4, 29, 10, 30))
         )));
 
         mockMvc.perform(get("/me/usage-goal-times/current")
                         .header("Authorization", "Bearer access-token"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.goals[0].id").value(101))
                 .andExpect(jsonPath("$.goals[0].usageGoalType").value("TOTAL_USAGE"))
                 .andExpect(jsonPath("$.goals[0].goalMinutes").value(60))
-                .andExpect(jsonPath("$.goals[0].setAt").value("2026-04-29T10:30:00"))
+                .andExpect(jsonPath("$.goals[0].createdAt").value("2026-04-29T10:30:00"))
+                .andExpect(jsonPath("$.goals[1].id").value(102))
                 .andExpect(jsonPath("$.goals[1].usageGoalType").value("INSTAGRAM"))
                 .andDo(document("usage-goal-times/current",
                         preprocessRequest(prettyPrint()),
@@ -297,15 +299,18 @@ class UserUsageGoalTimeControllerTest {
                 fieldWithPath("goals")
                         .type(JsonFieldType.ARRAY)
                         .description("목표 타입별 최신 목표시간 배열"),
+                fieldWithPath("goals[].id")
+                        .type(JsonFieldType.NUMBER)
+                        .description("현재 목표시간 이력 ID"),
                 fieldWithPath("goals[].usageGoalType")
                         .type(JsonFieldType.STRING)
                         .description("사용시간 목표 타입"),
                 fieldWithPath("goals[].goalMinutes")
                         .type(JsonFieldType.NUMBER)
                         .description("현재 목표 사용시간(분)"),
-                fieldWithPath("goals[].setAt")
+                fieldWithPath("goals[].createdAt")
                         .type(JsonFieldType.STRING)
-                        .description("현재 목표시간이 설정된 시각")
+                        .description("현재 목표시간 이력 생성 시각")
         };
     }
 }

@@ -68,7 +68,7 @@ public class GroupService {
 
         GroupChallenge groupChallenge = groupChallengeService.getLatestChallenge(group.getId());
 
-        if (groupChallenge.getStatus() != GroupChallengeStatus.RECRUITING) {
+        if (!canJoin(groupChallenge)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "현재 참여 가능한 그룹 챌린지가 없습니다.");
         }
 
@@ -183,6 +183,11 @@ public class GroupService {
         } catch (NoSuchElementException exception) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "내가 속한 그룹만 조회할 수 있습니다.");
         }
+    }
+
+    private boolean canJoin(GroupChallenge groupChallenge) {
+        return groupChallenge.getStatus() == GroupChallengeStatus.RECRUITING
+                || groupChallenge.getStatus() == GroupChallengeStatus.ACTIVE;
     }
 
     private void lockUserForGroupOperation(Long userId) {

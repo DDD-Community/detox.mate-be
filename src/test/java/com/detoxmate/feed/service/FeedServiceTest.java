@@ -1,7 +1,12 @@
 package com.detoxmate.feed.service;
 
 import com.detoxmate.activityrecord.domain.ActivityRecord;
+import com.detoxmate.activityrecord.domain.UsageGoalType;
+import com.detoxmate.activityrecord.domain.UserUsageGoalTime;
 import com.detoxmate.activityrecord.repository.ActivityRecordRepository;
+import com.detoxmate.activityrecord.repository.UsageGoalTypeRepository;
+import com.detoxmate.activityrecord.repository.UserUsageGoalTimeRepository;
+import com.detoxmate.activityrecord.dto.UsageGoalTypeCode;
 import com.detoxmate.challengerecord.domain.ChallengeRecord;
 import com.detoxmate.challengerecord.domain.ChallengeRecordCertificationResult;
 import com.detoxmate.challengerecord.repository.ChallengeRecordRepository;
@@ -9,6 +14,7 @@ import com.detoxmate.challengerecordstatuscount.domain.ChallengeRecordStatusCoun
 import com.detoxmate.challengerecordstatuscount.repository.ChallengeRecordStatusCountRepository;
 import com.detoxmate.feed.dto.response.HomeFeedMemberCard;
 import com.detoxmate.feed.dto.response.HomeFeedResponse;
+import com.detoxmate.feed.dto.response.GroupChallengeOverviewResponse;
 import com.detoxmate.group.domain.Group;
 import com.detoxmate.group.domain.GroupChallenge;
 import com.detoxmate.group.domain.GroupChallengeParticipant;
@@ -25,10 +31,20 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.Timestamp;
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,7 +52,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
+@Import(FeedServiceTest.FixedClockConfig.class)
 class FeedServiceTest {
+
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+    private static final LocalDate TODAY = LocalDate.of(2026, 4, 16);
 
     @Autowired
     FeedService feedService;
@@ -67,6 +87,78 @@ class FeedServiceTest {
 
     @Autowired
     PokeRepository pokeRepository;
+
+    @Autowired
+    UsageGoalTypeRepository usageGoalTypeRepository;
+
+    @Autowired
+    UserUsageGoalTimeRepository userUsageGoalTimeRepository;
+
+    @Autowired
+    JdbcTemplate jdbcTemplate;
+
+    @Test
+    @DisplayName("챌린지 개요를 조회하면 홈 피드 카드용 챌린지 기록을 생성하지 않는다")
+    void getGroupChallengeOverview_doesNotCreateChallengeRecords() {
+        // given
+        Group group = groupRepository.save(Group.createNew("수능방", "ABCDE"));
+        GroupChallenge challenge = groupChallengeRepository.save(GroupChallenge.createFirst(group.getId()));
+
+        User currentUser = userRepository.save(User.createNew("나"));
+        saveParticipant(group.getId(), challenge.getId(), currentUser);
+
+        assertThat(challengeRecordRepository.findAll()).isEmpty();
+
+        // when
+        GroupChallengeOverviewResponse response = feedService.getGroupChallengeOverview(
+                challenge.getId(),
+                currentUser.getId()
+        );
+
+        // then
+        assertThat(response.groupChallengeId()).isEqualTo(challenge.getId());
+        assertThat(response.groupId()).isEqualTo(group.getId());
+        assertThat(response.groupName()).isEqualTo("수능방");
+        assertThat(response.challengeNo()).isEqualTo(1);
+        assertThat(response.status()).isEqualTo("RECRUITING");
+        assertThat(response.streakCount()).isZero();
+        assertThat(challengeRecordRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("챌린지 개요는 캘린더 정책으로 계산한 그룹 스트릭을 반환한다")
+    void getGroupChallengeOverview_returnsCalculatedStreakCount() {
+        // given
+        UsageGoalType totalUsage = usageGoalTypeRepository.save(UsageGoalType.create(1L, UsageGoalTypeCode.TOTAL_USAGE));
+        Group group = groupRepository.save(Group.createNew("수능방", "ABCDE"));
+        GroupChallenge challenge = GroupChallenge.createFirst(group.getId());
+        challenge.activate(LocalDateTime.of(2026, 4, 11, 0, 0));
+        groupChallengeRepository.save(challenge);
+
+        User currentUser = userRepository.save(User.createNew("나"));
+        User targetUser = userRepository.save(User.createNew("민준"));
+
+        LocalDateTime joinedAt = LocalDateTime.of(2026, 4, 10, 10, 0);
+        GroupChallengeParticipant currentParticipant =
+                saveParticipant(group.getId(), challenge.getId(), currentUser, joinedAt);
+        GroupChallengeParticipant targetParticipant =
+                saveParticipant(group.getId(), challenge.getId(), targetUser, joinedAt.plusMinutes(1));
+
+        UserUsageGoalTime currentGoal = saveGoal(currentUser, totalUsage, 80, LocalDateTime.of(2026, 4, 11, 9, 0));
+        UserUsageGoalTime targetGoal = saveGoal(targetUser, totalUsage, 120, LocalDateTime.of(2026, 4, 11, 9, 0));
+
+        certify(challenge.getId(), currentParticipant, currentUser, currentGoal, LocalDate.of(2026, 4, 14));
+        certify(challenge.getId(), targetParticipant, targetUser, targetGoal, LocalDate.of(2026, 4, 15));
+
+        // when
+        GroupChallengeOverviewResponse response = feedService.getGroupChallengeOverview(
+                challenge.getId(),
+                currentUser.getId()
+        );
+
+        // then
+        assertThat(response.streakCount()).isEqualTo(2);
+    }
 
     @Test
     @DisplayName("홈 피드를 조회하면 오늘 챌린지 기록이 없는 참여자에게 빈 챌린지 기록을 생성하고 카드에 내려준다")
@@ -109,7 +201,7 @@ class FeedServiceTest {
 
         assertThat(targetRecord.getGroupChallengeId()).isEqualTo(challenge.getId());
         assertThat(targetRecord.getGroupChallengeParticipantId()).isEqualTo(targetParticipant.getId());
-        assertThat(targetRecord.getRecordDate()).isEqualTo(LocalDate.now());
+        assertThat(targetRecord.getRecordDate()).isEqualTo(TODAY);
         assertThat(targetRecord.getActivityRecordId()).isNull();
     }
 
@@ -165,7 +257,7 @@ class FeedServiceTest {
                 saveParticipant(group.getId(), challenge.getId(), targetUser);
 
         ChallengeRecord targetRecord = challengeRecordRepository.save(
-                ChallengeRecord.create(challenge.getId(), targetParticipant.getId(), LocalDate.now())
+                ChallengeRecord.create(challenge.getId(), targetParticipant.getId(), TODAY)
         );
 
         pokeRepository.save(
@@ -173,7 +265,7 @@ class FeedServiceTest {
                         targetRecord.getId(),
                         currentUser.getId(),
                         targetUser.getId(),
-                        LocalDate.now()
+                        TODAY
                 )
         );
 
@@ -204,7 +296,7 @@ class FeedServiceTest {
                 saveParticipant(group.getId(), challenge.getId(), targetUser);
 
         ChallengeRecord targetRecord = challengeRecordRepository.save(
-                ChallengeRecord.create(challenge.getId(), targetParticipant.getId(), LocalDate.now())
+                ChallengeRecord.create(challenge.getId(), targetParticipant.getId(), TODAY)
         );
 
         statusCountRepository.saveAndFlush(ChallengeRecordStatusCount.create(targetRecord.getId()));
@@ -270,7 +362,7 @@ class FeedServiceTest {
         ChallengeRecord challengeRecord = ChallengeRecord.create(
                 groupChallengeId,
                 participant.getId(),
-                LocalDate.now()
+                TODAY
         );
 
         challengeRecord.certify(
@@ -288,6 +380,70 @@ class FeedServiceTest {
         return participantRepository.save(GroupChallengeParticipant.join(groupMember.getId(), groupChallengeId));
     }
 
+    private GroupChallengeParticipant saveParticipant(
+            Long groupId,
+            Long groupChallengeId,
+            User user,
+            LocalDateTime joinedAt
+    ) {
+        GroupMember groupMember = GroupMember.createMember(user.getId(), groupId);
+        ReflectionTestUtils.setField(groupMember, "joinedAt", joinedAt);
+        GroupMember savedGroupMember = groupMemberRepository.save(groupMember);
+
+        GroupChallengeParticipant participant = GroupChallengeParticipant.join(savedGroupMember.getId(), groupChallengeId);
+        ReflectionTestUtils.setField(participant, "joinedAt", joinedAt);
+        return participantRepository.save(participant);
+    }
+
+    private UserUsageGoalTime saveGoal(
+            User user,
+            UsageGoalType usageGoalType,
+            int goalMinutes,
+            LocalDateTime setAt
+    ) {
+        UserUsageGoalTime goal = userUsageGoalTimeRepository.saveAndFlush(
+                UserUsageGoalTime.create(user, usageGoalType, goalMinutes)
+        );
+        jdbcTemplate.update(
+                "UPDATE user_usage_goal_times SET created_at = ?, updated_at = ? WHERE user_usage_goal_times_id = ?",
+                Timestamp.valueOf(setAt),
+                Timestamp.valueOf(setAt),
+                goal.getId()
+        );
+        ReflectionTestUtils.setField(goal, "createdAt", setAt);
+        ReflectionTestUtils.setField(goal, "updatedAt", setAt);
+        return goal;
+    }
+
+    private void certify(
+            Long groupChallengeId,
+            GroupChallengeParticipant participant,
+            User user,
+            UserUsageGoalTime goal,
+            LocalDate recordDate
+    ) {
+        ActivityRecord activityRecord = ActivityRecord.create(
+                user,
+                participant,
+                "activity/" + user.getId() + "/" + recordDate + ".png",
+                "인증 완료"
+        );
+        activityRecord.addDetail(goal, 60, true);
+        ActivityRecord savedActivityRecord = activityRecordRepository.save(activityRecord);
+
+        ChallengeRecord challengeRecord = ChallengeRecord.create(
+                groupChallengeId,
+                participant.getId(),
+                recordDate
+        );
+        challengeRecord.certify(
+                savedActivityRecord.getId(),
+                participant.getId(),
+                ChallengeRecordCertificationResult.SUCCESS
+        );
+        challengeRecordRepository.save(challengeRecord);
+    }
+
 
     private HomeFeedMemberCard findCard(HomeFeedResponse response, Long userId) {
         return response.members().stream()
@@ -295,6 +451,13 @@ class FeedServiceTest {
                 .findFirst()
                 .orElseThrow();
     }
+    @TestConfiguration
+    static class FixedClockConfig {
 
-
+        @Bean
+        @Primary
+        Clock fixedClock() {
+            return Clock.fixed(TODAY.atTime(9, 0).atZone(KST).toInstant(), KST);
+        }
+    }
 }

@@ -13,6 +13,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 
 @DataJpaTest
@@ -83,6 +85,20 @@ class ChallengeRecordRepositoryTest {
         // then
         assertThat(found).isPresent();
         assertThat(found.get().getId()).isEqualTo(record.getId());
+    }
+
+    @Test
+    @DisplayName("같은 그룹 챌린지, 참여자, 날짜의 챌린지 기록은 중복 저장할 수 없다")
+    void saveChallengeRecord_rejectsDuplicateParticipantDate() {
+        // given
+        challengeRecordRepository.saveAndFlush(
+                ChallengeRecord.create(GROUP_CHALLENGE_ID, PARTICIPANT_ID, RECORD_DATE)
+        );
+
+        // when & then
+        assertThatThrownBy(() -> challengeRecordRepository.saveAndFlush(
+                ChallengeRecord.create(GROUP_CHALLENGE_ID, PARTICIPANT_ID, RECORD_DATE)
+        )).isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
