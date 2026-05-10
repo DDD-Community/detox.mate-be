@@ -331,7 +331,7 @@ public class GroupChallengeRecordFeedService {
                 challengeRecord,
                 activityDay.activityRecordById()
         );
-        MemberDailyStatus dailyStatus = dailyStatus(activityDay, participant, includedInGroupResult, challengeRecord);
+        MemberDailyStatus dailyStatus = dailyStatus(includedInGroupResult, challengeRecord);
         ChallengeRecordStatusCount statusCount = challengeRecord == null
                 ? null
                 : activityDay.statusCountByRecordId().get(challengeRecord.getId());
@@ -554,13 +554,8 @@ public class GroupChallengeRecordFeedService {
                 .toList();
     }
 
-    private MemberDailyStatus dailyStatus(
-            GroupActivityDayContext activityDay,
-            GroupActivityParticipant participant,
-            boolean includedInGroupResult,
-            ChallengeRecord challengeRecord
-    ) {
-        if (!includedInGroupResult && !(activityDay.todayFeed() && isActiveParticipant(participant))) {
+    private MemberDailyStatus dailyStatus(boolean includedInGroupResult, ChallengeRecord challengeRecord) {
+        if (!includedInGroupResult) {
             return MemberDailyStatus.NOT_ACTIVE;
         }
         if (challengeRecord == null || !challengeRecord.isCertified()) {
