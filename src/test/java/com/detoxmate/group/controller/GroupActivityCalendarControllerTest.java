@@ -81,7 +81,8 @@ class GroupActivityCalendarControllerTest {
                         .header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.firstVerificationDate").value("2026-04-10"))
+                .andExpect(jsonPath("$.firstVerificationDate").doesNotExist())
+                .andExpect(jsonPath("$.summary.startDate").value("2026-04-10"))
                 .andExpect(jsonPath("$.summary.halfCount").value(7))
                 .andDo(document("group-challenges/activity-calendar/get",
                         preprocessRequest(prettyPrint()),
@@ -104,7 +105,6 @@ class GroupActivityCalendarControllerTest {
     private GroupActivityCalendarResponse calendarResponse() {
         return new GroupActivityCalendarResponse(
                 1L,
-                LocalDate.of(2026, 4, 10),
                 4,
                 new GroupActivityCalendarSummaryResponse(
                         LocalDate.of(2026, 4, 10),
@@ -139,13 +139,11 @@ class GroupActivityCalendarControllerTest {
     private FieldDescriptor[] calendarResponseFields() {
         return new FieldDescriptor[] {
                 fieldWithPath("groupId").type(JsonFieldType.NUMBER).description("그룹 ID"),
-                fieldWithPath("firstVerificationDate").type(JsonFieldType.STRING)
-                        .description("첫 인증 시작일. 아직 산정할 수 없으면 null").optional(),
                 fieldWithPath("streakDays").type(JsonFieldType.NUMBER)
                         .description("오늘을 제외하고 어제까지 연속으로 그룹 인증에 성공한 날짜 수"),
                 fieldWithPath("summary").type(JsonFieldType.OBJECT).description("첫 인증 시작일 이후 누적 상단 카운트"),
                 fieldWithPath("summary.startDate").type(JsonFieldType.STRING)
-                        .description("누적 카운트 시작일. firstVerificationDate와 같다").optional(),
+                        .description("누적 카운트 시작일. 첫 인증 시작일이며, 아직 산정할 수 없으면 null").optional(),
                 fieldWithPath("summary.endDate").type(JsonFieldType.STRING)
                         .description("누적 카운트 종료일. 보통 조회일 기준 어제").optional(),
                 fieldWithPath("summary.allCount").type(JsonFieldType.NUMBER)

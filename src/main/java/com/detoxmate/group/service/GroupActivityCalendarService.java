@@ -75,7 +75,6 @@ public class GroupActivityCalendarService {
 
         return new GroupActivityCalendarResponse(
                 activity.challenge().getGroupId(),
-                firstVerificationDate,
                 streakDays,
                 toSummaryResponse(summary)
         );

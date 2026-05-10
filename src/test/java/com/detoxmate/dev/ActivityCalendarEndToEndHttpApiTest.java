@@ -67,7 +67,8 @@ class ActivityCalendarEndToEndHttpApiTest {
                 "/group-challenges/" + groupChallengeId + "/activity-calendar",
                 meBearer
         );
-        assertThat(initialCalendar.get("firstVerificationDate").asText()).isEqualTo("2026-04-08");
+        assertThat(initialCalendar.has("firstVerificationDate")).isFalse();
+        assertThat(initialCalendar.at("/summary/startDate").asText()).isEqualTo("2026-04-08");
         assertThat(initialCalendar.at("/summary/allCount").asInt()).isEqualTo(5);
         assertThat(initialCalendar.at("/summary/halfCount").asInt()).isEqualTo(3);
         assertThat(initialCalendar.at("/summary/resetCount").asInt()).isZero();

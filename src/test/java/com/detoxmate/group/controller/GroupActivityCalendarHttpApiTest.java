@@ -111,7 +111,8 @@ class GroupActivityCalendarHttpApiTest {
         );
 
         assertThat(calendarResponse.statusCode()).isEqualTo(200);
-        assertThat(calendarResponse.body()).contains("\"firstVerificationDate\":\"2026-04-12\"");
+        assertThat(calendarResponse.body()).doesNotContain("firstVerificationDate");
+        assertThat(calendarResponse.body()).contains("\"startDate\":\"2026-04-12\"");
         assertThat(activityFeedResponse.statusCode()).isEqualTo(200);
         assertThat(activityFeedResponse.body()).contains(
                 "\"dayStatus\":\"CONFIRMED\"",

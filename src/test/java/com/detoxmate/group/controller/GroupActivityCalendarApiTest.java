@@ -125,7 +125,7 @@ class GroupActivityCalendarApiTest {
                         .header(HttpHeaders.AUTHORIZATION, bearer(fixture.currentUser().getId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.groupId").value(fixture.group().getId()))
-                .andExpect(jsonPath("$.firstVerificationDate").value("2026-04-12"))
+                .andExpect(jsonPath("$.firstVerificationDate").doesNotExist())
                 .andExpect(jsonPath("$.streakDays").value(1))
                 .andExpect(jsonPath("$.summary.startDate").value("2026-04-12"))
                 .andExpect(jsonPath("$.summary.endDate").value("2026-04-15"))
