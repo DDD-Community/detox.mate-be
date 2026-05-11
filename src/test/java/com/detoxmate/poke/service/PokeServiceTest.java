@@ -41,6 +41,7 @@ class PokeServiceTest {
 
     private static final Long GROUP_CHALLENGE_ID = 10L;
     private static final Long PARTICIPANT_ID = 20L;
+    private static final Long OTHER_PARTICIPANT_ID = 21L;
     private static final Long ACTIVITY_RECORD_ID = 100L;
 
     private static final Long SENDER_USER_ID = 1L;
@@ -195,7 +196,7 @@ class PokeServiceTest {
                 )
         );
 
-        ChallengeRecord otherChallengeRecord = saveBeforeRecord(TODAY);
+        ChallengeRecord otherChallengeRecord = saveBeforeRecord(TODAY, OTHER_PARTICIPANT_ID);
         pokeRepository.save(
                 Poke.create(
                         otherChallengeRecord.getId(),
@@ -214,12 +215,45 @@ class PokeServiceTest {
                 .containsExactly(secondToday.getId(), firstToday.getId(), old.getId());
     }
 
+    @Test
+    @DisplayName("여러 챌린지 기록에서 현재 사용자가 찌른 콕만 조회한다")
+    void getPokesByChallengeRecordsAndSender_returnsPokesForSender() {
+        // given
+        ChallengeRecord firstRecord = saveBeforeRecord(TODAY);
+        ChallengeRecord secondRecord = saveBeforeRecord(TODAY, OTHER_PARTICIPANT_ID);
+
+        Poke first = pokeRepository.save(
+                Poke.create(firstRecord.getId(), SENDER_USER_ID, RECEIVER_USER_ID, TODAY)
+        );
+        Poke second = pokeRepository.save(
+                Poke.create(secondRecord.getId(), SENDER_USER_ID, OTHER_RECEIVER_USER_ID, TODAY)
+        );
+        pokeRepository.save(
+                Poke.create(firstRecord.getId(), OTHER_RECEIVER_USER_ID, RECEIVER_USER_ID, TODAY)
+        );
+
+        // when
+        List<Poke> pokes = pokeService.getPokesByChallengeRecordsAndSender(
+                List.of(firstRecord.getId(), secondRecord.getId()),
+                SENDER_USER_ID
+        );
+
+        // then
+        assertThat(pokes)
+                .extracting(Poke::getId)
+                .containsExactlyInAnyOrder(first.getId(), second.getId());
+    }
+
 
     private ChallengeRecord saveBeforeRecord(LocalDate recordDate) {
+        return saveBeforeRecord(recordDate, PARTICIPANT_ID);
+    }
+
+    private ChallengeRecord saveBeforeRecord(LocalDate recordDate, Long participantId) {
         return challengeRecordRepository.save(
                 ChallengeRecord.create(
                         GROUP_CHALLENGE_ID,
-                        PARTICIPANT_ID,
+                        participantId,
                         recordDate
                 )
         );

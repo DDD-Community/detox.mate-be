@@ -54,6 +54,15 @@ public class PokeService {
         return pokeRepository.findAllByChallengeRecordOrderByLatest(challengeRecordId);
     }
 
+    @Transactional(readOnly = true)
+    public List<Poke> getPokesByChallengeRecordsAndSender(List<Long> challengeRecordIds, Long senderUserId) {
+        if (challengeRecordIds.isEmpty()) {
+            return List.of();
+        }
+
+        return pokeRepository.findAllByChallengeRecordIdInAndSenderUserId(challengeRecordIds, senderUserId);
+    }
+
     private void validatePokeAllowed(ChallengeRecord challengeRecord) {
         if (challengeRecord.isCertified()) {
             throw new CustomException(PokeErrorCode.POKE_NOT_ALLOWED_AFTER_RECORD);

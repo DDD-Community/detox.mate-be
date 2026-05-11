@@ -236,19 +236,22 @@ class ActivityRecordControllerTest {
     }
 
     @Test
-    void 미달성인데_reflectionText가_없으면_400_에러를_반환한다() throws Exception {
+    void activity_record_생성_중_400_에러를_반환한다() throws Exception {
         HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
         FieldDescriptor[] requestFieldDescriptors = createRequestFields();
         FieldDescriptor[] errorResponseFieldDescriptors = errorResponseFields();
 
         when(activityRecordService.create(1L, new ActivityRecordCreateRequest(
-                null,
-                null,
+                "activity-records/1/2026/04/sample.png",
+                "오늘은 산책했다",
                 10L,
-                List.of(new ActivityRecordDetailRequest(UsageGoalTypeCode.TOTAL_USAGE, 80))
+                List.of(
+                        new ActivityRecordDetailRequest(UsageGoalTypeCode.TOTAL_USAGE, 80),
+                        new ActivityRecordDetailRequest(UsageGoalTypeCode.INSTAGRAM, 20)
+                )
         ))).thenThrow(new ResponseStatusException(
                 HttpStatus.BAD_REQUEST,
-                "미달성인 경우 reflectionText 는 필수입니다."
+                "활동 기록을 생성할 수 없습니다."
         ));
 
         mockMvc.perform(post("/activity-records")
@@ -256,11 +259,17 @@ class ActivityRecordControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
+                                  "activityImageObjectKey": "activity-records/1/2026/04/sample.png",
+                                  "reflectionText": "오늘은 산책했다",
                                   "groupChallengeParticipantId": 10,
                                   "details": [
                                     {
                                       "usageGoalType": "TOTAL_USAGE",
                                       "usedMinutes": 80
+                                    },
+                                    {
+                                      "usageGoalType": "INSTAGRAM",
+                                      "usedMinutes": 20
                                     }
                                   ]
                                 }
@@ -286,6 +295,31 @@ class ActivityRecordControllerTest {
                                 .responseFields(errorResponseFieldDescriptors)
                                 .build()
                         )));
+    }
+
+    @Test
+    void activity_record_생성_요청에_groupChallengeParticipantId가_없으면_400_에러를_반환한다() throws Exception {
+        mockMvc.perform(post("/activity-records")
+                        .header("Authorization", "Bearer access-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "activityImageObjectKey": "activity-records/1/2026/04/sample.png",
+                                  "reflectionText": "오늘은 산책했다",
+                                  "details": [
+                                    {
+                                      "usageGoalType": "TOTAL_USAGE",
+                                      "usedMinutes": 80
+                                    }
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.status").value(400));
+
+        verifyNoInteractions(activityRecordService);
     }
 
     private HeaderDescriptor[] authorizationHeaderDescriptors() {

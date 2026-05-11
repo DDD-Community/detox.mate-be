@@ -167,7 +167,7 @@ class GroupControllerTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Group")
                                 .summary("Join group")
-                                .description("초대코드로 그룹에 참여하고 현재 챌린지가 모집 중이면 자동 참가한다.")
+                                .description("초대코드로 그룹에 참여하고 현재 챌린지가 모집 중이거나 진행 중이면 자동 참가한다.")
                                 .requestHeaders(requestHeaderDescriptors)
                                 .requestSchema(schema("JoinGroupRequest"))
                                 .responseSchema(schema("GroupResponse"))

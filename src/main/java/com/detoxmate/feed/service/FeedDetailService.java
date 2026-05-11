@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,7 @@ public class FeedDetailService {
     private final UserService userService;
 
     private final GroupChallengeParticipantService participantService;
+    private final Clock clock;
 
     @Transactional(readOnly = true)
     public FeedDetailResponse getFeedDetail(Long challengeRecordId, Long currentUserId) {
@@ -96,7 +98,7 @@ public class FeedDetailService {
                 new FeedDetailReactionSummary(0, List.of()),
                 beforeCommentCount(statusCount),
                 pokeCount(statusCount),
-                challengeRecord.isToday(LocalDate.now()),
+                challengeRecord.isToday(LocalDate.now(clock)),
                 poked,
                 toPokedUsers(pokes)
         );

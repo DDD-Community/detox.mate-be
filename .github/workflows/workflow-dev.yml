@@ -76,7 +76,6 @@ jobs:
           DEV_DB_PASSWORD=${{ secrets.DEV_DB_PASSWORD }}
           JWT_SECRET=${{ secrets.JWT_SECRET }}
           JWT_ACCESS_TOKEN_EXPIRES_IN=${{ secrets.JWT_ACCESS_TOKEN_EXPIRES_IN }}
-          LOG_PATH=/logs
           STORAGE_IMAGE_READ_BASE_URL=${{ vars.STORAGE_IMAGE_READ_BASE_URL }}
           S3_BUCKET_NAME=${{ vars.S3_BUCKET_NAME }}
           AWS_REGION=${{ vars.AWS_REGION }}
@@ -112,17 +111,19 @@ jobs:
             --restart unless-stopped \
             -p ${{ env.APP_PORT }}:${{ env.APP_PORT }} \
             --env-file deploy/.env \
-            --log-opt max-size=10m \
-            --log-opt max-file=3 \
             -v /home/ec2-user/logs:/logs \
             -v /opt/detoxmate/firebase:/opt/detoxmate/firebase:ro \
             -e SPRING_PROFILES_ACTIVE=dev \
             ${{ env.APP_NAME }}:latest
 
       - name: Remove .env file
+        if: always()
         run: rm -f deploy/.env
 
-      - name: Cleanup unused images
+      - name: Cleanup runner and docker cache
+        if: always()
         run: |
-          docker image prune -f
-          docker builder prune -af
+          rm -rf deploy || true
+          docker image prune -af || true
+          docker builder prune -af || true
+          rm -rf /home/ec2-user/actions-runner/_work/_temp/* || true

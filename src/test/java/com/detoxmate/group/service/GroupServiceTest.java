@@ -230,17 +230,24 @@ public class GroupServiceTest {
     }
 
     @Test
-    void 그룹_챌린지가_이미_실행중이면_예외를_던진다() {
+    void 그룹_챌린지가_ACTIVE여도_초대코드로_중간_합류할_수_있다() {
         // given
         when(groupRepository.findByInviteCode(INVITE_CODE)).thenReturn(Optional.of(recruitingGroup()));
         when(groupMemberRepository.existsByUserIdAndStatus(MEMBER_USER_ID, "ACTIVE")).thenReturn(false);
         when(groupChallengeRepository.findTopByGroupIdOrderByChallengeNoDesc(GROUP_ID))
                 .thenReturn(Optional.of(activeChallenge()));
+        when(groupMemberRepository.save(any(GroupMember.class))).thenReturn(joinedMember());
+        when(groupMemberRepository.findMemberUserQueryResultsByGroupId(GROUP_ID)).thenReturn(groupMembers());
 
-        // when & then
-        assertThatThrownBy(() -> groupService.joinGroup(INVITE_CODE, MEMBER_USER_ID))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("409 CONFLICT");
+        // when
+        GroupResponse response = groupService.joinGroup(INVITE_CODE, MEMBER_USER_ID);
+
+        // then
+        verify(groupMemberRepository).save(any(GroupMember.class));
+        verify(groupChallengeParticipantRepository).save(any(GroupChallengeParticipant.class));
+        assertThat(response.id()).isEqualTo(GROUP_ID);
+        assertThat(response.myRole()).isEqualTo("MEMBER");
+        assertThat(response.currentChallenge().status()).isEqualTo("ACTIVE");
     }
 
     @Test
@@ -322,12 +329,13 @@ public class GroupServiceTest {
     @Test
     void 그룹을_탈퇴하면_멤버를_LEFT로_변경하고_최신_챌린지_참가자를_WITHDRAWN으로_변경한다() {
         GroupMember groupMember = joinedMember();
+        GroupChallenge latestChallenge = activeChallenge();
         GroupChallengeParticipant participant = joinedParticipant(groupMember.getId(), RECRUITING_CHALLENGE_ID);
         when(groupRepository.findByIdForUpdate(GROUP_ID)).thenReturn(Optional.of(recruitingGroup()));
         when(groupMemberRepository.findByUserIdAndGroupIdAndStatus(MEMBER_USER_ID, GROUP_ID, "ACTIVE"))
                 .thenReturn(Optional.of(groupMember));
         when(groupChallengeRepository.findTopByGroupIdOrderByChallengeNoDesc(GROUP_ID))
-                .thenReturn(Optional.of(recruitingChallenge()));
+                .thenReturn(Optional.of(latestChallenge));
         when(groupMemberRepository.findFirstByGroupIdAndStatusAndIdNotOrderByJoinedAtDescIdDesc(GROUP_ID, "ACTIVE", groupMember.getId()))
                 .thenReturn(Optional.of(ownerGroupMember()));
         when(groupChallengeParticipantRepository.findByGroupChallengeIdAndGroupMemberId(RECRUITING_CHALLENGE_ID, groupMember.getId()))
@@ -339,6 +347,8 @@ public class GroupServiceTest {
         assertThat(groupMember.getLeftAt()).isNotNull();
         assertThat(participant.getStatus()).isEqualTo(GroupChallengeParticipantStatus.WITHDRAWN.name());
         assertThat(participant.getWithdrawnAt()).isNotNull();
+        assertThat(latestChallenge.getStatus()).isEqualTo(GroupChallengeStatus.ACTIVE);
+        assertThat(latestChallenge.getEndAt()).isNull();
     }
 
     @Test
