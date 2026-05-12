@@ -140,10 +140,10 @@ class ScreenTimeOcrErrorReportEndToEndHttpApiTest {
                 "/admin/screen-time-ocr-error-reports?status=PENDING&page=0&size=20",
                 "test-admin-token"
         );
-        assertThat(adminList.get("totalElements").asLong()).isEqualTo(1L);
-        assertThat(adminList.at("/items/0/id").asLong()).isEqualTo(reportId);
-        assertThat(adminList.at("/items/0/ocrTotalUsedMinutes").asInt()).isEqualTo(180);
-        assertThat(adminList.at("/items/0/imageUrl").asText())
+        assertThat(adminList.get("totalElements").asLong()).isGreaterThanOrEqualTo(1L);
+        JsonNode listedReport = findItemById(adminList, reportId);
+        assertThat(listedReport.get("ocrTotalUsedMinutes").asInt()).isEqualTo(180);
+        assertThat(listedReport.get("imageUrl").asText())
                 .isEqualTo("https://example.com/media/screen-time-ocr-reports/%d/2026/05/sample.png"
                         .formatted(fixture.user().getId()));
 
@@ -205,6 +205,35 @@ class ScreenTimeOcrErrorReportEndToEndHttpApiTest {
         );
 
         assertThat(response.statusCode()).as(response.body()).isEqualTo(403);
+    }
+
+    @Test
+    @DisplayName("실제 HTTP API로 activityRecordId 없이 OCR 오류 신고를 생성한다")
+    void createReport_allowsMissingActivityRecordIdThroughHttpApi() throws Exception {
+        Fixture fixture = saveFixture();
+        String userBearer = bearer(fixture.user().getId());
+
+        JsonNode createdReport = postJson(
+                "/screen-time-ocr-error-reports",
+                userBearer,
+                """
+                        {
+                          "groupChallengeParticipantId": %d,
+                          "recordDate": "2026-05-12",
+                          "imageObjectKey": "screen-time-ocr-reports/%d/2026/05/sample-without-activity.png",
+                          "ocrTotalUsedMinutes": 180
+                        }
+                        """.formatted(
+                        fixture.participant().getId(),
+                        fixture.user().getId()
+                ),
+                201
+        );
+
+        long reportId = createdReport.get("id").asLong();
+        ScreenTimeOcrErrorReport report = reportRepository.findById(reportId).orElseThrow();
+        assertThat(report.getActivityRecordId()).isNull();
+        assertThat(report.getGroupChallengeParticipantId()).isEqualTo(fixture.participant().getId());
     }
 
     private Fixture saveFixture() {
@@ -269,6 +298,15 @@ class ScreenTimeOcrErrorReportEndToEndHttpApiTest {
         HttpResponse<String> response = send("GET", path, bearer, null);
         assertThat(response.statusCode()).as("GET " + path + " -> " + response.body()).isEqualTo(200);
         return objectMapper.readTree(response.body());
+    }
+
+    private JsonNode findItemById(JsonNode listResponse, long id) {
+        for (JsonNode item : listResponse.get("items")) {
+            if (item.get("id").asLong() == id) {
+                return item;
+            }
+        }
+        throw new AssertionError("item not found: " + id);
     }
 
     private JsonNode getAdminJson(String path, String adminToken) throws Exception {

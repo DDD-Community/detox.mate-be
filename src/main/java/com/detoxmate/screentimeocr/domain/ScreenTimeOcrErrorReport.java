@@ -1,7 +1,7 @@
 package com.detoxmate.screentimeocr.domain;
 
 import com.detoxmate.activityrecord.domain.ActivityRecord;
-import com.detoxmate.user.domain.User;
+import com.detoxmate.group.domain.GroupChallengeParticipant;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -30,11 +30,11 @@ import java.time.LocalDateTime;
         indexes = {
                 @Index(
                         name = "idx_screen_time_ocr_report_status_created_at",
-                        columnList = "status, created_at"
+                        columnList = "status, created_at, screen_time_ocr_error_report_id"
                 ),
                 @Index(
-                        name = "idx_screen_time_ocr_report_user_created_at",
-                        columnList = "user_id, created_at"
+                        name = "idx_screen_time_ocr_report_participant_record_date",
+                        columnList = "group_challenge_participant_id, record_date"
                 ),
                 @Index(
                         name = "idx_screen_time_ocr_report_activity_record",
@@ -50,16 +50,13 @@ public class ScreenTimeOcrErrorReport {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "activity_record_id")
     private ActivityRecord activityRecord;
 
-    @Column(name = "group_challenge_participant_id")
-    private Long groupChallengeParticipantId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "group_challenge_participant_id", nullable = false)
+    private GroupChallengeParticipant groupChallengeParticipant;
 
     @Column(name = "record_date", nullable = false)
     private LocalDate recordDate;
@@ -95,20 +92,18 @@ public class ScreenTimeOcrErrorReport {
     private LocalDateTime updatedAt;
 
     private ScreenTimeOcrErrorReport(
-            User user,
+            GroupChallengeParticipant groupChallengeParticipant,
             ActivityRecord activityRecord,
-            Long groupChallengeParticipantId,
             LocalDate recordDate,
             String imageObjectKey,
             Integer ocrTotalUsedMinutes
     ) {
-        validateUser(user);
+        validateGroupChallengeParticipant(groupChallengeParticipant);
         validateRecordDate(recordDate);
         validateImageObjectKey(imageObjectKey);
         validateMinutes(ocrTotalUsedMinutes);
-        this.user = user;
+        this.groupChallengeParticipant = groupChallengeParticipant;
         this.activityRecord = activityRecord;
-        this.groupChallengeParticipantId = groupChallengeParticipantId;
         this.recordDate = recordDate;
         this.imageObjectKey = imageObjectKey;
         this.ocrTotalUsedMinutes = ocrTotalUsedMinutes;
@@ -116,25 +111,19 @@ public class ScreenTimeOcrErrorReport {
     }
 
     public static ScreenTimeOcrErrorReport create(
-            User user,
+            GroupChallengeParticipant groupChallengeParticipant,
             ActivityRecord activityRecord,
-            Long groupChallengeParticipantId,
             LocalDate recordDate,
             String imageObjectKey,
             Integer ocrTotalUsedMinutes
     ) {
         return new ScreenTimeOcrErrorReport(
-                user,
+                groupChallengeParticipant,
                 activityRecord,
-                groupChallengeParticipantId,
                 recordDate,
                 imageObjectKey,
                 ocrTotalUsedMinutes
         );
-    }
-
-    public Long getUserId() {
-        return user.getId();
     }
 
     public Long getActivityRecordId() {
@@ -142,6 +131,10 @@ public class ScreenTimeOcrErrorReport {
             return null;
         }
         return activityRecord.getId();
+    }
+
+    public Long getGroupChallengeParticipantId() {
+        return groupChallengeParticipant.getId();
     }
 
     public boolean isPending() {
@@ -172,9 +165,9 @@ public class ScreenTimeOcrErrorReport {
         this.adminNote = adminNote;
     }
 
-    private static void validateUser(User user) {
-        if (user == null) {
-            throw new IllegalArgumentException("user 는 필수입니다.");
+    private static void validateGroupChallengeParticipant(GroupChallengeParticipant groupChallengeParticipant) {
+        if (groupChallengeParticipant == null) {
+            throw new IllegalArgumentException("groupChallengeParticipant 는 필수입니다.");
         }
     }
 
