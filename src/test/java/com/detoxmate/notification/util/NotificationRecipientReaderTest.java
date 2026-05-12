@@ -5,11 +5,9 @@ import com.detoxmate.challengerecord.repository.ChallengeRecordRepository;
 import com.detoxmate.common.exception.CustomException;
 import com.detoxmate.common.exception.feed.FeedErrorCode;
 import com.detoxmate.group.domain.Group;
-import com.detoxmate.group.domain.GroupChallenge;
 import com.detoxmate.group.domain.GroupChallengeParticipant;
 import com.detoxmate.group.domain.GroupMember;
 import com.detoxmate.group.repository.GroupChallengeParticipantRepository;
-import com.detoxmate.group.repository.GroupChallengeRepository;
 import com.detoxmate.group.repository.GroupMemberRepository;
 import com.detoxmate.group.repository.GroupRepository;
 import com.detoxmate.notification.dto.ChallengeRecordNotificationRow;
@@ -37,9 +35,6 @@ class NotificationRecipientReaderTest {
 
     @Autowired
     private GroupRepository groupRepository;
-
-    @Autowired
-    private GroupChallengeRepository groupChallengeRepository;
 
     @Autowired
     private GroupMemberRepository groupMemberRepository;
@@ -87,7 +82,7 @@ class NotificationRecipientReaderTest {
     void findGroupChallengeParticipantUserIds_returnsJoinedActiveMembersOnly() {
         // given
         Group group = groupRepository.save(Group.createNew("챌린지방", "A1003"));
-        GroupChallenge challenge = groupChallengeRepository.save(GroupChallenge.createFirst(group.getId()));
+        Long groupChallengeId = 100L;
         User joinedUser = userRepository.save(User.createNew("참여자"));
         User withdrawnUser = userRepository.save(User.createNew("철회자"));
         User leftUser = userRepository.save(User.createNew("탈퇴자"));
@@ -97,14 +92,14 @@ class NotificationRecipientReaderTest {
         GroupMember leftMember = groupMemberRepository.save(GroupMember.createMember(leftUser.getId(), group.getId()));
         leftMember.leave();
 
-        participantRepository.save(GroupChallengeParticipant.join(joinedMember.getId(), challenge.getId()));
+        participantRepository.save(GroupChallengeParticipant.join(joinedMember.getId(), groupChallengeId));
         GroupChallengeParticipant withdrawnParticipant =
-                participantRepository.save(GroupChallengeParticipant.join(withdrawnMember.getId(), challenge.getId()));
+                participantRepository.save(GroupChallengeParticipant.join(withdrawnMember.getId(), groupChallengeId));
         withdrawnParticipant.withdraw();
-        participantRepository.save(GroupChallengeParticipant.join(leftMember.getId(), challenge.getId()));
+        participantRepository.save(GroupChallengeParticipant.join(leftMember.getId(), groupChallengeId));
 
         // when
-        List<Long> userIds = reader.findGroupChallengeParticipantUserIds(challenge.getId());
+        List<Long> userIds = reader.findGroupChallengeParticipantUserIds(groupChallengeId);
 
         // then
         assertThat(userIds).containsExactly(joinedUser.getId());
@@ -115,13 +110,13 @@ class NotificationRecipientReaderTest {
     void findChallengeRecordInfo_returnsRecordAuthorInfo() {
         // given
         Group group = groupRepository.save(Group.createNew("피드방", "A1004"));
-        GroupChallenge challenge = groupChallengeRepository.save(GroupChallenge.createFirst(group.getId()));
+        Long groupChallengeId = 200L;
         User author = userRepository.save(User.createNew("작성자"));
         GroupMember authorMember = groupMemberRepository.save(GroupMember.createMember(author.getId(), group.getId()));
         GroupChallengeParticipant participant =
-                participantRepository.save(GroupChallengeParticipant.join(authorMember.getId(), challenge.getId()));
+                participantRepository.save(GroupChallengeParticipant.join(authorMember.getId(), groupChallengeId));
         ChallengeRecord record = challengeRecordRepository.save(
-                ChallengeRecord.create(challenge.getId(), participant.getId(), LocalDate.of(2026, 5, 12))
+                ChallengeRecord.create(groupChallengeId, participant.getId(), LocalDate.of(2026, 5, 12))
         );
 
         // when
@@ -129,7 +124,7 @@ class NotificationRecipientReaderTest {
 
         // then
         assertThat(row.challengeRecordId()).isEqualTo(record.getId());
-        assertThat(row.groupChallengeId()).isEqualTo(challenge.getId());
+        assertThat(row.groupChallengeId()).isEqualTo(groupChallengeId);
         assertThat(row.authorUserId()).isEqualTo(author.getId());
         assertThat(row.authorNickname()).isEqualTo("작성자");
     }
