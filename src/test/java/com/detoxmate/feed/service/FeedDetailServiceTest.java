@@ -270,6 +270,59 @@ class FeedDetailServiceTest {
         assertThat(response.pokedUsers()).isEmpty();
     }
 
+    @Test
+    @DisplayName("탈퇴한 작성자의 과거 피드 상세는 익명 작성자 정보와 탈퇴 여부를 반환한다")
+    void getFeedDetail_withWithdrawnAuthor_returnsAnonymizedAuthor() {
+        // given
+        Group group = groupRepository.save(Group.createNew("수능방", "ABCDE"));
+        GroupChallenge challenge = groupChallengeRepository.save(GroupChallenge.createFirst(group.getId()));
+
+        User currentUser = userRepository.save(User.createNew("나"));
+        User author = userRepository.save(User.createNew("민준", "profile-images/2/profile.png"));
+
+        saveParticipant(group.getId(), challenge.getId(), currentUser);
+        GroupChallengeParticipant authorParticipant = saveParticipant(group.getId(), challenge.getId(), author);
+
+        ActivityRecord activityRecord = activityRecordRepository.save(
+                ActivityRecord.create(
+                        author,
+                        authorParticipant,
+                        "activity/image.png",
+                        "오늘 인증 완료"
+                )
+        );
+        ChallengeRecord challengeRecord = ChallengeRecord.create(
+                challenge.getId(),
+                authorParticipant.getId(),
+                LocalDate.now()
+        );
+        challengeRecord.certify(
+                activityRecord.getId(),
+                authorParticipant.getId(),
+                ChallengeRecordCertificationResult.SUCCESS
+        );
+        challengeRecordRepository.save(challengeRecord);
+
+        GroupMember authorGroupMember = groupMemberRepository
+                .findByUserIdAndGroupIdAndStatus(author.getId(), group.getId(), "ACTIVE")
+                .orElseThrow();
+        authorGroupMember.leave();
+        authorParticipant.withdraw();
+        author.withdraw();
+
+        // when
+        FeedDetailResponse response = feedDetailService.getFeedDetail(
+                challengeRecord.getId(),
+                currentUser.getId()
+        );
+
+        // then
+        assertThat(response.author().userId()).isEqualTo(author.getId());
+        assertThat(response.author().displayName()).isEqualTo(User.WITHDRAWN_DISPLAY_NAME);
+        assertThat(response.author().profileImageUrl()).isNull();
+        assertThat(response.author().userWithdrawn()).isTrue();
+    }
+
     private GroupChallengeParticipant saveParticipant(Long groupId,
                                                       Long groupChallengeId,
                                                       User user) {

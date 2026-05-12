@@ -15,7 +15,7 @@ import com.detoxmate.poke.domain.Poke;
 import com.detoxmate.poke.service.PokeService;
 import com.detoxmate.reaction.domain.Reaction;
 import com.detoxmate.reaction.service.ReactionService;
-import com.detoxmate.user.dto.MyProfileResponse;
+import com.detoxmate.user.dto.UserProfileSummary;
 import com.detoxmate.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -148,7 +148,8 @@ public class FeedDetailService {
         return new FeedDetailAuthorInfo(
                 participant.userId(),
                 participant.displayName(),
-                participant.profileImageUrl()
+                participant.profileImageUrl(),
+                participant.userWithdrawn()
         );
     }
 
@@ -177,7 +178,7 @@ public class FeedDetailService {
     }
 
     private FeedDetailReactionSummary toReactionSummary(List<Reaction> reactions) {
-        Map<Long, MyProfileResponse> profiles = userService.getProfilesByIds(
+        Map<Long, UserProfileSummary> profiles = userService.getProfileSummariesByIds(
                 reactions.stream()
                         .map(Reaction::getUserId)
                         .collect(Collectors.toSet())
@@ -190,17 +191,18 @@ public class FeedDetailService {
         return new FeedDetailReactionSummary(items.size(), items);
     }
 
-    private FeedDetailReactionItem toReactionItem(Reaction reaction, MyProfileResponse profile) {
+    private FeedDetailReactionItem toReactionItem(Reaction reaction, UserProfileSummary profile) {
         return new FeedDetailReactionItem(
                 reaction.getBody().name(),
                 reaction.getUserId(),
                 profile == null ? null : profile.displayName(),
-                profile == null ? null : profile.profileImageUrl()
+                profile == null ? null : profile.profileImageUrl(),
+                profile != null && profile.userWithdrawn()
         );
     }
 
     private List<FeedDetailPokedUser> toPokedUsers(List<Poke> pokes) {
-        Map<Long, MyProfileResponse> profiles = userService.getProfilesByIds(
+        Map<Long, UserProfileSummary> profiles = userService.getProfileSummariesByIds(
                 pokes.stream()
                         .map(Poke::getSenderUserId)
                         .collect(Collectors.toSet())
@@ -211,11 +213,12 @@ public class FeedDetailService {
                 .toList();
     }
 
-    private FeedDetailPokedUser toPokedUser(Poke poke, MyProfileResponse profile) {
+    private FeedDetailPokedUser toPokedUser(Poke poke, UserProfileSummary profile) {
         return new FeedDetailPokedUser(
                 poke.getSenderUserId(),
                 profile == null ? null : profile.displayName(),
-                profile == null ? null : profile.profileImageUrl()
+                profile == null ? null : profile.profileImageUrl(),
+                profile != null && profile.userWithdrawn()
         );
     }
 

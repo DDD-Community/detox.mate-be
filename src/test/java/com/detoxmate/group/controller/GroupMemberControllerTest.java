@@ -153,6 +153,7 @@ class GroupMemberControllerTest {
                 "ACTIVE",
                 LocalDateTime.of(2026, 5, 1, 23, 50),
                 4,
+                false,
                 List.of(
                         new GroupMemberUsageGoalResponse(101L, UsageGoalTypeCode.TOTAL_USAGE, 60, LocalDateTime.of(2026, 4, 29, 10, 30)),
                         new GroupMemberUsageGoalResponse(102L, UsageGoalTypeCode.INSTAGRAM, 30, LocalDateTime.of(2026, 4, 29, 10, 30))
@@ -199,6 +200,7 @@ class GroupMemberControllerTest {
                 fieldWithPath("status").type(JsonFieldType.STRING).description("그룹 멤버 상태"),
                 fieldWithPath("joinedAt").type(JsonFieldType.STRING).description("그룹 참여 일시"),
                 fieldWithPath("dayCount").type(JsonFieldType.NUMBER).description("현재 챌린지 참여일 기준 D-day. 같은 날이면 0"),
+                fieldWithPath("isUserWithdrawn").type(JsonFieldType.BOOLEAN).description("회원 탈퇴한 사용자인지 여부"),
                 fieldWithPath("currentGoals").type(JsonFieldType.ARRAY).description("목표 타입별 최신 목표 시간"),
                 fieldWithPath("currentGoals[].id").type(JsonFieldType.NUMBER).description("user usage goal time ID"),
                 fieldWithPath("currentGoals[].usageGoalType").type(JsonFieldType.STRING).description("사용시간 목표 타입"),

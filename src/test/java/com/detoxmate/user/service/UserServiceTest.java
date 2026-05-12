@@ -2,6 +2,10 @@ package com.detoxmate.user.service;
 
 import com.detoxmate.auth.JwtTokenProvider;
 import com.detoxmate.auth.service.RefreshTokenSessionService;
+import com.detoxmate.group.domain.GroupMember;
+import com.detoxmate.group.service.GroupMemberService;
+import com.detoxmate.group.service.GroupService;
+import com.detoxmate.notification.repository.FcmTokenRepository;
 import com.detoxmate.upload.config.StorageProperties;
 import com.detoxmate.upload.service.ImageReadUrlBuilder;
 import com.detoxmate.upload.service.UploadObjectKeyValidator;
@@ -14,13 +18,16 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import org.mockito.InOrder;
+
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class UserServiceTest {
@@ -71,6 +78,24 @@ class UserServiceTest {
     }
 
     @Test
+    void 탈퇴한_유저의_accessToken으로_조회하면_401_예외를_던진다() {
+        UserRepository userRepository = mock(UserRepository.class);
+        SocialLoginUserRepository socialLoginUserRepository = mock(SocialLoginUserRepository.class);
+        RefreshTokenSessionService refreshTokenSessionService = mock(RefreshTokenSessionService.class);
+        JwtTokenProvider jwtTokenProvider = new JwtTokenProvider(JWT_SECRET, ACCESS_TOKEN_EXPIRES_IN);
+        UserService userService = userService(userRepository, socialLoginUserRepository, refreshTokenSessionService, jwtTokenProvider);
+        String accessToken = jwtTokenProvider.createAccessToken(1L);
+        User user = User.createNew("카카오닉네임", "profile-images/1/profile.png");
+        user.withdraw();
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> userService.getMe(accessToken))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("401 UNAUTHORIZED");
+    }
+
+    @Test
     void displayName과_profileImageObjectKey를_함께_변경한다() {
         UserRepository userRepository = mock(UserRepository.class);
         SocialLoginUserRepository socialLoginUserRepository = mock(SocialLoginUserRepository.class);
@@ -116,23 +141,76 @@ class UserServiceTest {
         UserRepository userRepository = mock(UserRepository.class);
         SocialLoginUserRepository socialLoginUserRepository = mock(SocialLoginUserRepository.class);
         RefreshTokenSessionService refreshTokenSessionService = mock(RefreshTokenSessionService.class);
+        GroupMemberService groupMemberService = mock(GroupMemberService.class);
+        GroupService groupService = mock(GroupService.class);
+        FcmTokenRepository fcmTokenRepository = mock(FcmTokenRepository.class);
         JwtTokenProvider jwtTokenProvider = new JwtTokenProvider(JWT_SECRET, ACCESS_TOKEN_EXPIRES_IN);
-        UserService userService = userService(userRepository, socialLoginUserRepository, refreshTokenSessionService, jwtTokenProvider);
+        UserService userService = new UserService(
+                userRepository,
+                socialLoginUserRepository,
+                refreshTokenSessionService,
+                jwtTokenProvider,
+                new ImageReadUrlBuilder(new StorageProperties(TEST_IMAGE_BASE_URL)),
+                new UploadObjectKeyValidator(),
+                groupMemberService,
+                groupService,
+                fcmTokenRepository
+        );
 
         User user = User.createNew("카카오닉네임", "profile-images/1/profile.png");
         ReflectionTestUtils.setField(user, "id", 1L);
         String accessToken = jwtTokenProvider.createAccessToken(1L);
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user));
+        when(groupMemberService.getActiveGroupMembers(1L)).thenReturn(List.of());
 
         // when
         userService.withdraw(accessToken);
 
         // then
-        InOrder inOrder = inOrder(socialLoginUserRepository, refreshTokenSessionService, userRepository);
+        InOrder inOrder = inOrder(socialLoginUserRepository, refreshTokenSessionService, fcmTokenRepository);
         inOrder.verify(socialLoginUserRepository).deleteByUserId(1L);
         inOrder.verify(refreshTokenSessionService).deleteByUserId(1L);
-        inOrder.verify(userRepository).delete(user);
+        inOrder.verify(fcmTokenRepository).deleteByUserId(1L);
+        assertThat(user.isWithdrawn()).isTrue();
+        assertThat(user.getDisplayName()).isEqualTo(User.WITHDRAWN_DISPLAY_NAME);
+        assertThat(user.getProfileImageObjectKey()).isNull();
+    }
+
+    @Test
+    void 활성_그룹이_있으면_회원_탈퇴_시_그룹_탈퇴_흐름을_호출한다() {
+        UserRepository userRepository = mock(UserRepository.class);
+        SocialLoginUserRepository socialLoginUserRepository = mock(SocialLoginUserRepository.class);
+        RefreshTokenSessionService refreshTokenSessionService = mock(RefreshTokenSessionService.class);
+        GroupMemberService groupMemberService = mock(GroupMemberService.class);
+        GroupService groupService = mock(GroupService.class);
+        FcmTokenRepository fcmTokenRepository = mock(FcmTokenRepository.class);
+        JwtTokenProvider jwtTokenProvider = new JwtTokenProvider(JWT_SECRET, ACCESS_TOKEN_EXPIRES_IN);
+        UserService userService = new UserService(
+                userRepository,
+                socialLoginUserRepository,
+                refreshTokenSessionService,
+                jwtTokenProvider,
+                new ImageReadUrlBuilder(new StorageProperties(TEST_IMAGE_BASE_URL)),
+                new UploadObjectKeyValidator(),
+                groupMemberService,
+                groupService,
+                fcmTokenRepository
+        );
+        User user = User.createNew("카카오닉네임", "profile-images/1/profile.png");
+        ReflectionTestUtils.setField(user, "id", 1L);
+        GroupMember groupMember = GroupMember.createMember(1L, 10L);
+
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user));
+        when(groupMemberService.getActiveGroupMembers(1L)).thenReturn(List.of(groupMember));
+
+        userService.withdrawMe(1L);
+
+        verify(groupService).withdrawGroup(10L, 1L);
+        verify(socialLoginUserRepository).deleteByUserId(1L);
+        verify(refreshTokenSessionService).deleteByUserId(1L);
+        verify(fcmTokenRepository).deleteByUserId(1L);
+        assertThat(user.isWithdrawn()).isTrue();
     }
 
     @Test
@@ -145,7 +223,7 @@ class UserServiceTest {
         UserService userService = userService(userRepository, socialLoginUserRepository, refreshTokenSessionService, jwtTokenProvider);
         String accessToken = jwtTokenProvider.createAccessToken(999L);
 
-        when(userRepository.findById(999L)).thenReturn(Optional.empty());
+        when(userRepository.findByIdForUpdate(999L)).thenReturn(Optional.empty());
 
         // when & then
         assertThatThrownBy(() -> userService.withdraw(accessToken))
@@ -164,7 +242,10 @@ class UserServiceTest {
                 refreshTokenSessionService,
                 jwtTokenProvider,
                 new ImageReadUrlBuilder(new StorageProperties(TEST_IMAGE_BASE_URL)),
-                new UploadObjectKeyValidator()
+                new UploadObjectKeyValidator(),
+                mock(GroupMemberService.class),
+                mock(GroupService.class),
+                mock(FcmTokenRepository.class)
         );
     }
 }

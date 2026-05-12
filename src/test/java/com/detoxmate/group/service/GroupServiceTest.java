@@ -494,7 +494,8 @@ public class GroupServiceTest {
                 "OWNER",
                 "ACTIVE",
                 GROUP_CREATED_AT,
-                null
+                null,
+                false
         );
     }
 
@@ -507,7 +508,8 @@ public class GroupServiceTest {
                 "MEMBER",
                 "ACTIVE",
                 MEMBER_JOINED_AT,
-                null
+                null,
+                false
         );
     }
 }

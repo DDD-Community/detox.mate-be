@@ -316,7 +316,8 @@ public class FeedControllerDocsTest {
                 fieldWithPath("members[].reactionCount").type(NUMBER).description("리액션 수"),
                 fieldWithPath("members[].commentCount").type(NUMBER).description("댓글 수"),
                 fieldWithPath("members[].pokeCount").type(NUMBER).description("받은 콕 수"),
-                fieldWithPath("members[].isPoked").type(BOOLEAN).description("내가 콕 찔렀는지 여부")
+                fieldWithPath("members[].isPoked").type(BOOLEAN).description("내가 콕 찔렀는지 여부"),
+                fieldWithPath("members[].isUserWithdrawn").type(BOOLEAN).description("회원 탈퇴한 사용자인지 여부")
         };
     }
 
@@ -352,6 +353,7 @@ public class FeedControllerDocsTest {
                 fieldWithPath("members[].userId").type(NUMBER).description("사용자 ID"),
                 fieldWithPath("members[].displayName").type(STRING).description("사용자 표시 이름"),
                 fieldWithPath("members[].profileImageUrl").type(STRING).description("프로필 이미지 URL").optional(),
+                fieldWithPath("members[].isUserWithdrawn").type(BOOLEAN).description("회원 탈퇴한 사용자인지 여부"),
                 fieldWithPath("members[].isMe").type(BOOLEAN).description("로그인 사용자인지 여부"),
                 fieldWithPath("members[].memberStatus").type(STRING).description("그룹 멤버 상태"),
                 fieldWithPath("members[].participantStatus").type(STRING).description("챌린지 참가 상태"),
@@ -396,6 +398,8 @@ public class FeedControllerDocsTest {
                         .description("콕 찌른 사용자 표시 이름").optional(),
                 fieldWithPath("members[].pokedUsers[].profileImageUrl").type(STRING)
                         .description("콕 찌른 사용자 프로필 이미지 URL").optional(),
+                fieldWithPath("members[].pokedUsers[].isUserWithdrawn").type(BOOLEAN)
+                        .description("콕 찌른 사용자가 회원 탈퇴한 사용자인지 여부").optional(),
                 fieldWithPath("members[].reactions").type(OBJECT)
                         .description("상세 조회에서만 제공하는 리액션 요약").optional(),
                 fieldWithPath("members[].reactions.totalCount").type(NUMBER).description("리액션 목록 수").optional(),
@@ -405,7 +409,9 @@ public class FeedControllerDocsTest {
                 fieldWithPath("members[].reactions.summary[].displayName").type(STRING)
                         .description("리액션 작성자 표시 이름").optional(),
                 fieldWithPath("members[].reactions.summary[].profileImageUrl").type(STRING)
-                        .description("리액션 작성자 프로필 이미지 URL").optional()
+                        .description("리액션 작성자 프로필 이미지 URL").optional(),
+                fieldWithPath("members[].reactions.summary[].isUserWithdrawn").type(BOOLEAN)
+                        .description("리액션 작성자가 회원 탈퇴한 사용자인지 여부").optional()
         };
     }
 
@@ -416,6 +422,7 @@ public class FeedControllerDocsTest {
                 fieldWithPath("userId").type(NUMBER).description("사용자 ID"),
                 fieldWithPath("displayName").type(STRING).description("사용자 표시 이름"),
                 fieldWithPath("profileImageUrl").type(STRING).description("프로필 이미지 URL").optional(),
+                fieldWithPath("isUserWithdrawn").type(BOOLEAN).description("회원 탈퇴한 사용자인지 여부"),
                 fieldWithPath("isMe").type(BOOLEAN).description("로그인 사용자인지 여부"),
                 fieldWithPath("memberStatus").type(STRING).description("그룹 멤버 상태"),
                 fieldWithPath("participantStatus").type(STRING).description("챌린지 참가 상태"),
@@ -453,6 +460,7 @@ public class FeedControllerDocsTest {
                 fieldWithPath("pokedUsers[].userId").type(NUMBER).description("콕 찌른 사용자 ID").optional(),
                 fieldWithPath("pokedUsers[].displayName").type(STRING).description("콕 찌른 사용자 표시 이름").optional(),
                 fieldWithPath("pokedUsers[].profileImageUrl").type(STRING).description("콕 찌른 사용자 프로필 이미지 URL").optional(),
+                fieldWithPath("pokedUsers[].isUserWithdrawn").type(BOOLEAN).description("콕 찌른 사용자가 회원 탈퇴한 사용자인지 여부").optional(),
                 fieldWithPath("reactions").type(OBJECT).description("리액션 요약").optional(),
                 fieldWithPath("reactions.totalCount").type(NUMBER).description("리액션 목록 수").optional(),
                 fieldWithPath("reactions.summary").type(ARRAY).description("리액션 목록").optional(),
@@ -461,7 +469,8 @@ public class FeedControllerDocsTest {
                 fieldWithPath("reactions.summary[].displayName").type(STRING)
                         .description("리액션 작성자 표시 이름").optional(),
                 fieldWithPath("reactions.summary[].profileImageUrl").type(STRING)
-                        .description("리액션 작성자 프로필 이미지 URL").optional()
+                        .description("리액션 작성자 프로필 이미지 URL").optional(),
+                fieldWithPath("reactions.summary[].isUserWithdrawn").type(BOOLEAN).description("리액션 작성자가 회원 탈퇴한 사용자인지 여부").optional()
         };
     }
 
@@ -477,6 +486,7 @@ public class FeedControllerDocsTest {
                 fieldWithPath("author.displayName").type(STRING).description("작성자 닉네임"),
                 fieldWithPath("author.profileImageUrl").type(STRING)
                         .description("저장된 작성자 프로필 이미지 object key를 읽기 URL로 변환한 값").optional(),
+                fieldWithPath("author.isUserWithdrawn").type(BOOLEAN).description("작성자가 회원 탈퇴한 사용자인지 여부"),
                 fieldWithPath("activityCreatedAt").type(STRING).description("인증 생성 시각. 인증 전이면 null").optional(),
                 fieldWithPath("activityImageUrl").type(STRING).description("활동 사진 object key 또는 URL. 인증 전이면 null").optional(),
                 fieldWithPath("oneLineReview").type(STRING).description("한줄평. 인증 전이면 null").optional(),
@@ -492,11 +502,16 @@ public class FeedControllerDocsTest {
                 fieldWithPath("reactions.summary[].displayName").type(STRING).description("리액션 작성자 닉네임").optional(),
                 fieldWithPath("reactions.summary[].profileImageUrl").type(STRING)
                         .description("저장된 리액션 작성자 프로필 이미지 object key를 읽기 URL로 변환한 값").optional(),
+                fieldWithPath("reactions.summary[].isUserWithdrawn").type(BOOLEAN).description("리액션 작성자가 회원 탈퇴한 사용자인지 여부").optional(),
                 fieldWithPath("commentCount").type(NUMBER).description("현재 상세 상태에 해당하는 댓글 수"),
                 fieldWithPath("pokeCount").type(NUMBER).description("받은 콕 수"),
                 fieldWithPath("pokeable").type(BOOLEAN).description("현재 사용자가 콕 찌를 수 있는지 여부"),
                 fieldWithPath("poked").type(BOOLEAN).description("현재 사용자가 이미 콕 찔렀는지 여부"),
-                fieldWithPath("pokedUsers").type(ARRAY).description("콕 찌른 유저 목록. 인증 후 상세이면 빈 배열")
+                fieldWithPath("pokedUsers").type(ARRAY).description("콕 찌른 유저 목록. 인증 후 상세이면 빈 배열"),
+                fieldWithPath("pokedUsers[].userId").type(NUMBER).description("콕 찌른 유저 ID").optional(),
+                fieldWithPath("pokedUsers[].displayName").type(STRING).description("콕 찌른 유저 닉네임").optional(),
+                fieldWithPath("pokedUsers[].profileImageUrl").type(STRING).description("콕 찌른 유저 프로필 이미지 URL").optional(),
+                fieldWithPath("pokedUsers[].isUserWithdrawn").type(BOOLEAN).description("콕 찌른 유저가 회원 탈퇴한 사용자인지 여부").optional()
         };
     }
 

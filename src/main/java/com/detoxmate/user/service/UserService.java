@@ -2,12 +2,17 @@ package com.detoxmate.user.service;
 
 import com.detoxmate.auth.JwtTokenProvider;
 import com.detoxmate.auth.service.RefreshTokenSessionService;
+import com.detoxmate.group.domain.GroupMember;
+import com.detoxmate.group.service.GroupMemberService;
+import com.detoxmate.group.service.GroupService;
+import com.detoxmate.notification.repository.FcmTokenRepository;
 import com.detoxmate.upload.dto.UploadPurpose;
 import com.detoxmate.upload.service.ImageReadUrlBuilder;
 import com.detoxmate.upload.service.UploadObjectKeyValidator;
 import com.detoxmate.user.dto.MyProfileResponse;
 import com.detoxmate.user.domain.User;
 import com.detoxmate.user.dto.UpdateMyProfileRequest;
+import com.detoxmate.user.dto.UserProfileSummary;
 import com.detoxmate.user.repository.SocialLoginUserRepository;
 import com.detoxmate.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -29,24 +35,27 @@ public class UserService {
     private final JwtTokenProvider jwtTokenProvider;
     private final ImageReadUrlBuilder imageReadUrlBuilder;
     private final UploadObjectKeyValidator uploadObjectKeyValidator;
+    private final GroupMemberService groupMemberService;
+    private final GroupService groupService;
+    private final FcmTokenRepository fcmTokenRepository;
 
     @Transactional(readOnly = true)
     public MyProfileResponse getMe(String accessToken) {
-        User user = getUser(accessToken);
+        User user = getActiveUser(accessToken);
 
         return toMyProfileResponse(user);
     }
 
     @Transactional(readOnly = true)
     public MyProfileResponse getMe(Long userId) {
-        User user = getUser(userId);
+        User user = getActiveUser(userId);
 
         return toMyProfileResponse(user);
     }
 
     @Transactional
     public MyProfileResponse updateMe(Long userId, UpdateMyProfileRequest request) {
-        User user = getUser(userId);
+        User user = getActiveUser(userId);
 
         if (request.displayName() != null) {
             user.changeDisplayName(request.displayName());
@@ -59,17 +68,31 @@ public class UserService {
         return toMyProfileResponse(user);
     }
 
+    @Transactional
     public void withdrawMe(Long userId) {
-        throw new UnsupportedOperationException("아직 미구현 - API 문서화 단계");
+        User user = userRepository.findByIdForUpdate(userId)
+                .orElseThrow();
+
+        if (user.isWithdrawn()) {
+            return;
+        }
+
+        List<Long> activeGroupIds = groupMemberService.getActiveGroupMembers(userId).stream()
+                .map(GroupMember::getGroupId)
+                .toList();
+
+        activeGroupIds.forEach(groupId -> groupService.withdrawGroup(groupId, userId));
+
+        socialLoginUserRepository.deleteByUserId(userId);
+        refreshTokenSessionService.deleteByUserId(userId);
+        fcmTokenRepository.deleteByUserId(userId);
+        user.withdraw();
     }
 
     @Transactional
     public void withdraw(String accessToken) {
-        User user = getUser(accessToken);
-
-        socialLoginUserRepository.deleteByUserId(user.getId());
-        refreshTokenSessionService.deleteByUserId(user.getId());
-        userRepository.delete(user);
+        Long userId = jwtTokenProvider.getUserId(accessToken);
+        withdrawMe(userId);
     }
 
     @Transactional(readOnly = true)
@@ -84,6 +107,19 @@ public class UserService {
                 ));
     }
 
+    @Transactional(readOnly = true)
+    public Map<Long, UserProfileSummary> getProfileSummariesByIds(Set<Long> userIds) {
+        if (userIds.isEmpty()) {
+            return Map.of();
+        }
+
+        return userRepository.findAllById(userIds).stream()
+                .collect(Collectors.toMap(
+                        User::getId,
+                        this::toUserProfileSummary
+                ));
+    }
+
     private User getUser(String accessToken) {
         Long userId = jwtTokenProvider.getUserId(accessToken);
         return getUser(userId);
@@ -94,11 +130,36 @@ public class UserService {
                 .orElseThrow();
     }
 
+    private User getActiveUser(String accessToken) {
+        return validateActive(getUser(accessToken));
+    }
+
+    private User getActiveUser(Long userId) {
+        return validateActive(getUser(userId));
+    }
+
+    private User validateActive(User user) {
+        if (!user.isActive()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "탈퇴한 사용자입니다.");
+        }
+
+        return user;
+    }
+
     private MyProfileResponse toMyProfileResponse(User user) {
         return new MyProfileResponse(
                 user.getId(),
-                user.getDisplayName(),
-                imageReadUrlBuilder.build(user.getProfileImageObjectKey())
+                user.getPublicDisplayName(),
+                imageReadUrlBuilder.build(user.getPublicProfileImageObjectKey())
+        );
+    }
+
+    private UserProfileSummary toUserProfileSummary(User user) {
+        return new UserProfileSummary(
+                user.getId(),
+                user.getPublicDisplayName(),
+                imageReadUrlBuilder.build(user.getPublicProfileImageObjectKey()),
+                user.isWithdrawn()
         );
     }
 

@@ -77,7 +77,8 @@ public class FeedQueryReader {
                 row.status(),
                 row.joinedAt(),
                 row.withdrawnAt(),
-                List.of()
+                List.of(),
+                row.userWithdrawn()
         );
     }
 }

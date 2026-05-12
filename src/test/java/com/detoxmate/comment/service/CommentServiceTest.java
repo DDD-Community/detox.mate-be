@@ -11,7 +11,7 @@ import com.detoxmate.comment.dto.request.CreateCommentRequest;
 import com.detoxmate.comment.dto.response.CommentListResponse;
 import com.detoxmate.comment.dto.response.CommentResponse;
 import com.detoxmate.comment.repository.CommentRepository;
-import com.detoxmate.user.dto.MyProfileResponse;
+import com.detoxmate.user.dto.UserProfileSummary;
 import com.detoxmate.user.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -61,11 +61,11 @@ class CommentServiceTest {
 
     @BeforeEach
     void setUp() {
-        given(userService.getProfilesByIds(anySet())).willAnswer(inv -> {
+        given(userService.getProfileSummariesByIds(anySet())).willAnswer(inv -> {
             Set<Long> ids = inv.getArgument(0);
             return ids.stream().collect(Collectors.toMap(
                     id -> id,
-                    id -> new MyProfileResponse(id, "닉네임" + id, "https://img/" + id)
+                    id -> new UserProfileSummary(id, "닉네임" + id, "https://img/" + id, false)
             ));
         });
     }

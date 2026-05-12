@@ -15,7 +15,8 @@ public class CommentMockData {
                                 1L,
                                 new CommentAuthorInfo(
                                         3L, "민준",
-                                        "https://cdn.detoxmate.co.kr/profile/3.png"
+                                        "https://cdn.detoxmate.co.kr/profile/3.png",
+                                        false
                                 ),
                                 "와 대박! 오늘도 성공하셨네 독하다 독해",
                                 LocalDateTime.parse("2026-04-26T10:00:00")

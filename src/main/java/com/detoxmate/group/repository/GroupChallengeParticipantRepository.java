@@ -23,6 +23,7 @@ public interface GroupChallengeParticipantRepository extends JpaRepository<Group
                 gm.userId,
                 u.displayName,
                 u.profileImageObjectKey,
+                CASE WHEN u.status = com.detoxmate.user.domain.UserStatus.WITHDRAWN THEN true ELSE false END,
                 gm.status,
                 gm.joinedAt,
                 gm.leftAt,
@@ -81,7 +82,8 @@ public interface GroupChallengeParticipantRepository extends JpaRepository<Group
                 u.profileImageObjectKey,
                 gcp.status,
                 gcp.joinedAt,
-                gcp.withdrawnAt
+                gcp.withdrawnAt,
+                CASE WHEN u.status = com.detoxmate.user.domain.UserStatus.WITHDRAWN THEN true ELSE false END
             )
             FROM GroupChallengeParticipant gcp
             JOIN GroupMember gm ON gm.id = gcp.groupMemberId
@@ -105,7 +107,8 @@ public interface GroupChallengeParticipantRepository extends JpaRepository<Group
                 u.profileImageObjectKey,
                 gcp.status,
                 gcp.joinedAt,
-                gcp.withdrawnAt
+                gcp.withdrawnAt,
+                CASE WHEN u.status = com.detoxmate.user.domain.UserStatus.WITHDRAWN THEN true ELSE false END
             )
             FROM GroupChallengeParticipant gcp
             JOIN GroupMember gm ON gm.id = gcp.groupMemberId
@@ -129,7 +132,8 @@ public interface GroupChallengeParticipantRepository extends JpaRepository<Group
             u.profileImageObjectKey,
             gcp.status,
             gcp.joinedAt,
-            gcp.withdrawnAt
+            gcp.withdrawnAt,
+            CASE WHEN u.status = com.detoxmate.user.domain.UserStatus.WITHDRAWN THEN true ELSE false END
         )
         FROM GroupChallengeParticipant gcp
         JOIN GroupMember gm ON gm.id = gcp.groupMemberId
@@ -153,14 +157,13 @@ public interface GroupChallengeParticipantRepository extends JpaRepository<Group
             u.profileImageObjectKey,
             gcp.status,
             gcp.joinedAt,
-            gcp.withdrawnAt
+            gcp.withdrawnAt,
+            CASE WHEN u.status = com.detoxmate.user.domain.UserStatus.WITHDRAWN THEN true ELSE false END
         )
         FROM GroupChallengeParticipant gcp
         JOIN GroupMember gm ON gm.id = gcp.groupMemberId
         LEFT JOIN User u ON u.id = gm.userId
         WHERE gcp.id = :participantId
-                AND gcp.status = 'JOINED'
-                AND gm.status = 'ACTIVE'
         """)
     Optional<GroupChallengeParticipantRow> findParticipantRowForFeedDetail(
             @Param("participantId") Long participantId

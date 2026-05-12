@@ -12,6 +12,8 @@ import java.util.Optional;
 public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> {
     Optional<GroupMember> findByUserId(Long userId);
 
+    Optional<GroupMember> findByIdAndGroupId(Long id, Long groupId);
+
     Optional<GroupMember> findByUserIdAndGroupIdAndStatus(Long userId, Long groupId, String status);
 
     List<GroupMember> findAllByUserIdAndStatus(Long userId, String status);
@@ -35,7 +37,8 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
                 gm.role,
                 gm.status,
                 gm.joinedAt,
-                gm.leftAt
+                gm.leftAt,
+                CASE WHEN u.status = com.detoxmate.user.domain.UserStatus.WITHDRAWN THEN true ELSE false END
             )
             FROM GroupMember gm
             LEFT JOIN User u ON gm.userId = u.id

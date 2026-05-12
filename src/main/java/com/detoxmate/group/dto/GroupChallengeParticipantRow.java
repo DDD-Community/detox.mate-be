@@ -11,6 +11,7 @@ public record GroupChallengeParticipantRow(
         String profileImageObjectKey,
         String status,
         LocalDateTime joinedAt,
-        LocalDateTime withdrawnAt
+        LocalDateTime withdrawnAt,
+        boolean userWithdrawn
 ) {
 }

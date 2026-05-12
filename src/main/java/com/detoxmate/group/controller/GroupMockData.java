@@ -113,7 +113,8 @@ public final class GroupMockData {
                 "OWNER",
                 "ACTIVE",
                 GROUP_CREATED_AT,
-                null
+                null,
+                false
         );
     }
 
@@ -126,7 +127,8 @@ public final class GroupMockData {
                 "MEMBER",
                 "ACTIVE",
                 SECOND_MEMBER_JOINED_AT,
-                null
+                null,
+                false
         );
     }
 
@@ -160,7 +162,8 @@ public final class GroupMockData {
                 "JOINED",
                 GROUP_CREATED_AT,
                 null,
-                List.of()
+                List.of(),
+                false
         );
     }
 
@@ -174,7 +177,8 @@ public final class GroupMockData {
                 "JOINED",
                 SECOND_MEMBER_JOINED_AT,
                 null,
-                List.of()
+                List.of(),
+                false
         );
     }
 }

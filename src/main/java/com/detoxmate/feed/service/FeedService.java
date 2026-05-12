@@ -170,7 +170,8 @@ public class FeedService {
                 reactionCount(statusCount),
                 commentCount(challengeRecord, statusCount),
                 pokeCount(statusCount),
-                poked
+                poked,
+                participant.userWithdrawn()
         );
     }
 

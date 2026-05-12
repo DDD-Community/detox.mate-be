@@ -150,7 +150,8 @@ class GroupChallengeServiceTest {
                 "profile-images/1/profile.png",
                 "JOINED",
                 CREATED_AT,
-                null
+                null,
+                false
         );
     }
 
@@ -164,7 +165,8 @@ class GroupChallengeServiceTest {
                 "profile-images/1/profile.png",
                 "JOINED",
                 CREATED_AT,
-                null
+                null,
+                false
         );
     }
 
@@ -178,7 +180,8 @@ class GroupChallengeServiceTest {
                 null,
                 "JOINED",
                 LocalDateTime.of(2026, 4, 19, 10, 30),
-                null
+                null,
+                false
         );
     }
 
@@ -192,7 +195,8 @@ class GroupChallengeServiceTest {
                 null,
                 "JOINED",
                 LocalDateTime.of(2026, 4, 19, 10, 30),
-                null
+                null,
+                false
         );
     }
 }

@@ -9,6 +9,7 @@ public record GroupActivityParticipantRow(
         Long userId,
         String displayName,
         String profileImageObjectKey,
+        boolean userWithdrawn,
         String memberStatus,
         LocalDateTime memberJoinedAt,
         LocalDateTime memberLeftAt,
