@@ -1,7 +1,7 @@
 package com.detoxmate.notification.event;
 
-public record CertificationCreatedEvent(
+public record ReactionCreatedEvent(
         Long challengeRecordId,
-        Long actorUserId
+        Long reactorUserId
 ) {
 }

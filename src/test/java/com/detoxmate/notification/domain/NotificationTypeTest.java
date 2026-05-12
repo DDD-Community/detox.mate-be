@@ -14,13 +14,13 @@ class NotificationTypeTest {
     @DisplayName("알림 타입을 생성한다.")
     void createNotificationType(){
         //given
-        NotificationTypeCode typeCode = NotificationTypeCode.CERTIFICATION;
+        NotificationTypeCode typeCode = NotificationTypeCode.CERTIFICATION_CREATED;
 
         //when
         NotificationType notificationType = NotificationType.create(typeCode);
 
         //then
-        assertThat(notificationType.getTypeCode()).isEqualTo(NotificationTypeCode.CERTIFICATION);
+        assertThat(notificationType.getTypeCode()).isEqualTo(NotificationTypeCode.CERTIFICATION_CREATED);
     }
 
     @Test

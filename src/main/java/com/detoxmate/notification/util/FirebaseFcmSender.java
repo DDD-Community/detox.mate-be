@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
+
 
 @Slf4j
 @Component
@@ -21,20 +23,23 @@ public class FirebaseFcmSender implements FcmSender {
     private final FirebaseMessaging firebaseMessaging;
 
     @Override
-    public void send(String token, String title, String body) {
+    public void send(String token, String title, String body, Map<String, String> data) {
         Message message = Message.builder()
                 .setToken(token)
                 .setNotification(Notification.builder()
                         .setTitle(title)
                         .setBody(body)
                         .build())
+                .putAllData(data)
                 .build();
 
-        try{
+        try {
             String response = firebaseMessaging.send(message);
-            log.info("[Notification][FirebaseFcmSender] FCM message sent successfully. token = {}, response={}",mask(token),response);
-        }catch(FirebaseMessagingException e){
-            log.error("[Notification][FirebaseFcmSender]FCM send failed. token = {}, errorCode={}",mask(token),e.getMessagingErrorCode());
+            log.info("[Notification][FirebaseFcmSender] FCM message sent successfully. token={}, response={}",
+                    mask(token), response);
+        } catch (FirebaseMessagingException e) {
+            log.error("[Notification][FirebaseFcmSender] FCM send failed. token={}, errorCode={}",
+                    mask(token), e.getMessagingErrorCode());
             throw new CustomException(resolveErrorCode(e));
         }
     }

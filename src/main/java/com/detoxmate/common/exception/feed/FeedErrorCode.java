@@ -13,6 +13,7 @@ public enum FeedErrorCode implements ErrorCode {
     FEED_ACTIVITY_RECORD_NOT_FOUND(HttpStatus.NOT_FOUND, "피드의 인증 기록을 찾을 수 없습니다."),
     FEED_ACCESS_DENIED(HttpStatus.FORBIDDEN,"참여 중인 챌린지의 피드만 조회할 수 있습니다."),
     FEED_HISTORY_DATE_MUST_BE_PAST(HttpStatus.BAD_REQUEST, "히스토리 피드는 오늘 이전 날짜만 조회할 수 있습니다."),
+    FEED_NOT_FOUND(HttpStatus.NOT_FOUND, "피드를 찾을 수 없습니다."),
 
     ACTIVITY_RECORD_CHALLENGE_STATUS_NOT_FOUND(HttpStatus.NOT_FOUND, "인증글 챌린지 상태를 찾을 수 없습니다.");
 

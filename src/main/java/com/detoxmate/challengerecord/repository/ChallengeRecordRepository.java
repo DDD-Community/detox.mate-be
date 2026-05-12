@@ -1,6 +1,7 @@
 package com.detoxmate.challengerecord.repository;
 
 import com.detoxmate.challengerecord.domain.ChallengeRecord;
+import com.detoxmate.notification.dto.ChallengeRecordNotificationRow;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -51,4 +52,21 @@ public interface ChallengeRecordRepository extends JpaRepository<ChallengeRecord
             order by u.displayName asc, cr.id asc
             """)
     List<ChallengeRecord> findAllByGroupChallengeDateOrderByDisplayName(Long groupChallengeId, LocalDate recordDate);
+
+    @Query("""
+            SELECT new com.detoxmate.notification.dto.ChallengeRecordNotificationRow(
+                cr.id,
+                cr.groupChallengeId,
+                gm.userId,
+                u.displayName
+            )
+            FROM ChallengeRecord cr
+            JOIN GroupChallengeParticipant gcp ON gcp.id = cr.groupChallengeParticipantId
+            JOIN GroupMember gm ON gm.id = gcp.groupMemberId
+            LEFT JOIN User u ON u.id = gm.userId
+            WHERE cr.id = :challengeRecordId
+              AND gcp.status = 'JOINED'
+              AND gm.status = 'ACTIVE'
+            """)
+    Optional<ChallengeRecordNotificationRow> findChallengeRecordNotificationRow(Long challengeRecordId);
 }

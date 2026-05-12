@@ -45,9 +45,7 @@ public class NotificationHistory {
     @Column(name = "expired_at")
     private LocalDateTime expiredAt;
 
-    private NotificationHistory(
-            Notification notification, Long userId, String title, String message, LocalDateTime createdAt, LocalDateTime expiredAt
-    ){
+    private NotificationHistory(Notification notification, Long userId, String title, String message, LocalDateTime createdAt, LocalDateTime expiredAt){
         this.notification = notification;
         this.userId = userId;
         this.isRead = false;
@@ -57,28 +55,24 @@ public class NotificationHistory {
         this.expiredAt = expiredAt;
     }
 
-    public static NotificationHistory from(
-            Notification notification,
-            Long userId,
-            String actorNickname) {
-
-        return from(notification,userId,actorNickname,null);
+    public static NotificationHistory fromResolvedMessage(Notification notification, Long userId, String message) {
+        return fromResolvedMessage(notification, userId, message, null);
     }
 
-    public static NotificationHistory from(
-            Notification notification,
-            Long userId,
-            String actorNickname,
-            LocalDateTime expiredAt
-    ){
+    public static NotificationHistory fromResolvedMessage(Notification notification,
+                                           Long userId,
+                                           String message,
+                                           LocalDateTime expiredAt){
+
         validateNotification(notification);
         validateUserId(userId);
+        validateMessage(message);
 
         return new NotificationHistory(
                 notification,
                 userId,
                 notification.getTitle(),
-                notification.resolve(actorNickname),
+                message,
                 LocalDateTime.now(),
                 expiredAt
         );
@@ -104,6 +98,16 @@ public class NotificationHistory {
     private static void validateUserId(Long userId){
         if(userId ==null){
             throw new CustomException(NotificationErrorCode.NOTIFICATION_HISTORY_USER_ID_REQUIRED);
+        }
+    }
+
+    private static void validateMessage(String message) {
+        if (message == null || message.isBlank()) {
+            throw new CustomException(NotificationErrorCode.NOTIFICATION_HISTORY_MESSAGE_REQUIRED);
+        }
+
+        if (message.length() > MESSAGE_MAX_LENGTH) {
+            throw new CustomException(NotificationErrorCode.NOTIFICATION_HISTORY_MESSAGE_LENGTH_EXCEEDED);
         }
     }
 

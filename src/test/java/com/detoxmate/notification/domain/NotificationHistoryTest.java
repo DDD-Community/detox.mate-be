@@ -13,23 +13,26 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class NotificationHistoryTest {
 
     @Test
-    @DisplayName("알림 템플릿과 수신자, 행위자 닉네임으로 알림 이력을 생성합니다.")
+    @DisplayName("알림 템플릿과 수신자, 치환된 메시지로 알림 이력을 생성합니다.")
     void createNotificationHistory() {
         //given
         String notificationTitle = "댓글 알림";
         String notificationMessageTemplate = "{nickname}님이 댓글을 남겼습니다.";
 
         Notification notification = Notification.create(
-                NotificationType.create(NotificationTypeCode.COMMENT),
+                NotificationType.create(NotificationTypeCode.COMMENT_CREATED),
                 notificationTitle,
                 notificationMessageTemplate
         );
         Long recipientId = 1L;
-        String actorNickname= "xeulbn";
         String resolveNotificationMessage = "xeulbn님이 댓글을 남겼습니다.";
 
         //when
-        NotificationHistory history = NotificationHistory.from(notification,recipientId,actorNickname);
+        NotificationHistory history = NotificationHistory.fromResolvedMessage(
+                notification,
+                recipientId,
+                resolveNotificationMessage
+        );
 
         //then
         assertThat(history.getUserId()).isEqualTo(recipientId);
@@ -45,14 +48,18 @@ class NotificationHistoryTest {
         String notificationMessageTemplate = "오늘 인증까지 1시간 남았습니다.";
 
         Notification notification = Notification.create(
-                NotificationType.create(NotificationTypeCode.CERTIFICATION),
+                NotificationType.create(NotificationTypeCode.CERTIFICATION_CREATED),
                 notificationTitle,
                 notificationMessageTemplate
         );
         Long recipientId = 1L;
 
         //when
-        NotificationHistory history = NotificationHistory.from(notification,recipientId,null);
+        NotificationHistory history = NotificationHistory.fromResolvedMessage(
+                notification,
+                recipientId,
+                notificationMessageTemplate
+        );
 
         //then
         assertThat(history.getUserId()).isEqualTo(recipientId);
@@ -64,13 +71,13 @@ class NotificationHistoryTest {
     void userIdNotNull(){
         //given
         Notification notification = Notification.create(
-                NotificationType.create(NotificationTypeCode.COMMENT),
+                NotificationType.create(NotificationTypeCode.COMMENT_CREATED),
                 "댓글 알림",
                 "{nickname}님이 댓글을 남겼습니다."
         );
 
         //when & then
-        assertThatThrownBy(()-> NotificationHistory.from(notification,null,"xeulbn"))
+        assertThatThrownBy(()-> NotificationHistory.fromResolvedMessage(notification,null,"xeulbn님이 댓글을 남겼습니다."))
                 .isInstanceOf(CustomException.class)
                 .extracting(e->((CustomException)e).getErrorCode())
                 .isEqualTo(NotificationErrorCode.NOTIFICATION_HISTORY_USER_ID_REQUIRED);
@@ -83,28 +90,28 @@ class NotificationHistoryTest {
         Long recipientId = 1L;
 
         //when & then
-        assertThatThrownBy(()-> NotificationHistory.from(null,recipientId,"xeulbn"))
+        assertThatThrownBy(()-> NotificationHistory.fromResolvedMessage(null,recipientId,"xeulbn님이 댓글을 남겼습니다."))
                 .isInstanceOf(CustomException.class)
                 .extracting(e-> ((CustomException)e).getErrorCode())
                 .isEqualTo(NotificationErrorCode.NOTIFICATION_HISTORY_NOTIFICATION_REQUIRED);
     }
 
     @Test
-    @DisplayName("닉네임이 필요한 템플릿인데, 닉네임이 null이면 예외가 발생한다.")
-    void createHistoryWithNullNicknameWhenPlaceholderExists(){
+    @DisplayName("알림 이력의 메시지는 null일 수 없다.")
+    void createHistoryWithNullMessage(){
         // given
         Notification notification = Notification.create(
-                NotificationType.create(NotificationTypeCode.COMMENT),
+                NotificationType.create(NotificationTypeCode.COMMENT_CREATED),
                 "댓글 알림",
                 "{nickname}님이 댓글을 남겼습니다."
         );
         Long recipientId = 1L;
 
         //when & then
-        assertThatThrownBy(()-> NotificationHistory.from(notification,recipientId,null))
+        assertThatThrownBy(()-> NotificationHistory.fromResolvedMessage(notification,recipientId,null))
                 .isInstanceOf(CustomException.class)
                 .extracting(e-> ((CustomException)e).getErrorCode())
-                .isEqualTo(NotificationErrorCode.NOTIFICATION_NICKNAME_REQUIRED);
+                .isEqualTo(NotificationErrorCode.NOTIFICATION_HISTORY_MESSAGE_REQUIRED);
     }
     
     @Test
@@ -112,13 +119,17 @@ class NotificationHistoryTest {
     void historyTitleSnapshotFromTemplate(){
         //given
         Notification notification = Notification.create(
-                NotificationType.create(NotificationTypeCode.COMMENT),
+                NotificationType.create(NotificationTypeCode.COMMENT_CREATED),
                 "댓글 알림",
                 "{nickname}님이 댓글을 남겼습니다"
         );
 
         //when
-        NotificationHistory history = NotificationHistory.from(notification,1L,"xeulbn");
+        NotificationHistory history = NotificationHistory.fromResolvedMessage(
+                notification,
+                1L,
+                "xeulbn님이 댓글을 남겼습니다"
+        );
 
         //then
         assertThat(history.getTitle()).isEqualTo("댓글 알림");
@@ -129,13 +140,17 @@ class NotificationHistoryTest {
     void historyDefaultIsReadFalse(){
         //given
         Notification notification = Notification.create(
-                NotificationType.create(NotificationTypeCode.COMMENT),
+                NotificationType.create(NotificationTypeCode.COMMENT_CREATED),
                 "댓글 알림",
                 "{nickname}님이 댓글을 남겼습니다."
         );
 
         //when
-        NotificationHistory history = NotificationHistory.from(notification,1L,"xeulbn");
+        NotificationHistory history = NotificationHistory.fromResolvedMessage(
+                notification,
+                1L,
+                "xeulbn님이 댓글을 남겼습니다."
+        );
 
         //then
         assertThat(history.isRead()).isFalse();
@@ -146,14 +161,18 @@ class NotificationHistoryTest {
     void historyCreatedAtOnCreation(){
         //given
         Notification notification = Notification.create(
-                NotificationType.create(NotificationTypeCode.COMMENT),
+                NotificationType.create(NotificationTypeCode.COMMENT_CREATED),
                 "댓글 알림",
                 "{nickname}님이 댓글을 남겼습니다."
         );
         LocalDateTime before = LocalDateTime.now();
 
         //when
-        NotificationHistory history = NotificationHistory.from(notification,1L,"xeulbn");
+        NotificationHistory history = NotificationHistory.fromResolvedMessage(
+                notification,
+                1L,
+                "xeulbn님이 댓글을 남겼습니다."
+        );
 
         //then
         assertThat(history.getCreatedAt()).isBetween(before,LocalDateTime.now());
@@ -164,11 +183,15 @@ class NotificationHistoryTest {
     void markAsRead(){
         //given
         Notification notification = Notification.create(
-                NotificationType.create(NotificationTypeCode.COMMENT),
+                NotificationType.create(NotificationTypeCode.COMMENT_CREATED),
                 "댓글 알림",
                 "{nickname}님이 댓글을 남겼습니다."
         );
-        NotificationHistory history = NotificationHistory.from(notification,1L,"xeulbn");
+        NotificationHistory history = NotificationHistory.fromResolvedMessage(
+                notification,
+                1L,
+                "xeulbn님이 댓글을 남겼습니다."
+        );
 
         //when
         history.markAsRead();
@@ -182,12 +205,17 @@ class NotificationHistoryTest {
     void isExpiredAfterExpireDate(){
         //given
         Notification notification = Notification.create(
-                NotificationType.create(NotificationTypeCode.CERTIFICATION),
+                NotificationType.create(NotificationTypeCode.CERTIFICATION_CREATED),
                 "인증 시간 알림",
                 "오늘 인증까지 1시간 남았습니다."
         );
         LocalDateTime pastExpiration = LocalDateTime.now().minusHours(1);
-        NotificationHistory history = NotificationHistory.from(notification,1L,null,pastExpiration);
+        NotificationHistory history = NotificationHistory.fromResolvedMessage(
+                notification,
+                1L,
+                "오늘 인증까지 1시간 남았습니다.",
+                pastExpiration
+        );
 
         //when
         boolean expired = history.isExpired();
@@ -201,12 +229,17 @@ class NotificationHistoryTest {
     void isNotExpiredAfterExpireDate(){
         //given
         Notification notification = Notification.create(
-                NotificationType.create(NotificationTypeCode.CERTIFICATION),
+                NotificationType.create(NotificationTypeCode.CERTIFICATION_CREATED),
                 "인증 시간 알림",
                 "오늘 인증까지 1시간 남았습니다."
         );
         LocalDateTime futureExpriation = LocalDateTime.now().plusHours(1);
-        NotificationHistory history = NotificationHistory.from(notification,1L,null,futureExpriation);
+        NotificationHistory history = NotificationHistory.fromResolvedMessage(
+                notification,
+                1L,
+                "오늘 인증까지 1시간 남았습니다.",
+                futureExpriation
+        );
 
         //when
         boolean expired = history.isExpired();
@@ -220,11 +253,15 @@ class NotificationHistoryTest {
     void isNotExpiredWhenExpiredAtIsNull(){
         //given
         Notification notification = Notification.create(
-                NotificationType.create(NotificationTypeCode.COMMENT),
+                NotificationType.create(NotificationTypeCode.COMMENT_CREATED),
                 "댓글 알림",
                 "{nickname}님이 댓글을 남겼습니다."
         );
-        NotificationHistory history = NotificationHistory.from(notification,1L,"xeulbn");
+        NotificationHistory history = NotificationHistory.fromResolvedMessage(
+                notification,
+                1L,
+                "xeulbn님이 댓글을 남겼습니다."
+        );
 
         //when
         boolean expired = history.isExpired();

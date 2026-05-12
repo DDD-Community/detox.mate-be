@@ -18,10 +18,9 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -52,8 +51,13 @@ class NotificationServiceTest {
 
     @BeforeEach
     void setUp() {
+        historyRepository.deleteAll();
+        fcmTokenRepository.deleteAll();
+        notificationRepository.deleteAll();
+        notificationTypeRepository.deleteAll();
+
         certificationType = notificationTypeRepository.save(
-                NotificationType.create(NotificationTypeCode.CERTIFICATION)
+                NotificationType.create(NotificationTypeCode.CERTIFICATION_CREATED)
         );
     }
 
@@ -66,14 +70,17 @@ class NotificationServiceTest {
         saveToken(1L, "test-token-abc", DevicePlatform.IOS);
 
         // when
-        notificationService.send(1L, NotificationTypeCode.CERTIFICATION, "xeulbn");
+        notificationService.send(defaultCommand(1L));
 
         // then
-        assertThat(historyRepository.findAll()).hasSize(1);
+        assertThat(historyRepository.findAll())
+                .extracting(NotificationHistory::getMessage)
+                .containsExactly("xeulbn님, 오늘 인증까지 1시간 남았습니다.");
         verify(fcmSender).send(
                 eq("test-token-abc"),
                 eq(DEFAULT_TITLE),
-                eq("xeulbn님, 오늘 인증까지 1시간 남았습니다.")
+                eq("xeulbn님, 오늘 인증까지 1시간 남았습니다."),
+                eq(NotificationPayload.none().toFcmData(NotificationTypeCode.CERTIFICATION_CREATED))
         );
     }
 
@@ -86,12 +93,12 @@ class NotificationServiceTest {
         saveToken(1L, "test-token-abc-AND", DevicePlatform.ANDROID);
 
         //when
-        notificationService.send(1L, NotificationTypeCode.CERTIFICATION, "xeulbn");
+        notificationService.send(defaultCommand(1L));
 
         //then
-        verify(fcmSender).send(eq("test-token-abc-IOS"), anyString(), anyString());
-        verify(fcmSender).send(eq("test-token-abc-AND"), anyString(), anyString());
-        verify(fcmSender, times(2)).send(anyString(), anyString(), anyString());
+        verify(fcmSender).send(eq("test-token-abc-IOS"), anyString(), anyString(), anyMap());
+        verify(fcmSender).send(eq("test-token-abc-AND"), anyString(), anyString(), anyMap());
+        verify(fcmSender, times(2)).send(anyString(), anyString(), anyString(), anyMap());
         assertThat(historyRepository.findAll()).hasSize(1);
     }
 
@@ -102,10 +109,10 @@ class NotificationServiceTest {
         saveDefaultNotification();
 
         //when
-        notificationService.send(999L, NotificationTypeCode.CERTIFICATION, "xeulbn");
+        notificationService.send(defaultCommand(999L));
 
         //then
-        verify(fcmSender, never()).send(anyString(), anyString(), anyString());
+        verify(fcmSender, never()).send(anyString(), anyString(), anyString(), anyMap());
         assertThat(historyRepository.findAll()).hasSize(1);
     }
 
@@ -116,13 +123,13 @@ class NotificationServiceTest {
         saveToken(1L, "test-token-abc", DevicePlatform.IOS);
 
         //when
-        assertThatThrownBy(() -> notificationService.send(1L, NotificationTypeCode.CERTIFICATION, "xeulbn"))
+        assertThatThrownBy(() -> notificationService.send(defaultCommand(1L)))
                 .isInstanceOf(CustomException.class)
                 .extracting(e -> ((CustomException) e).getErrorCode())
                 .isEqualTo(NotificationErrorCode.NOTIFICATION_NOT_FOUND);
 
         //then
-        verify(fcmSender, never()).send(anyString(), anyString(), anyString());
+        verify(fcmSender, never()).send(anyString(), anyString(), anyString(), anyMap());
         assertThat(historyRepository.findAll()).isEmpty();
     }
 
@@ -134,13 +141,13 @@ class NotificationServiceTest {
         saveToken(1L, "token-fail", DevicePlatform.IOS);
         saveToken(1L, "token-ok", DevicePlatform.ANDROID);
         doThrow(new CustomException(FcmSenderErrorCode.FCM_SEND_FAILED))
-                .when(fcmSender).send(eq("token-fail"), anyString(), anyString());
+                .when(fcmSender).send(eq("token-fail"), anyString(), anyString(), anyMap());
 
         //when
-        notificationService.send(1L, NotificationTypeCode.CERTIFICATION, "xeulbn");
+        notificationService.send(defaultCommand(1L));
 
         //then
-        verify(fcmSender).send(eq("token-ok"), anyString(), anyString());
+        verify(fcmSender).send(eq("token-ok"), anyString(), anyString(), anyMap());
         assertThat(historyRepository.findAll()).hasSize(1);
     }
 
@@ -154,11 +161,11 @@ class NotificationServiceTest {
 
         // dead-token은 UNREGISTERED 에러
         doThrow(new CustomException(FcmSenderErrorCode.FCM_TOKEN_UNREGISTERED))
-                .when(fcmSender).send(eq("dead-token"), anyString(), anyString());
+                .when(fcmSender).send(eq("dead-token"), anyString(), anyString(), anyMap());
         // alive-token은 성공
 
         // when
-        notificationService.send(1L, NotificationTypeCode.CERTIFICATION, "xeulbn");
+        notificationService.send(defaultCommand(1L));
 
         // then — 죽은 토큰은 삭제
         assertThat(fcmTokenRepository.findByToken("dead-token")).isEmpty();
@@ -174,10 +181,10 @@ class NotificationServiceTest {
         fcmTokenRepository.save(FcmToken.create(1L, "test-token", DevicePlatform.ANDROID));
 
         doThrow(new CustomException(FcmSenderErrorCode.FCM_SEND_FAILED))
-                .when(fcmSender).send(eq("test-token"), anyString(), anyString());
+                .when(fcmSender).send(eq("test-token"), anyString(), anyString(), anyMap());
 
         // when
-        notificationService.send(1L, NotificationTypeCode.CERTIFICATION, "xeulbn");
+        notificationService.send(defaultCommand(1L));
 
         // then — 일시 오류니까 보존
         assertThat(fcmTokenRepository.findByToken("test-token")).isPresent();
@@ -191,5 +198,14 @@ class NotificationServiceTest {
 
     private FcmToken saveToken(Long userId, String token, DevicePlatform platform) {
         return fcmTokenRepository.save(FcmToken.create(userId, token, platform));
+    }
+
+    private NotificationCommand defaultCommand(Long userId) {
+        return NotificationCommand.history(
+                userId,
+                NotificationTypeCode.CERTIFICATION_CREATED,
+                NotificationContext.of("nickname", "xeulbn"),
+                NotificationPayload.none()
+        );
     }
 }
