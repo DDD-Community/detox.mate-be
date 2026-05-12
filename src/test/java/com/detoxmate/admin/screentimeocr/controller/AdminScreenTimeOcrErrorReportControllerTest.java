@@ -1,7 +1,6 @@
 package com.detoxmate.admin.screentimeocr.controller;
 
 import com.detoxmate.admin.service.AdminAuthorizationService;
-import com.detoxmate.auth.CurrentUserResolver;
 import com.detoxmate.common.error.GlobalExceptionHandler;
 import com.detoxmate.screentimeocr.domain.ScreenTimeOcrErrorReportStatus;
 import com.detoxmate.screentimeocr.dto.AdminScreenTimeOcrErrorReportItemResponse;
@@ -10,8 +9,6 @@ import com.detoxmate.screentimeocr.dto.ScreenTimeOcrErrorReportUpdateAction;
 import com.detoxmate.screentimeocr.dto.ScreenTimeOcrErrorReportUpdateRequest;
 import com.detoxmate.screentimeocr.dto.ScreenTimeOcrErrorReportUpdateResponse;
 import com.detoxmate.screentimeocr.service.ScreenTimeOcrErrorReportAdminService;
-import com.detoxmate.user.dto.MyProfileResponse;
-import com.detoxmate.user.service.UserService;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,22 +56,17 @@ class AdminScreenTimeOcrErrorReportControllerTest {
 
     private ScreenTimeOcrErrorReportAdminService adminReportService;
     private AdminAuthorizationService adminAuthorizationService;
-    private UserService userService;
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp(RestDocumentationContextProvider restDocumentation) {
         adminReportService = mock(ScreenTimeOcrErrorReportAdminService.class);
         adminAuthorizationService = mock(AdminAuthorizationService.class);
-        userService = mock(UserService.class);
-        when(userService.getMe("admin-token"))
-                .thenReturn(new MyProfileResponse(99L, "관리자", "https://example.com/admin.png"));
 
         mockMvc = MockMvcBuilders.standaloneSetup(new AdminScreenTimeOcrErrorReportController(
                         adminReportService,
                         adminAuthorizationService
                 ))
-                .setCustomArgumentResolvers(new CurrentUserResolver(userService))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .apply(documentationConfiguration(restDocumentation))
                 .build();
@@ -86,6 +78,7 @@ class AdminScreenTimeOcrErrorReportControllerTest {
         ParameterDescriptor[] queryParameterDescriptors = listQueryParameters();
         FieldDescriptor[] responseFieldDescriptors = listResponseFields();
 
+        when(adminAuthorizationService.requireAdmin("test-admin-token")).thenReturn("TEST_ADMIN");
         when(adminReportService.list(ScreenTimeOcrErrorReportStatus.PENDING, PageRequest.of(0, 20)))
                 .thenReturn(new AdminScreenTimeOcrErrorReportListResponse(
                         List.of(new AdminScreenTimeOcrErrorReportItemResponse(
@@ -112,7 +105,7 @@ class AdminScreenTimeOcrErrorReportControllerTest {
                 ));
 
         mockMvc.perform(get("/admin/screen-time-ocr-error-reports")
-                        .header("Authorization", "Bearer admin-token")
+                        .header("X-Admin-Token", "test-admin-token")
                         .queryParam("status", "PENDING")
                         .queryParam("page", "0")
                         .queryParam("size", "20"))
@@ -148,7 +141,8 @@ class AdminScreenTimeOcrErrorReportControllerTest {
         FieldDescriptor[] requestFieldDescriptors = updateRequestFields();
         FieldDescriptor[] responseFieldDescriptors = updateResponseFields();
 
-        when(adminReportService.update(99L, 555L, new ScreenTimeOcrErrorReportUpdateRequest(
+        when(adminAuthorizationService.requireAdmin("test-admin-token")).thenReturn("TEST_ADMIN");
+        when(adminReportService.update("TEST_ADMIN", 555L, new ScreenTimeOcrErrorReportUpdateRequest(
                 ScreenTimeOcrErrorReportUpdateAction.CORRECT,
                 165,
                 "스크린샷 기준 총 사용시간 2시간 45분"
@@ -158,12 +152,12 @@ class AdminScreenTimeOcrErrorReportControllerTest {
                 180,
                 165,
                 "스크린샷 기준 총 사용시간 2시간 45분",
-                99L,
+                "TEST_ADMIN",
                 LocalDateTime.of(2026, 5, 13, 10, 0)
         ));
 
         mockMvc.perform(patch("/admin/screen-time-ocr-error-reports/{reportId}", 555L)
-                        .header("Authorization", "Bearer admin-token")
+                        .header("X-Admin-Token", "test-admin-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -177,7 +171,7 @@ class AdminScreenTimeOcrErrorReportControllerTest {
                 .andExpect(jsonPath("$.id").value(555))
                 .andExpect(jsonPath("$.status").value("CORRECTED"))
                 .andExpect(jsonPath("$.correctedTotalUsedMinutes").value(165))
-                .andExpect(jsonPath("$.resolvedByUserId").value(99))
+                .andExpect(jsonPath("$.resolvedBy").value("TEST_ADMIN"))
                 .andDo(document("admin/screen-time-ocr-error-reports/update",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
@@ -201,7 +195,7 @@ class AdminScreenTimeOcrErrorReportControllerTest {
 
     private HeaderDescriptor[] authorizationHeaderDescriptors() {
         return new HeaderDescriptor[] {
-                headerWithName("Authorization").description("Bearer {accessToken} 형식의 admin access token")
+                headerWithName("X-Admin-Token").description("서버에 설정된 admin 검수 토큰")
         };
     }
 
@@ -233,7 +227,7 @@ class AdminScreenTimeOcrErrorReportControllerTest {
                 fieldWithPath("items[].correctedTotalUsedMinutes").type(JsonFieldType.NUMBER).optional().description("admin이 수정한 총 사용 시간(분)"),
                 fieldWithPath("items[].status").type(JsonFieldType.STRING).description("신고 상태"),
                 fieldWithPath("items[].adminNote").type(JsonFieldType.STRING).optional().description("admin 처리 메모"),
-                fieldWithPath("items[].resolvedByUserId").type(JsonFieldType.NUMBER).optional().description("처리한 admin user ID"),
+                fieldWithPath("items[].resolvedBy").type(JsonFieldType.STRING).optional().description("처리한 admin actor"),
                 fieldWithPath("items[].resolvedAt").type(JsonFieldType.STRING).optional().description("처리 시각"),
                 fieldWithPath("items[].createdAt").type(JsonFieldType.STRING).description("생성 시각"),
                 fieldWithPath("items[].updatedAt").type(JsonFieldType.STRING).description("수정 시각"),
@@ -259,7 +253,7 @@ class AdminScreenTimeOcrErrorReportControllerTest {
                 fieldWithPath("ocrTotalUsedMinutes").type(JsonFieldType.NUMBER).description("OCR이 추론한 총 사용 시간(분)"),
                 fieldWithPath("correctedTotalUsedMinutes").type(JsonFieldType.NUMBER).optional().description("admin이 수정한 총 사용 시간(분)"),
                 fieldWithPath("adminNote").type(JsonFieldType.STRING).optional().description("admin 처리 메모"),
-                fieldWithPath("resolvedByUserId").type(JsonFieldType.NUMBER).description("처리한 admin user ID"),
+                fieldWithPath("resolvedBy").type(JsonFieldType.STRING).description("처리한 admin actor"),
                 fieldWithPath("resolvedAt").type(JsonFieldType.STRING).description("처리 시각")
         };
     }

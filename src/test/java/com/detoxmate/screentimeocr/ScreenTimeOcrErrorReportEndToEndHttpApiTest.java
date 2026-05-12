@@ -113,7 +113,6 @@ class ScreenTimeOcrErrorReportEndToEndHttpApiTest {
     void screenTimeOcrErrorReportFlow_correctsActualCertificationThroughHttpApis() throws Exception {
         Fixture fixture = saveFixture();
         String userBearer = bearer(fixture.user().getId());
-        String adminBearer = bearer(fixture.admin().getId());
 
         JsonNode createdReport = postJson(
                 "/screen-time-ocr-error-reports",
@@ -137,9 +136,9 @@ class ScreenTimeOcrErrorReportEndToEndHttpApiTest {
         long reportId = createdReport.get("id").asLong();
         assertThat(createdReport.get("status").asText()).isEqualTo("PENDING");
 
-        JsonNode adminList = getJson(
+        JsonNode adminList = getAdminJson(
                 "/admin/screen-time-ocr-error-reports?status=PENDING&page=0&size=20",
-                adminBearer
+                "test-admin-token"
         );
         assertThat(adminList.get("totalElements").asLong()).isEqualTo(1L);
         assertThat(adminList.at("/items/0/id").asLong()).isEqualTo(reportId);
@@ -148,9 +147,9 @@ class ScreenTimeOcrErrorReportEndToEndHttpApiTest {
                 .isEqualTo("https://example.com/media/screen-time-ocr-reports/%d/2026/05/sample.png"
                         .formatted(fixture.user().getId()));
 
-        JsonNode updatedReport = patchJson(
+        JsonNode updatedReport = patchAdminJson(
                 "/admin/screen-time-ocr-error-reports/" + reportId,
-                adminBearer,
+                "test-admin-token",
                 """
                         {
                           "action": "CORRECT",
@@ -162,7 +161,7 @@ class ScreenTimeOcrErrorReportEndToEndHttpApiTest {
         );
         assertThat(updatedReport.get("status").asText()).isEqualTo("CORRECTED");
         assertThat(updatedReport.get("correctedTotalUsedMinutes").asInt()).isEqualTo(100);
-        assertThat(updatedReport.get("resolvedByUserId").asLong()).isEqualTo(fixture.admin().getId());
+        assertThat(updatedReport.get("resolvedBy").asText()).isEqualTo("TEST_ADMIN");
 
         ActivityRecord correctedActivityRecord = activityRecordRepository
                 .findByIdWithDetails(fixture.activityRecord().getId())
@@ -183,14 +182,25 @@ class ScreenTimeOcrErrorReportEndToEndHttpApiTest {
     }
 
     @Test
-    @DisplayName("실제 HTTP API에서 non-admin은 admin 목록 API를 호출할 수 없다")
-    void adminList_rejectsNonAdminThroughHttpApi() throws Exception {
-        Fixture fixture = saveFixture();
-
-        HttpResponse<String> response = send(
+    @DisplayName("실제 HTTP API에서 잘못된 admin token은 admin 목록 API를 호출할 수 없다")
+    void adminList_rejectsInvalidAdminTokenThroughHttpApi() throws Exception {
+        HttpResponse<String> response = sendAdmin(
                 "GET",
                 "/admin/screen-time-ocr-error-reports?status=PENDING",
-                bearer(fixture.user().getId()),
+                "wrong-token",
+                null
+        );
+
+        assertThat(response.statusCode()).as(response.body()).isEqualTo(403);
+    }
+
+    @Test
+    @DisplayName("실제 HTTP API에서 admin token이 없으면 admin 목록 API를 호출할 수 없다")
+    void adminList_rejectsMissingAdminTokenThroughHttpApi() throws Exception {
+        HttpResponse<String> response = sendAdmin(
+                "GET",
+                "/admin/screen-time-ocr-error-reports?status=PENDING",
+                null,
                 null
         );
 
@@ -203,9 +213,6 @@ class ScreenTimeOcrErrorReportEndToEndHttpApiTest {
                 UsageGoalType.create((long) sequence, UsageGoalTypeCode.TOTAL_USAGE)
         );
         User user = userRepository.save(User.createNew("신고자"));
-        User admin = User.createNew("관리자");
-        admin.grantAdminRole();
-        userRepository.save(admin);
 
         Group group = groupRepository.save(Group.createNew("OCR검수" + sequence, "OCR0" + sequence));
         GroupChallenge challenge = GroupChallenge.createFirst(group.getId());
@@ -237,7 +244,7 @@ class ScreenTimeOcrErrorReportEndToEndHttpApiTest {
         );
         challengeRecordRepository.saveAndFlush(challengeRecord);
 
-        return new Fixture(user, admin, participant, savedActivityRecord);
+        return new Fixture(user, participant, savedActivityRecord);
     }
 
     private UserUsageGoalTime saveGoal(
@@ -264,6 +271,12 @@ class ScreenTimeOcrErrorReportEndToEndHttpApiTest {
         return objectMapper.readTree(response.body());
     }
 
+    private JsonNode getAdminJson(String path, String adminToken) throws Exception {
+        HttpResponse<String> response = sendAdmin("GET", path, adminToken, null);
+        assertThat(response.statusCode()).as("GET " + path + " -> " + response.body()).isEqualTo(200);
+        return objectMapper.readTree(response.body());
+    }
+
     private JsonNode postJson(String path, String bearer, String body, int expectedStatus) throws Exception {
         HttpResponse<String> response = send("POST", path, bearer, body);
         assertThat(response.statusCode()).as("POST " + path + " -> " + response.body()).isEqualTo(expectedStatus);
@@ -272,6 +285,12 @@ class ScreenTimeOcrErrorReportEndToEndHttpApiTest {
 
     private JsonNode patchJson(String path, String bearer, String body, int expectedStatus) throws Exception {
         HttpResponse<String> response = send("PATCH", path, bearer, body);
+        assertThat(response.statusCode()).as("PATCH " + path + " -> " + response.body()).isEqualTo(expectedStatus);
+        return objectMapper.readTree(response.body());
+    }
+
+    private JsonNode patchAdminJson(String path, String adminToken, String body, int expectedStatus) throws Exception {
+        HttpResponse<String> response = sendAdmin("PATCH", path, adminToken, body);
         assertThat(response.statusCode()).as("PATCH " + path + " -> " + response.body()).isEqualTo(expectedStatus);
         return objectMapper.readTree(response.body());
     }
@@ -294,13 +313,30 @@ class ScreenTimeOcrErrorReportEndToEndHttpApiTest {
         return httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
     }
 
+    private HttpResponse<String> sendAdmin(String method, String path, String adminToken, String body) throws Exception {
+        HttpRequest.Builder builder = HttpRequest.newBuilder()
+                .uri(URI.create("http://localhost:" + port + path));
+
+        if (adminToken != null) {
+            builder.header("X-Admin-Token", adminToken);
+        }
+
+        if (body != null) {
+            builder.header("Content-Type", "application/json");
+            builder.method(method, HttpRequest.BodyPublishers.ofString(body));
+        } else {
+            builder.method(method, HttpRequest.BodyPublishers.noBody());
+        }
+
+        return httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+    }
+
     private String bearer(Long userId) {
         return "Bearer " + jwtTokenProvider.createAccessToken(userId);
     }
 
     private record Fixture(
             User user,
-            User admin,
             GroupChallengeParticipant participant,
             ActivityRecord activityRecord
     ) {

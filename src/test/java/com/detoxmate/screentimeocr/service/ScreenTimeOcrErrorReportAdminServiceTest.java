@@ -67,7 +67,7 @@ class ScreenTimeOcrErrorReportAdminServiceTest {
         when(challengeRecordRepository.findByActivityRecordId(123L)).thenReturn(Optional.of(challengeRecord));
 
         ScreenTimeOcrErrorReportUpdateResponse response = adminService.update(
-                99L,
+                "TEST_ADMIN",
                 555L,
                 new ScreenTimeOcrErrorReportUpdateRequest(
                         ScreenTimeOcrErrorReportUpdateAction.CORRECT,
@@ -82,7 +82,7 @@ class ScreenTimeOcrErrorReportAdminServiceTest {
         assertThat(challengeRecord.getStatus()).isEqualTo(ChallengeRecordStatus.AFTER_RECORD_SUCCESS);
         assertThat(report.getStatus()).isEqualTo(ScreenTimeOcrErrorReportStatus.CORRECTED);
         assertThat(response.correctedTotalUsedMinutes()).isEqualTo(100);
-        assertThat(response.resolvedByUserId()).isEqualTo(99L);
+        assertThat(response.resolvedBy()).isEqualTo("TEST_ADMIN");
         assertThat(response.resolvedAt()).isEqualTo(LocalDateTime.of(2026, 5, 13, 10, 0));
     }
 
@@ -95,7 +95,7 @@ class ScreenTimeOcrErrorReportAdminServiceTest {
         when(reportRepository.findWithUserAndActivityRecordById(555L)).thenReturn(Optional.of(report));
 
         ScreenTimeOcrErrorReportUpdateResponse response = adminService.update(
-                99L,
+                "TEST_ADMIN",
                 555L,
                 new ScreenTimeOcrErrorReportUpdateRequest(
                         ScreenTimeOcrErrorReportUpdateAction.REJECT,

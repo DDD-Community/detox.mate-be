@@ -1,44 +1,45 @@
 package com.detoxmate.admin.service;
 
-import com.detoxmate.user.domain.User;
-import com.detoxmate.user.repository.UserRepository;
+import com.detoxmate.admin.config.AdminProperties;
 import org.junit.jupiter.api.Test;
-import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class AdminAuthorizationServiceTest {
 
-    private final UserRepository userRepository = mock(UserRepository.class);
-    private final AdminAuthorizationService adminAuthorizationService = new AdminAuthorizationService(userRepository);
-
     @Test
-    void ADMIN_role_유저는_admin_API에_접근할_수_있다() {
-        User admin = user(99L);
-        admin.grantAdminRole();
-        when(userRepository.findById(99L)).thenReturn(Optional.of(admin));
+    void 설정된_admin_token과_일치하면_admin_actor를_반환한다() {
+        AdminAuthorizationService adminAuthorizationService = new AdminAuthorizationService(
+                new AdminProperties("secret-token", "OCR_REVIEWER")
+        );
 
-        assertThatCode(() -> adminAuthorizationService.requireAdmin(99L))
-                .doesNotThrowAnyException();
+        String adminActor = adminAuthorizationService.requireAdmin("secret-token");
+
+        assertThat(adminActor).isEqualTo("OCR_REVIEWER");
     }
 
     @Test
-    void USER_role_유저는_admin_API에_접근할_수_없다() {
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user(1L)));
+    void 설정된_admin_token과_다르면_admin_API에_접근할_수_없다() {
+        AdminAuthorizationService adminAuthorizationService = new AdminAuthorizationService(
+                new AdminProperties("secret-token", "OCR_REVIEWER")
+        );
 
-        assertThatThrownBy(() -> adminAuthorizationService.requireAdmin(1L))
-                .isInstanceOf(ResponseStatusException.class);
+        assertThatThrownBy(() -> adminAuthorizationService.requireAdmin("wrong-token"))
+                .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
+                        assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
     }
 
-    private User user(Long id) {
-        User user = User.createNew("tester");
-        ReflectionTestUtils.setField(user, "id", id);
-        return user;
+    @Test
+    void admin_token이_설정되지_않으면_admin_API를_열지_않는다() {
+        AdminAuthorizationService adminAuthorizationService = new AdminAuthorizationService(
+                new AdminProperties("", "OCR_REVIEWER")
+        );
+
+        assertThatThrownBy(() -> adminAuthorizationService.requireAdmin("secret-token"))
+                .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
+                        assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR));
     }
 }

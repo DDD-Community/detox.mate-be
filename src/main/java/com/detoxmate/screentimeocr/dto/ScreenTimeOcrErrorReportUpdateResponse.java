@@ -10,7 +10,7 @@ public record ScreenTimeOcrErrorReportUpdateResponse(
         Integer ocrTotalUsedMinutes,
         Integer correctedTotalUsedMinutes,
         String adminNote,
-        Long resolvedByUserId,
+        String resolvedBy,
         LocalDateTime resolvedAt
 ) {
 }

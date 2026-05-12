@@ -80,8 +80,8 @@ public class ScreenTimeOcrErrorReport {
     @Column(name = "admin_note", columnDefinition = "TEXT")
     private String adminNote;
 
-    @Column(name = "resolved_by_user_id")
-    private Long resolvedByUserId;
+    @Column(name = "resolved_by", length = 100)
+    private String resolvedBy;
 
     @Column(name = "resolved_at")
     private LocalDateTime resolvedAt;
@@ -152,22 +152,22 @@ public class ScreenTimeOcrErrorReport {
         return activityRecord != null;
     }
 
-    public void markCorrected(Integer correctedTotalUsedMinutes, Long resolvedByUserId, LocalDateTime resolvedAt, String adminNote) {
+    public void markCorrected(Integer correctedTotalUsedMinutes, String resolvedBy, LocalDateTime resolvedAt, String adminNote) {
         validateMinutes(correctedTotalUsedMinutes);
-        validateResolvedByUserId(resolvedByUserId);
+        validateResolvedBy(resolvedBy);
         validateResolvedAt(resolvedAt);
         this.correctedTotalUsedMinutes = correctedTotalUsedMinutes;
         this.status = ScreenTimeOcrErrorReportStatus.CORRECTED;
-        this.resolvedByUserId = resolvedByUserId;
+        this.resolvedBy = resolvedBy;
         this.resolvedAt = resolvedAt;
         this.adminNote = adminNote;
     }
 
-    public void reject(Long resolvedByUserId, LocalDateTime resolvedAt, String adminNote) {
-        validateResolvedByUserId(resolvedByUserId);
+    public void reject(String resolvedBy, LocalDateTime resolvedAt, String adminNote) {
+        validateResolvedBy(resolvedBy);
         validateResolvedAt(resolvedAt);
         this.status = ScreenTimeOcrErrorReportStatus.REJECTED;
-        this.resolvedByUserId = resolvedByUserId;
+        this.resolvedBy = resolvedBy;
         this.resolvedAt = resolvedAt;
         this.adminNote = adminNote;
     }
@@ -200,9 +200,9 @@ public class ScreenTimeOcrErrorReport {
         }
     }
 
-    private static void validateResolvedByUserId(Long resolvedByUserId) {
-        if (resolvedByUserId == null) {
-            throw new IllegalArgumentException("resolvedByUserId 는 필수입니다.");
+    private static void validateResolvedBy(String resolvedBy) {
+        if (resolvedBy == null || resolvedBy.isBlank()) {
+            throw new IllegalArgumentException("resolvedBy 는 필수입니다.");
         }
     }
 
