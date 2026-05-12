@@ -85,4 +85,6 @@ public interface ChallengeRecordRepository extends JpaRepository<ChallengeRecord
               AND gm.status = 'ACTIVE'
             """)
     Optional<ChallengeRecordNotificationRow> findChallengeRecordNotificationRow(Long challengeRecordId);
+
+    Optional<ChallengeRecord> findByActivityRecordId(Long activityRecordId);
 }

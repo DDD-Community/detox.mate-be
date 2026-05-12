@@ -81,6 +81,12 @@ public class ActivityRecordDetail {
         return new ActivityRecordDetail(activityRecord, userUsageGoalTime, useMinutes, achieved);
     }
 
+    public void correctUseMinutes(int correctedUseMinutes) {
+        validateUseMinutes(correctedUseMinutes);
+        this.useMinutes = correctedUseMinutes;
+        this.achieved = correctedUseMinutes <= userUsageGoalTime.getGoalMinutes();
+    }
+
     private static void validateActivityRecord(ActivityRecord activityRecord) {
         if (activityRecord == null) {
             throw new IllegalArgumentException("activityRecord 는 필수입니다.");
