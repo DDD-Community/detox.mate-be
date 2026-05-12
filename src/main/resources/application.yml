@@ -19,7 +19,6 @@ springdoc:
 app:
   admin:
     review-token: ${ADMIN_REVIEW_TOKEN:}
-    actor-name: ${ADMIN_REVIEW_ACTOR:MVP_ADMIN}
   discord:
     ocr-report:
       webhook-url: ${DISCORD_OCR_REPORT_WEBHOOK_URL:}
