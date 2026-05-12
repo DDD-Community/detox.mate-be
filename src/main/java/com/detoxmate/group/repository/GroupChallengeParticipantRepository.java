@@ -23,6 +23,7 @@ public interface GroupChallengeParticipantRepository extends JpaRepository<Group
                 gm.userId,
                 u.displayName,
                 u.profileImageObjectKey,
+                CASE WHEN u.status = com.detoxmate.user.domain.UserStatus.WITHDRAWN THEN true ELSE false END,
                 gm.status,
                 gm.joinedAt,
                 gm.leftAt,

@@ -320,7 +320,7 @@ class FeedDetailServiceTest {
         assertThat(response.author().userId()).isEqualTo(author.getId());
         assertThat(response.author().displayName()).isEqualTo(User.WITHDRAWN_DISPLAY_NAME);
         assertThat(response.author().profileImageUrl()).isNull();
-        assertThat(response.author().isWithdrawn()).isTrue();
+        assertThat(response.author().userWithdrawn()).isTrue();
     }
 
     private GroupChallengeParticipant saveParticipant(Long groupId,

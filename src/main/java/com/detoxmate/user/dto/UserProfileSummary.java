@@ -4,6 +4,6 @@ public record UserProfileSummary(
         Long id,
         String displayName,
         String profileImageUrl,
-        boolean isWithdrawn
+        boolean userWithdrawn
 ) {
 }

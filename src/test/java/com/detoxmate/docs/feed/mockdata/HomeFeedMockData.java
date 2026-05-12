@@ -100,6 +100,7 @@ public class HomeFeedMockData {
                                 "민준",
                                 "https://example.com/profiles/minjun.png",
                                 false,
+                                false,
                                 "ACTIVE",
                                 "JOINED",
                                 "GOAL_ACHIEVED",
@@ -138,6 +139,7 @@ public class HomeFeedMockData {
                                 "서연",
                                 "https://example.com/profiles/seoyeon.png",
                                 false,
+                                false,
                                 "ACTIVE",
                                 "JOINED",
                                 "NOT_CERTIFIED",
@@ -164,6 +166,7 @@ public class HomeFeedMockData {
                 10L,
                 "민준",
                 "https://example.com/profiles/minjun.png",
+                false,
                 false,
                 "ACTIVE",
                 "JOINED",
@@ -200,7 +203,8 @@ public class HomeFeedMockData {
                                 "CLAP",
                                 11L,
                                 "서연",
-                                "https://example.com/profiles/seoyeon.png"
+                                "https://example.com/profiles/seoyeon.png",
+                                false
                         ))
                 )
         );

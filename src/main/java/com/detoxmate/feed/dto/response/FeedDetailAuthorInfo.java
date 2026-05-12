@@ -1,10 +1,12 @@
 package com.detoxmate.feed.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record FeedDetailAuthorInfo(
         Long userId,
         String displayName,
         String profileImageUrl,
-        boolean isWithdrawn
+        @JsonProperty("isUserWithdrawn")
+        boolean userWithdrawn
 ) {
 }

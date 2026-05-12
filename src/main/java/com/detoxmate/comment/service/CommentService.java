@@ -144,7 +144,7 @@ public class CommentService {
 
     private CommentAuthorInfo toAuthorInfo(Comment comment, UserProfileSummary profile) {
         if (profile != null) {
-            return new CommentAuthorInfo(profile.id(), profile.displayName(), profile.profileImageUrl(), profile.isWithdrawn());
+            return new CommentAuthorInfo(profile.id(), profile.displayName(), profile.profileImageUrl(), profile.userWithdrawn());
         }
 
         return new CommentAuthorInfo(comment.getUserId(), null, null, false);

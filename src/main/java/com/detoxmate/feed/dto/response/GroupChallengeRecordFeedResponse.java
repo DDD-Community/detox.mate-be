@@ -23,6 +23,7 @@ public record GroupChallengeRecordFeedResponse(
             Long userId,
             String displayName,
             String profileImageUrl,
+            @JsonProperty("isUserWithdrawn") boolean userWithdrawn,
             @JsonProperty("isMe") boolean isMe,
             String memberStatus,
             String participantStatus,
@@ -60,14 +61,16 @@ public record GroupChallengeRecordFeedResponse(
             String reactionBody,
             Long userId,
             String displayName,
-            String profileImageUrl
+            String profileImageUrl,
+            @JsonProperty("isUserWithdrawn") boolean userWithdrawn
     ) {
     }
 
     public record PokedUserResponse(
             Long userId,
             String displayName,
-            String profileImageUrl
+            String profileImageUrl,
+            @JsonProperty("isUserWithdrawn") boolean userWithdrawn
     ) {
     }
 }

@@ -1,5 +1,7 @@
 package com.detoxmate.group.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.time.LocalDateTime;
 
 public record GroupMemberResponse(
@@ -11,6 +13,7 @@ public record GroupMemberResponse(
         String status,
         LocalDateTime joinedAt,
         LocalDateTime leftAt,
-        boolean isWithdrawn
+        @JsonProperty("isUserWithdrawn")
+        boolean userWithdrawn
 ) {
 }

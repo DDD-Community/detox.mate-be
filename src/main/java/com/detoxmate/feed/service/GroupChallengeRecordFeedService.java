@@ -34,7 +34,7 @@ import com.detoxmate.poke.service.PokeService;
 import com.detoxmate.reaction.domain.Reaction;
 import com.detoxmate.reaction.service.ReactionService;
 import com.detoxmate.upload.service.ImageReadUrlBuilder;
-import com.detoxmate.user.dto.MyProfileResponse;
+import com.detoxmate.user.dto.UserProfileSummary;
 import com.detoxmate.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -351,6 +351,7 @@ public class GroupChallengeRecordFeedService {
                 row.userId(),
                 row.displayName(),
                 imageReadUrlBuilder.build(row.profileImageObjectKey()),
+                row.userWithdrawn(),
                 Objects.equals(row.userId(), activityDay.currentUserId()),
                 row.memberStatus(),
                 row.participantStatus(),
@@ -385,7 +386,7 @@ public class GroupChallengeRecordFeedService {
         }
 
         List<Poke> pokes = pokeService.getPokesForChallengeRecord(challengeRecord.getId());
-        Map<Long, MyProfileResponse> profiles = userService.getProfilesByIds(
+        Map<Long, UserProfileSummary> profiles = userService.getProfileSummariesByIds(
                 pokes.stream()
                         .map(Poke::getSenderUserId)
                         .collect(Collectors.toSet())
@@ -398,12 +399,13 @@ public class GroupChallengeRecordFeedService {
 
     private GroupChallengeRecordFeedResponse.PokedUserResponse toPokedUserResponse(
             Poke poke,
-            MyProfileResponse profile
+            UserProfileSummary profile
     ) {
         return new GroupChallengeRecordFeedResponse.PokedUserResponse(
                 poke.getSenderUserId(),
                 profile == null ? null : profile.displayName(),
-                profile == null ? null : profile.profileImageUrl()
+                profile == null ? null : profile.profileImageUrl(),
+                profile != null && profile.userWithdrawn()
         );
     }
 
@@ -413,7 +415,7 @@ public class GroupChallengeRecordFeedService {
         }
 
         List<Reaction> reactions = reactionService.getReactionsForChallengeRecord(challengeRecord.getId());
-        Map<Long, MyProfileResponse> profiles = userService.getProfilesByIds(
+        Map<Long, UserProfileSummary> profiles = userService.getProfileSummariesByIds(
                 reactions.stream()
                         .map(Reaction::getUserId)
                         .collect(Collectors.toSet())
@@ -427,13 +429,14 @@ public class GroupChallengeRecordFeedService {
 
     private GroupChallengeRecordFeedResponse.ReactionResponse toReactionResponse(
             Reaction reaction,
-            MyProfileResponse profile
+            UserProfileSummary profile
     ) {
         return new GroupChallengeRecordFeedResponse.ReactionResponse(
                 reaction.getBody().name(),
                 reaction.getUserId(),
                 profile == null ? null : profile.displayName(),
-                profile == null ? null : profile.profileImageUrl()
+                profile == null ? null : profile.profileImageUrl(),
+                profile != null && profile.userWithdrawn()
         );
     }
 

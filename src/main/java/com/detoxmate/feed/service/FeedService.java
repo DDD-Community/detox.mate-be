@@ -171,7 +171,7 @@ public class FeedService {
                 commentCount(challengeRecord, statusCount),
                 pokeCount(statusCount),
                 poked,
-                participant.isWithdrawn()
+                participant.userWithdrawn()
         );
     }
 

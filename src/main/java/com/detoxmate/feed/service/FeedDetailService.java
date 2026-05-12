@@ -149,7 +149,7 @@ public class FeedDetailService {
                 participant.userId(),
                 participant.displayName(),
                 participant.profileImageUrl(),
-                participant.isWithdrawn()
+                participant.userWithdrawn()
         );
     }
 
@@ -197,7 +197,7 @@ public class FeedDetailService {
                 reaction.getUserId(),
                 profile == null ? null : profile.displayName(),
                 profile == null ? null : profile.profileImageUrl(),
-                profile != null && profile.isWithdrawn()
+                profile != null && profile.userWithdrawn()
         );
     }
 
@@ -218,7 +218,7 @@ public class FeedDetailService {
                 poke.getSenderUserId(),
                 profile == null ? null : profile.displayName(),
                 profile == null ? null : profile.profileImageUrl(),
-                profile != null && profile.isWithdrawn()
+                profile != null && profile.userWithdrawn()
         );
     }
 

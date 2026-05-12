@@ -1,5 +1,6 @@
 package com.detoxmate.feed.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.LocalDateTime;
 
@@ -20,6 +21,7 @@ public record HomeFeedMemberCard(
         Integer commentCount,
         Integer pokeCount,
         Boolean isPoked,
-        boolean isWithdrawn
+        @JsonProperty("isUserWithdrawn")
+        boolean userWithdrawn
 ) {
 }
