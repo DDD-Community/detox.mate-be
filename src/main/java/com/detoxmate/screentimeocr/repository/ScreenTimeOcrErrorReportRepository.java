@@ -3,6 +3,7 @@ package com.detoxmate.screentimeocr.repository;
 import com.detoxmate.screentimeocr.domain.ScreenTimeOcrErrorReport;
 import com.detoxmate.screentimeocr.domain.ScreenTimeOcrErrorReportStatus;
 import com.detoxmate.screentimeocr.dto.ScreenTimeOcrErrorReportAdminListRow;
+import com.detoxmate.screentimeocr.dto.ScreenTimeOcrErrorReportDiscordNotificationRow;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -54,6 +55,30 @@ public interface ScreenTimeOcrErrorReportRepository extends JpaRepository<Screen
             @Param("status") ScreenTimeOcrErrorReportStatus status,
             Pageable pageable
     );
+
+    @Query("""
+            select new com.detoxmate.screentimeocr.dto.ScreenTimeOcrErrorReportDiscordNotificationRow(
+                report.id,
+                gm.userId,
+                case
+                    when u.status = com.detoxmate.user.domain.UserStatus.WITHDRAWN
+                    then '탈퇴한 사용자'
+                    else u.displayName
+                end,
+                activityRecord.id,
+                participant.id,
+                report.recordDate,
+                report.imageObjectKey,
+                report.ocrTotalUsedMinutes
+            )
+            from ScreenTimeOcrErrorReport report
+            join report.groupChallengeParticipant participant
+            join GroupMember gm on gm.id = participant.groupMemberId
+            left join User u on u.id = gm.userId
+            left join report.activityRecord activityRecord
+            where report.id = :id
+            """)
+    Optional<ScreenTimeOcrErrorReportDiscordNotificationRow> findDiscordNotificationRowById(@Param("id") Long id);
 
     @EntityGraph(attributePaths = {"activityRecord", "groupChallengeParticipant"})
     @Query("""

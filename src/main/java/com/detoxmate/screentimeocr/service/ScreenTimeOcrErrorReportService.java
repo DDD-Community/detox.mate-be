@@ -7,10 +7,12 @@ import com.detoxmate.group.repository.GroupChallengeParticipantRepository;
 import com.detoxmate.screentimeocr.domain.ScreenTimeOcrErrorReport;
 import com.detoxmate.screentimeocr.dto.ScreenTimeOcrErrorReportCreateRequest;
 import com.detoxmate.screentimeocr.dto.ScreenTimeOcrErrorReportCreateResponse;
+import com.detoxmate.screentimeocr.event.ScreenTimeOcrErrorReportCreatedEvent;
 import com.detoxmate.screentimeocr.repository.ScreenTimeOcrErrorReportRepository;
 import com.detoxmate.upload.dto.UploadPurpose;
 import com.detoxmate.upload.service.UploadObjectKeyValidator;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +36,7 @@ public class ScreenTimeOcrErrorReportService {
     private final ActivityRecordRepository activityRecordRepository;
     private final GroupChallengeParticipantRepository groupChallengeParticipantRepository;
     private final UploadObjectKeyValidator uploadObjectKeyValidator;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public ScreenTimeOcrErrorReportCreateResponse create(
@@ -57,6 +60,7 @@ public class ScreenTimeOcrErrorReportService {
         );
 
         ScreenTimeOcrErrorReport savedReport = reportRepository.save(report);
+        eventPublisher.publishEvent(new ScreenTimeOcrErrorReportCreatedEvent(savedReport.getId()));
         return new ScreenTimeOcrErrorReportCreateResponse(
                 savedReport.getId(),
                 savedReport.getStatus(),

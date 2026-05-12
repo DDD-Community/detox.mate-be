@@ -11,10 +11,12 @@ import com.detoxmate.screentimeocr.domain.ScreenTimeOcrErrorReport;
 import com.detoxmate.screentimeocr.domain.ScreenTimeOcrErrorReportStatus;
 import com.detoxmate.screentimeocr.dto.ScreenTimeOcrErrorReportCreateRequest;
 import com.detoxmate.screentimeocr.dto.ScreenTimeOcrErrorReportCreateResponse;
+import com.detoxmate.screentimeocr.event.ScreenTimeOcrErrorReportCreatedEvent;
 import com.detoxmate.screentimeocr.repository.ScreenTimeOcrErrorReportRepository;
 import com.detoxmate.upload.service.UploadObjectKeyValidator;
 import com.detoxmate.user.domain.User;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -36,12 +38,14 @@ class ScreenTimeOcrErrorReportServiceTest {
     private final ActivityRecordRepository activityRecordRepository = mock(ActivityRecordRepository.class);
     private final GroupChallengeParticipantRepository participantRepository =
             mock(GroupChallengeParticipantRepository.class);
+    private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
     private final UploadObjectKeyValidator uploadObjectKeyValidator = new UploadObjectKeyValidator();
     private final ScreenTimeOcrErrorReportService reportService = new ScreenTimeOcrErrorReportService(
             reportRepository,
             activityRecordRepository,
             participantRepository,
-            uploadObjectKeyValidator
+            uploadObjectKeyValidator,
+            eventPublisher
     );
 
     @Test
@@ -65,6 +69,7 @@ class ScreenTimeOcrErrorReportServiceTest {
         assertThat(response.id()).isEqualTo(555L);
         assertThat(response.status()).isEqualTo(ScreenTimeOcrErrorReportStatus.PENDING);
         verify(reportRepository).save(any(ScreenTimeOcrErrorReport.class));
+        verify(eventPublisher).publishEvent(new ScreenTimeOcrErrorReportCreatedEvent(555L));
     }
 
     @Test
