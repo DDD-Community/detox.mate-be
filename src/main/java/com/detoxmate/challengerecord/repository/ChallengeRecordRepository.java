@@ -57,4 +57,6 @@ public interface ChallengeRecordRepository extends JpaRepository<ChallengeRecord
             order by u.displayName asc, cr.id asc
             """)
     List<ChallengeRecord> findAllByGroupChallengeDateOrderByDisplayName(Long groupChallengeId, LocalDate recordDate);
+
+    Optional<ChallengeRecord> findByActivityRecordId(Long activityRecordId);
 }

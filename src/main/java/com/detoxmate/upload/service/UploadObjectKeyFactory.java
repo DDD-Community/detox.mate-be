@@ -23,6 +23,7 @@ class UploadObjectKeyFactory {
         return switch (uploadPurpose) {
             case ACTIVITY_RECORD_IMAGE -> activityRecordImageKey(userId, sanitizedFileName, uuid);
             case PROFILE_IMAGE -> profileImageKey(userId, sanitizedFileName, uuid);
+            case SCREEN_TIME_OCR_REPORT_IMAGE -> screenTimeOcrReportImageKey(userId, sanitizedFileName, uuid);
         };
     }
 
@@ -33,6 +34,11 @@ class UploadObjectKeyFactory {
 
     private String profileImageKey(Long userId, String sanitizedFileName, String uuid) {
         return UploadObjectKeyPath.objectKeyPrefixForUser(userId, UploadPurpose.PROFILE_IMAGE) + uuid + "-" + sanitizedFileName;
+    }
+
+    private String screenTimeOcrReportImageKey(Long userId, String sanitizedFileName, String uuid) {
+        LocalDate now = LocalDate.now(clock);
+        return UploadObjectKeyPath.screenTimeOcrReportImageDirectory(userId, now) + uuid + "-" + sanitizedFileName;
     }
 
     private String sanitize(String fileName) {
