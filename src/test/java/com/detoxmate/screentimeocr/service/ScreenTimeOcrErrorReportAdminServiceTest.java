@@ -60,9 +60,9 @@ class ScreenTimeOcrErrorReportAdminServiceTest {
         ActivityRecord activityRecord = activityRecord(123L, user, 10L);
         ChallengeRecord challengeRecord = ChallengeRecord.create(200L, 10L, LocalDate.of(2026, 5, 12));
         challengeRecord.certify(123L, 10L, ChallengeRecordCertificationResult.FAIL);
-        ScreenTimeOcrErrorReport report = report(555L, user, activityRecord);
+        ScreenTimeOcrErrorReport report = report(555L, activityRecord);
 
-        when(reportRepository.findWithUserAndActivityRecordById(555L)).thenReturn(Optional.of(report));
+        when(reportRepository.findWithActivityRecordById(555L)).thenReturn(Optional.of(report));
         when(activityRecordRepository.findByIdWithDetails(123L)).thenReturn(Optional.of(activityRecord));
         when(challengeRecordRepository.findByActivityRecordId(123L)).thenReturn(Optional.of(challengeRecord));
 
@@ -90,9 +90,9 @@ class ScreenTimeOcrErrorReportAdminServiceTest {
     void REJECT는_report만_반려하고_인증값은_수정하지_않는다() {
         User user = user(1L);
         ActivityRecord activityRecord = activityRecord(123L, user, 10L);
-        ScreenTimeOcrErrorReport report = report(555L, user, activityRecord);
+        ScreenTimeOcrErrorReport report = report(555L, activityRecord);
 
-        when(reportRepository.findWithUserAndActivityRecordById(555L)).thenReturn(Optional.of(report));
+        when(reportRepository.findWithActivityRecordById(555L)).thenReturn(Optional.of(report));
 
         ScreenTimeOcrErrorReportUpdateResponse response = adminService.update(
                 "TEST_ADMIN",
@@ -111,11 +111,10 @@ class ScreenTimeOcrErrorReportAdminServiceTest {
         assertThat(response.status()).isEqualTo(ScreenTimeOcrErrorReportStatus.REJECTED);
     }
 
-    private ScreenTimeOcrErrorReport report(Long id, User user, ActivityRecord activityRecord) {
+    private ScreenTimeOcrErrorReport report(Long id, ActivityRecord activityRecord) {
         ScreenTimeOcrErrorReport report = ScreenTimeOcrErrorReport.create(
-                user,
+                activityRecord.getGroupChallengeParticipant(),
                 activityRecord,
-                10L,
                 LocalDate.of(2026, 5, 12),
                 "screen-time-ocr-reports/1/2026/05/sample.png",
                 180

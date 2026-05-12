@@ -14,7 +14,6 @@ import com.detoxmate.screentimeocr.dto.ScreenTimeOcrErrorReportCreateResponse;
 import com.detoxmate.screentimeocr.repository.ScreenTimeOcrErrorReportRepository;
 import com.detoxmate.upload.service.UploadObjectKeyValidator;
 import com.detoxmate.user.domain.User;
-import com.detoxmate.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
@@ -34,14 +33,12 @@ import static org.mockito.Mockito.when;
 class ScreenTimeOcrErrorReportServiceTest {
 
     private final ScreenTimeOcrErrorReportRepository reportRepository = mock(ScreenTimeOcrErrorReportRepository.class);
-    private final UserRepository userRepository = mock(UserRepository.class);
     private final ActivityRecordRepository activityRecordRepository = mock(ActivityRecordRepository.class);
     private final GroupChallengeParticipantRepository participantRepository =
             mock(GroupChallengeParticipantRepository.class);
     private final UploadObjectKeyValidator uploadObjectKeyValidator = new UploadObjectKeyValidator();
     private final ScreenTimeOcrErrorReportService reportService = new ScreenTimeOcrErrorReportService(
             reportRepository,
-            userRepository,
             activityRecordRepository,
             participantRepository,
             uploadObjectKeyValidator
@@ -53,9 +50,9 @@ class ScreenTimeOcrErrorReportServiceTest {
         ActivityRecord activityRecord = activityRecord(123L, user, 10L);
         ScreenTimeOcrErrorReportCreateRequest request = createRequest();
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(activityRecordRepository.findByIdWithDetails(123L)).thenReturn(Optional.of(activityRecord));
         when(participantRepository.existsActiveByIdAndUserId(10L, 1L)).thenReturn(true);
+        when(participantRepository.findById(10L)).thenReturn(Optional.of(activityRecord.getGroupChallengeParticipant()));
         when(reportRepository.save(any(ScreenTimeOcrErrorReport.class))).thenAnswer(invocation -> {
             ScreenTimeOcrErrorReport report = invocation.getArgument(0);
             ReflectionTestUtils.setField(report, "id", 555L);

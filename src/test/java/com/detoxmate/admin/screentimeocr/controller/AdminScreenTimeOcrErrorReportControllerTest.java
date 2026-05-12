@@ -220,7 +220,7 @@ class AdminScreenTimeOcrErrorReportControllerTest {
                 fieldWithPath("items[].userId").type(JsonFieldType.NUMBER).description("신고한 유저 ID"),
                 fieldWithPath("items[].userDisplayName").type(JsonFieldType.STRING).description("신고한 유저 표시 이름"),
                 fieldWithPath("items[].activityRecordId").type(JsonFieldType.NUMBER).optional().description("연결된 활동 인증 기록 ID"),
-                fieldWithPath("items[].groupChallengeParticipantId").type(JsonFieldType.NUMBER).optional().description("연결된 그룹 챌린지 참여자 ID"),
+                fieldWithPath("items[].groupChallengeParticipantId").type(JsonFieldType.NUMBER).description("연결된 그룹 챌린지 참여자 ID"),
                 fieldWithPath("items[].recordDate").type(JsonFieldType.STRING).description("인증 대상 날짜"),
                 fieldWithPath("items[].imageUrl").type(JsonFieldType.STRING).description("검수용 스크린타임 이미지 URL"),
                 fieldWithPath("items[].ocrTotalUsedMinutes").type(JsonFieldType.NUMBER).description("OCR이 추론한 총 사용 시간(분)"),

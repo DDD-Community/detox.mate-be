@@ -9,6 +9,7 @@ import com.detoxmate.screentimeocr.domain.ScreenTimeOcrErrorReport;
 import com.detoxmate.screentimeocr.domain.ScreenTimeOcrErrorReportStatus;
 import com.detoxmate.screentimeocr.dto.AdminScreenTimeOcrErrorReportItemResponse;
 import com.detoxmate.screentimeocr.dto.AdminScreenTimeOcrErrorReportListResponse;
+import com.detoxmate.screentimeocr.dto.ScreenTimeOcrErrorReportAdminListRow;
 import com.detoxmate.screentimeocr.dto.ScreenTimeOcrErrorReportUpdateAction;
 import com.detoxmate.screentimeocr.dto.ScreenTimeOcrErrorReportUpdateRequest;
 import com.detoxmate.screentimeocr.dto.ScreenTimeOcrErrorReportUpdateResponse;
@@ -48,7 +49,7 @@ public class ScreenTimeOcrErrorReportAdminService {
             ScreenTimeOcrErrorReportStatus status,
             Pageable pageable
     ) {
-        Page<ScreenTimeOcrErrorReport> reportPage = reportRepository.findAllByStatusOrderByCreatedAtAscIdAsc(
+        Page<ScreenTimeOcrErrorReportAdminListRow> reportPage = reportRepository.findAdminListRowsByStatus(
                 status,
                 pageable
         );
@@ -79,23 +80,23 @@ public class ScreenTimeOcrErrorReportAdminService {
         return toUpdateResponse(report);
     }
 
-    private AdminScreenTimeOcrErrorReportItemResponse toItemResponse(ScreenTimeOcrErrorReport report) {
+    private AdminScreenTimeOcrErrorReportItemResponse toItemResponse(ScreenTimeOcrErrorReportAdminListRow report) {
         return new AdminScreenTimeOcrErrorReportItemResponse(
-                report.getId(),
-                report.getUserId(),
-                report.getUser().getPublicDisplayName(),
-                report.getActivityRecordId(),
-                report.getGroupChallengeParticipantId(),
-                report.getRecordDate(),
-                imageReadUrlBuilder.build(report.getImageObjectKey()),
-                report.getOcrTotalUsedMinutes(),
-                report.getCorrectedTotalUsedMinutes(),
-                report.getStatus(),
-                report.getAdminNote(),
-                report.getResolvedBy(),
-                report.getResolvedAt(),
-                report.getCreatedAt(),
-                report.getUpdatedAt()
+                report.id(),
+                report.userId(),
+                report.userDisplayName(),
+                report.activityRecordId(),
+                report.groupChallengeParticipantId(),
+                report.recordDate(),
+                imageReadUrlBuilder.build(report.imageObjectKey()),
+                report.ocrTotalUsedMinutes(),
+                report.correctedTotalUsedMinutes(),
+                report.status(),
+                report.adminNote(),
+                report.resolvedBy(),
+                report.resolvedAt(),
+                report.createdAt(),
+                report.updatedAt()
         );
     }
 
@@ -135,7 +136,7 @@ public class ScreenTimeOcrErrorReportAdminService {
     }
 
     private ScreenTimeOcrErrorReport findReport(Long reportId) {
-        return reportRepository.findWithUserAndActivityRecordById(reportId)
+        return reportRepository.findWithActivityRecordById(reportId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, REPORT_NOT_FOUND_MESSAGE));
     }
 

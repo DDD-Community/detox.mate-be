@@ -150,7 +150,6 @@ class ScreenTimeOcrErrorReportControllerTest {
                         .description("이미 생성된 활동 인증 기록 ID"),
                 fieldWithPath("groupChallengeParticipantId")
                         .type(JsonFieldType.NUMBER)
-                        .optional()
                         .description("인증 대상 그룹 챌린지 참여자 ID"),
                 fieldWithPath("recordDate")
                         .type(JsonFieldType.STRING)

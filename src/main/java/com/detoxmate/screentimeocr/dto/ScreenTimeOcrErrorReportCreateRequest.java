@@ -8,6 +8,8 @@ import java.time.LocalDate;
 
 public record ScreenTimeOcrErrorReportCreateRequest(
         Long activityRecordId,
+
+        @NotNull
         Long groupChallengeParticipantId,
 
         @NotNull
