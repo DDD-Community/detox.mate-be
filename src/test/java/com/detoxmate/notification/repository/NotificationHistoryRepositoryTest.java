@@ -16,7 +16,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
 @ActiveProfiles("test")
@@ -38,11 +37,11 @@ class NotificationHistoryRepositoryTest {
     void saveAndFind(){
         //given
         Notification notification = persistTemplate(
-                NotificationTypeCode.COMMENT,
+                NotificationTypeCode.COMMENT_CREATED,
                 "댓글 알림",
                 "{nickname}님이 댓글을 남겼습니다"
         );
-        NotificationHistory history = NotificationHistory.from(notification,1L,"xeulbn");
+        NotificationHistory history = createHistory(notification, 1L, "xeulbn");
 
         //when
         NotificationHistory saved = historyRepository.save(history);
@@ -62,7 +61,7 @@ class NotificationHistoryRepositoryTest {
     void findActiveByUserId() {
         // given
         Notification notification = persistTemplate(
-                NotificationTypeCode.COMMENT,
+                NotificationTypeCode.COMMENT_CREATED,
                 "댓글 알림",
                 "{nickname}님이 댓글을 남겼습니다"
         );
@@ -70,17 +69,17 @@ class NotificationHistoryRepositoryTest {
         LocalDateTime now = LocalDateTime.of(2026, 4, 21, 12, 0);
 
         // createdAt을 만들어놓기
-        NotificationHistory older = NotificationHistory.from(notification, myId, "A");
+        NotificationHistory older = createHistory(notification, myId, "A");
         setCreatedAt(older, now.minusHours(2));
         em.persist(older);
 
-        NotificationHistory newer = NotificationHistory.from(notification, myId, "B", now.plusDays(1));
+        NotificationHistory newer = createHistory(notification, myId, "B", now.plusDays(1));
         setCreatedAt(newer, now.minusHours(1));
         em.persist(newer);
 
         // 제외 대상들 (만료 & 타인)
-        em.persist(NotificationHistory.from(notification, myId, "C", now.minusDays(1)));
-        em.persist(NotificationHistory.from(notification, 2L, "D"));
+        em.persist(createHistory(notification, myId, "C", now.minusDays(1)));
+        em.persist(createHistory(notification, 2L, "D"));
 
         em.flush();
         em.clear();
@@ -103,7 +102,7 @@ class NotificationHistoryRepositoryTest {
     void countUnreadActiveByUserId() {
         // given
         Notification notification = persistTemplate(
-                NotificationTypeCode.COMMENT,
+                NotificationTypeCode.COMMENT_CREATED,
                 "댓글 알림",
                 "{nickname}님이 댓글을 남겼습니다"
         );
@@ -111,21 +110,19 @@ class NotificationHistoryRepositoryTest {
         LocalDateTime now = LocalDateTime.of(2026, 4, 21, 12, 0);
 
         // 읽음
-        NotificationHistory read = NotificationHistory.from(notification, myId, "A");
+        NotificationHistory read = createHistory(notification, myId, "A");
         read.markAsRead();
         historyRepository.save(read);
 
         // 안 읽음, 미만료
-        historyRepository.save(NotificationHistory.from(notification, myId, "B"));
-        historyRepository.save(NotificationHistory.from(
-                notification, myId, "C", now.plusDays(1)));
+        historyRepository.save(createHistory(notification, myId, "B"));
+        historyRepository.save(createHistory(notification, myId, "C", now.plusDays(1)));
 
         // 안 읽음, 만료됨
-        historyRepository.save(NotificationHistory.from(
-                notification, myId, "D", now.minusDays(1)));
+        historyRepository.save(createHistory(notification, myId, "D", now.minusDays(1)));
 
         // 다른 유저
-        historyRepository.save(NotificationHistory.from(notification, 2L, "E"));
+        historyRepository.save(createHistory(notification, 2L, "E"));
         em.flush();
 
         // when
@@ -140,7 +137,7 @@ class NotificationHistoryRepositoryTest {
     void findActiveByUserId_whenExpiredAtEqualsNow_excludes() {
         // given
         Notification notification = persistTemplate(
-                NotificationTypeCode.COMMENT,
+                NotificationTypeCode.COMMENT_CREATED,
                 "댓글 알림",
                 "{nickname}님이 댓글을 남겼습니다"
         );
@@ -148,7 +145,7 @@ class NotificationHistoryRepositoryTest {
         LocalDateTime now = LocalDateTime.of(2026, 4, 21, 12, 0);
 
         // 만료 시각 == 현재 시각
-        em.persist(NotificationHistory.from(notification, myId, "A", now));
+        em.persist(createHistory(notification, myId, "A", now));
         em.flush();
         em.clear();
 
@@ -162,6 +159,24 @@ class NotificationHistoryRepositoryTest {
 
     private void setCreatedAt(NotificationHistory h, LocalDateTime t) {
         ReflectionTestUtils.setField(h, "createdAt", t);
+    }
+
+    private NotificationHistory createHistory(Notification notification, Long userId, String nickname) {
+        return createHistory(notification, userId, nickname, null);
+    }
+
+    private NotificationHistory createHistory(
+            Notification notification,
+            Long userId,
+            String nickname,
+            LocalDateTime expiredAt
+    ) {
+        return NotificationHistory.fromResolvedMessage(
+                notification,
+                userId,
+                nickname + "님이 댓글을 남겼습니다",
+                expiredAt
+        );
     }
 
 }

@@ -7,6 +7,9 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.Map;
+import java.util.regex.Pattern;
+
 @Entity
 @Table(name = "notification")
 @Getter
@@ -15,7 +18,8 @@ public class Notification {
 
     private static final int TITLE_MAX_LENGTH = 50;
     private static final int MESSAGE_MAX_LENGTH = 255;
-    private static final String NICKNAME_PLACEHOLDER = "{nickname}";
+    private static final Pattern UNRESOLVED_PLACEHOLDER = Pattern.compile(".*\\{[^}]+}.*");
+
 
     @Id
     @Column(name = "notification_id")
@@ -45,17 +49,21 @@ public class Notification {
         return new Notification(type, title, messageTemplate);
     }
 
-    /**
-    만약 message에 댓글 내용도 함께 들어간다면, resolve로직은 변경되어야합니다.
-     */
-    public String resolve(String nickname){
-        if(!messageTemplate.contains(NICKNAME_PLACEHOLDER)){
-            return messageTemplate;
+
+    public String resolve(NotificationContext context) {
+        NotificationContext safeContext = context == null ? NotificationContext.empty() : context;
+
+        String resolved = messageTemplate;
+
+        for (Map.Entry<String, String> entry : safeContext.variables().entrySet()) {
+            resolved = resolved.replace("{" + entry.getKey() + "}", entry.getValue());
         }
-        if(nickname==null || nickname.isBlank()){
-            throw new CustomException(NotificationErrorCode.NOTIFICATION_NICKNAME_REQUIRED);
+
+        if (UNRESOLVED_PLACEHOLDER.matcher(resolved).matches()) {
+            throw new CustomException(NotificationErrorCode.NOTIFICATION_CONTEXT_MISSING_VARIABLE);
         }
-        return messageTemplate.replace(NICKNAME_PLACEHOLDER, nickname);
+
+        return resolved;
     }
 
     private static void validateType(NotificationType type){
