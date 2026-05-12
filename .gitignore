@@ -50,11 +50,7 @@ out/
 
 /logs
 
-/docs/*
-!/docs/domain/
-!/docs/domain/**
-!/docs/specs/
-!/docs/specs/**
+/docs
 
 .claude/worktrees
 
