@@ -1,10 +1,16 @@
 package com.detoxmate.screentimeocr.service;
 
 import com.detoxmate.activityrecord.domain.ActivityRecord;
+import com.detoxmate.activityrecord.domain.UserUsageGoalTime;
+import com.detoxmate.activityrecord.dto.UsageGoalTypeCode;
 import com.detoxmate.activityrecord.repository.ActivityRecordRepository;
+import com.detoxmate.activityrecord.repository.UserUsageGoalTimeRepository;
 import com.detoxmate.challengerecord.domain.ChallengeRecord;
 import com.detoxmate.challengerecord.domain.ChallengeRecordCertificationResult;
-import com.detoxmate.challengerecord.repository.ChallengeRecordRepository;
+import com.detoxmate.challengerecord.service.ChallengeRecordService;
+import com.detoxmate.group.domain.GroupChallengeParticipant;
+import com.detoxmate.group.domain.GroupMember;
+import com.detoxmate.group.repository.GroupMemberRepository;
 import com.detoxmate.screentimeocr.domain.ScreenTimeOcrErrorReport;
 import com.detoxmate.screentimeocr.domain.ScreenTimeOcrErrorReportStatus;
 import com.detoxmate.screentimeocr.dto.AdminScreenTimeOcrErrorReportItemResponse;
@@ -15,6 +21,8 @@ import com.detoxmate.screentimeocr.dto.ScreenTimeOcrErrorReportUpdateRequest;
 import com.detoxmate.screentimeocr.dto.ScreenTimeOcrErrorReportUpdateResponse;
 import com.detoxmate.screentimeocr.repository.ScreenTimeOcrErrorReportRepository;
 import com.detoxmate.upload.service.ImageReadUrlBuilder;
+import com.detoxmate.user.domain.User;
+import com.detoxmate.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,7 +32,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Clock;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -34,13 +45,17 @@ public class ScreenTimeOcrErrorReportAdminService {
     private static final String REPORT_ALREADY_RESOLVED_MESSAGE = "이미 처리된 OCR 오류 신고입니다.";
     private static final String ACTION_REQUIRED_MESSAGE = "처리 동작은 필수입니다.";
     private static final String CORRECTED_TOTAL_USED_MINUTES_REQUIRED_MESSAGE = "수정 총 사용 시간은 필수입니다.";
-    private static final String ACTIVITY_RECORD_REQUIRED_MESSAGE = "수정하려면 활동 기록이 연결되어 있어야 합니다.";
     private static final String ACTIVITY_RECORD_NOT_FOUND_MESSAGE = "활동 기록을 찾을 수 없습니다.";
-    private static final String CHALLENGE_RECORD_NOT_FOUND_MESSAGE = "챌린지 기록을 찾을 수 없습니다.";
+    private static final String GROUP_MEMBER_NOT_FOUND_MESSAGE = "그룹 멤버를 찾을 수 없습니다.";
+    private static final String USER_NOT_FOUND_MESSAGE = "사용자를 찾을 수 없습니다.";
+    private static final String TOTAL_USAGE_GOAL_NOT_FOUND_MESSAGE = "사용 가능한 총 사용 시간 목표가 없습니다.";
 
     private final ScreenTimeOcrErrorReportRepository reportRepository;
     private final ActivityRecordRepository activityRecordRepository;
-    private final ChallengeRecordRepository challengeRecordRepository;
+    private final ChallengeRecordService challengeRecordService;
+    private final GroupMemberRepository groupMemberRepository;
+    private final UserRepository userRepository;
+    private final UserUsageGoalTimeRepository userUsageGoalTimeRepository;
     private final ImageReadUrlBuilder imageReadUrlBuilder;
     private final Clock clock;
 
@@ -65,7 +80,6 @@ public class ScreenTimeOcrErrorReportAdminService {
 
     @Transactional
     public ScreenTimeOcrErrorReportUpdateResponse update(
-            String adminActor,
             Long reportId,
             ScreenTimeOcrErrorReportUpdateRequest request
     ) {
@@ -73,8 +87,8 @@ public class ScreenTimeOcrErrorReportAdminService {
         validatePending(report);
 
         switch (validatedAction(request)) {
-            case CORRECT -> correct(adminActor, report, request);
-            case REJECT -> report.reject(adminActor, now(), request.adminNote());
+            case CORRECT -> correct(report, request);
+            case REJECT -> report.reject(now(), request.adminNote());
         }
 
         return toUpdateResponse(report);
@@ -93,7 +107,6 @@ public class ScreenTimeOcrErrorReportAdminService {
                 report.correctedTotalUsedMinutes(),
                 report.status(),
                 report.adminNote(),
-                report.resolvedBy(),
                 report.resolvedAt(),
                 report.createdAt(),
                 report.updatedAt()
@@ -101,22 +114,18 @@ public class ScreenTimeOcrErrorReportAdminService {
     }
 
     private void correct(
-            String adminActor,
             ScreenTimeOcrErrorReport report,
             ScreenTimeOcrErrorReportUpdateRequest request
     ) {
         validateCorrectRequest(report, request);
-        ActivityRecord activityRecord = activityRecordRepository.findByIdWithDetails(report.getActivityRecordId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ACTIVITY_RECORD_NOT_FOUND_MESSAGE));
+        ChallengeRecord challengeRecord = findOrCreateChallengeRecord(report);
+        ActivityRecord activityRecord = resolveActivityRecord(report, challengeRecord, request.correctedTotalUsedMinutes());
 
         boolean allAchieved = activityRecord.correctTotalUsageMinutes(request.correctedTotalUsedMinutes());
-        ChallengeRecord challengeRecord = challengeRecordRepository.findByActivityRecordId(activityRecord.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, CHALLENGE_RECORD_NOT_FOUND_MESSAGE));
-
-        challengeRecord.correctCertificationResult(certificationResult(allAchieved));
+        applyChallengeRecord(challengeRecord, activityRecord, allAchieved);
+        report.linkActivityRecord(activityRecord);
         report.markCorrected(
                 request.correctedTotalUsedMinutes(),
-                adminActor,
                 now(),
                 request.adminNote()
         );
@@ -129,10 +138,89 @@ public class ScreenTimeOcrErrorReportAdminService {
         if (request.correctedTotalUsedMinutes() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, CORRECTED_TOTAL_USED_MINUTES_REQUIRED_MESSAGE);
         }
+    }
 
-        if (!report.hasActivityRecord()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ACTIVITY_RECORD_REQUIRED_MESSAGE);
+    private ActivityRecord findActivityRecord(Long activityRecordId) {
+        return activityRecordRepository.findByIdWithDetails(activityRecordId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ACTIVITY_RECORD_NOT_FOUND_MESSAGE));
+    }
+
+    private ActivityRecord createActivityRecord(ScreenTimeOcrErrorReport report, Integer correctedTotalUsedMinutes) {
+        GroupChallengeParticipant participant = report.getGroupChallengeParticipant();
+        User user = findUser(participant);
+        UserUsageGoalTime totalUsageGoal = findLatestTotalUsageGoal(user.getId(), report.getRecordDate());
+        boolean achieved = correctedTotalUsedMinutes <= totalUsageGoal.getGoalMinutes();
+
+        ActivityRecord activityRecord = ActivityRecord.create(
+                user,
+                participant,
+                report.getImageObjectKey(),
+                null
+        );
+        activityRecord.addDetail(totalUsageGoal, correctedTotalUsedMinutes, achieved);
+        ActivityRecord savedActivityRecord = activityRecordRepository.saveAndFlush(activityRecord);
+        report.linkActivityRecord(savedActivityRecord);
+        return savedActivityRecord;
+    }
+
+    private User findUser(GroupChallengeParticipant participant) {
+        GroupMember groupMember = groupMemberRepository.findById(participant.getGroupMemberId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, GROUP_MEMBER_NOT_FOUND_MESSAGE));
+        return userRepository.findById(groupMember.getUserId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, USER_NOT_FOUND_MESSAGE));
+    }
+
+    private UserUsageGoalTime findLatestTotalUsageGoal(Long userId, LocalDate recordDate) {
+        return userUsageGoalTimeRepository.findAllByUser_IdAndUsageGoalType_CodeInAndCreatedAtBefore(
+                        userId,
+                        List.of(UsageGoalTypeCode.TOTAL_USAGE),
+                        recordDate.atStartOfDay()
+                )
+                .stream()
+                .max(Comparator.comparing(UserUsageGoalTime::getCreatedAt))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, TOTAL_USAGE_GOAL_NOT_FOUND_MESSAGE));
+    }
+
+    private void applyChallengeRecord(
+            ChallengeRecord challengeRecord,
+            ActivityRecord activityRecord,
+            boolean allAchieved
+    ) {
+        if (challengeRecord.isCertified()) {
+            challengeRecord.correctCertificationResult(certificationResult(allAchieved));
+            return;
         }
+
+        challengeRecord.certify(
+                activityRecord.getId(),
+                activityRecord.getGroupChallengeParticipant().getId(),
+                certificationResult(allAchieved)
+        );
+    }
+
+    private ChallengeRecord findOrCreateChallengeRecord(ScreenTimeOcrErrorReport report) {
+        GroupChallengeParticipant participant = report.getGroupChallengeParticipant();
+        return challengeRecordService.create(
+                participant.getGroupChallengeId(),
+                participant.getId(),
+                report.getRecordDate()
+        );
+    }
+
+    private ActivityRecord resolveActivityRecord(
+            ScreenTimeOcrErrorReport report,
+            ChallengeRecord challengeRecord,
+            Integer correctedTotalUsedMinutes
+    ) {
+        if (challengeRecord.getActivityRecordId() != null) {
+            return findActivityRecord(challengeRecord.getActivityRecordId());
+        }
+
+        if (report.hasActivityRecord()) {
+            return findActivityRecord(report.getActivityRecordId());
+        }
+
+        return createActivityRecord(report, correctedTotalUsedMinutes);
     }
 
     private ScreenTimeOcrErrorReport findReport(Long reportId) {
@@ -168,7 +256,6 @@ public class ScreenTimeOcrErrorReportAdminService {
                 report.getOcrTotalUsedMinutes(),
                 report.getCorrectedTotalUsedMinutes(),
                 report.getAdminNote(),
-                report.getResolvedBy(),
                 report.getResolvedAt()
         );
     }

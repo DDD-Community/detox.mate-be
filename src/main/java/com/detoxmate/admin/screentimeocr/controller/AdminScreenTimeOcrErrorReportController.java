@@ -41,7 +41,7 @@ public class AdminScreenTimeOcrErrorReportController {
             @PathVariable Long reportId,
             @Valid @RequestBody ScreenTimeOcrErrorReportUpdateRequest request
     ) {
-        String adminActor = adminAuthorizationService.requireAdmin(adminToken);
-        return reportAdminService.update(adminActor, reportId, request);
+        adminAuthorizationService.requireAdmin(adminToken);
+        return reportAdminService.update(reportId, request);
     }
 }

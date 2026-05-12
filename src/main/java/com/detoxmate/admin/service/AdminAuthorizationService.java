@@ -18,7 +18,7 @@ public class AdminAuthorizationService {
 
     private final AdminProperties adminProperties;
 
-    public String requireAdmin(String adminToken) {
+    public void requireAdmin(String adminToken) {
         String configuredToken = adminProperties.reviewToken();
         if (configuredToken == null || configuredToken.isBlank()) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, ADMIN_TOKEN_NOT_CONFIGURED_MESSAGE);
@@ -31,7 +31,5 @@ public class AdminAuthorizationService {
                 )) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, ADMIN_ACCESS_DENIED_MESSAGE);
         }
-
-        return adminProperties.actorNameOrDefault();
     }
 }

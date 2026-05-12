@@ -78,7 +78,6 @@ class AdminScreenTimeOcrErrorReportControllerTest {
         ParameterDescriptor[] queryParameterDescriptors = listQueryParameters();
         FieldDescriptor[] responseFieldDescriptors = listResponseFields();
 
-        when(adminAuthorizationService.requireAdmin("test-admin-token")).thenReturn("TEST_ADMIN");
         when(adminReportService.list(ScreenTimeOcrErrorReportStatus.PENDING, PageRequest.of(0, 20)))
                 .thenReturn(new AdminScreenTimeOcrErrorReportListResponse(
                         List.of(new AdminScreenTimeOcrErrorReportItemResponse(
@@ -92,7 +91,6 @@ class AdminScreenTimeOcrErrorReportControllerTest {
                                 180,
                                 null,
                                 ScreenTimeOcrErrorReportStatus.PENDING,
-                                null,
                                 null,
                                 null,
                                 LocalDateTime.of(2026, 5, 12, 21, 31),
@@ -141,8 +139,7 @@ class AdminScreenTimeOcrErrorReportControllerTest {
         FieldDescriptor[] requestFieldDescriptors = updateRequestFields();
         FieldDescriptor[] responseFieldDescriptors = updateResponseFields();
 
-        when(adminAuthorizationService.requireAdmin("test-admin-token")).thenReturn("TEST_ADMIN");
-        when(adminReportService.update("TEST_ADMIN", 555L, new ScreenTimeOcrErrorReportUpdateRequest(
+        when(adminReportService.update(555L, new ScreenTimeOcrErrorReportUpdateRequest(
                 ScreenTimeOcrErrorReportUpdateAction.CORRECT,
                 165,
                 "스크린샷 기준 총 사용시간 2시간 45분"
@@ -152,7 +149,6 @@ class AdminScreenTimeOcrErrorReportControllerTest {
                 180,
                 165,
                 "스크린샷 기준 총 사용시간 2시간 45분",
-                "TEST_ADMIN",
                 LocalDateTime.of(2026, 5, 13, 10, 0)
         ));
 
@@ -171,7 +167,6 @@ class AdminScreenTimeOcrErrorReportControllerTest {
                 .andExpect(jsonPath("$.id").value(555))
                 .andExpect(jsonPath("$.status").value("CORRECTED"))
                 .andExpect(jsonPath("$.correctedTotalUsedMinutes").value(165))
-                .andExpect(jsonPath("$.resolvedBy").value("TEST_ADMIN"))
                 .andDo(document("admin/screen-time-ocr-error-reports/update",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
@@ -227,7 +222,6 @@ class AdminScreenTimeOcrErrorReportControllerTest {
                 fieldWithPath("items[].correctedTotalUsedMinutes").type(JsonFieldType.NUMBER).optional().description("admin이 수정한 총 사용 시간(분)"),
                 fieldWithPath("items[].status").type(JsonFieldType.STRING).description("신고 상태"),
                 fieldWithPath("items[].adminNote").type(JsonFieldType.STRING).optional().description("admin 처리 메모"),
-                fieldWithPath("items[].resolvedBy").type(JsonFieldType.STRING).optional().description("처리한 admin actor"),
                 fieldWithPath("items[].resolvedAt").type(JsonFieldType.STRING).optional().description("처리 시각"),
                 fieldWithPath("items[].createdAt").type(JsonFieldType.STRING).description("생성 시각"),
                 fieldWithPath("items[].updatedAt").type(JsonFieldType.STRING).description("수정 시각"),
@@ -253,7 +247,6 @@ class AdminScreenTimeOcrErrorReportControllerTest {
                 fieldWithPath("ocrTotalUsedMinutes").type(JsonFieldType.NUMBER).description("OCR이 추론한 총 사용 시간(분)"),
                 fieldWithPath("correctedTotalUsedMinutes").type(JsonFieldType.NUMBER).optional().description("admin이 수정한 총 사용 시간(분)"),
                 fieldWithPath("adminNote").type(JsonFieldType.STRING).optional().description("admin 처리 메모"),
-                fieldWithPath("resolvedBy").type(JsonFieldType.STRING).description("처리한 admin actor"),
                 fieldWithPath("resolvedAt").type(JsonFieldType.STRING).description("처리 시각")
         };
     }

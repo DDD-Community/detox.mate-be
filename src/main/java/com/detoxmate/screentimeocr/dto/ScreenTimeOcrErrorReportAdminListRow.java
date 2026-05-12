@@ -17,7 +17,6 @@ public record ScreenTimeOcrErrorReportAdminListRow(
         Integer correctedTotalUsedMinutes,
         ScreenTimeOcrErrorReportStatus status,
         String adminNote,
-        String resolvedBy,
         LocalDateTime resolvedAt,
         LocalDateTime createdAt,
         LocalDateTime updatedAt

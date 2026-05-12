@@ -28,6 +28,5 @@ firebase:
 app:
   admin:
     review-token: test-admin-token
-    actor-name: TEST_ADMIN
   storage:
     image-read-base-url: https://example.com/media

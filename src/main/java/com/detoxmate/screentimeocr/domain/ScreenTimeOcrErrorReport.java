@@ -77,9 +77,6 @@ public class ScreenTimeOcrErrorReport {
     @Column(name = "admin_note", columnDefinition = "TEXT")
     private String adminNote;
 
-    @Column(name = "resolved_by", length = 100)
-    private String resolvedBy;
-
     @Column(name = "resolved_at")
     private LocalDateTime resolvedAt;
 
@@ -145,22 +142,25 @@ public class ScreenTimeOcrErrorReport {
         return activityRecord != null;
     }
 
-    public void markCorrected(Integer correctedTotalUsedMinutes, String resolvedBy, LocalDateTime resolvedAt, String adminNote) {
+    public void linkActivityRecord(ActivityRecord activityRecord) {
+        if (activityRecord == null) {
+            throw new IllegalArgumentException("activityRecord 는 필수입니다.");
+        }
+        this.activityRecord = activityRecord;
+    }
+
+    public void markCorrected(Integer correctedTotalUsedMinutes, LocalDateTime resolvedAt, String adminNote) {
         validateMinutes(correctedTotalUsedMinutes);
-        validateResolvedBy(resolvedBy);
         validateResolvedAt(resolvedAt);
         this.correctedTotalUsedMinutes = correctedTotalUsedMinutes;
         this.status = ScreenTimeOcrErrorReportStatus.CORRECTED;
-        this.resolvedBy = resolvedBy;
         this.resolvedAt = resolvedAt;
         this.adminNote = adminNote;
     }
 
-    public void reject(String resolvedBy, LocalDateTime resolvedAt, String adminNote) {
-        validateResolvedBy(resolvedBy);
+    public void reject(LocalDateTime resolvedAt, String adminNote) {
         validateResolvedAt(resolvedAt);
         this.status = ScreenTimeOcrErrorReportStatus.REJECTED;
-        this.resolvedBy = resolvedBy;
         this.resolvedAt = resolvedAt;
         this.adminNote = adminNote;
     }
@@ -190,12 +190,6 @@ public class ScreenTimeOcrErrorReport {
 
         if (minutes < 0) {
             throw new IllegalArgumentException("minutes 는 0 이상이어야 합니다.");
-        }
-    }
-
-    private static void validateResolvedBy(String resolvedBy) {
-        if (resolvedBy == null || resolvedBy.isBlank()) {
-            throw new IllegalArgumentException("resolvedBy 는 필수입니다.");
         }
     }
 

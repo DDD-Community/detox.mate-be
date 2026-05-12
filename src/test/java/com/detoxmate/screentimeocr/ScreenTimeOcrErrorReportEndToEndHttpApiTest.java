@@ -161,7 +161,7 @@ class ScreenTimeOcrErrorReportEndToEndHttpApiTest {
         );
         assertThat(updatedReport.get("status").asText()).isEqualTo("CORRECTED");
         assertThat(updatedReport.get("correctedTotalUsedMinutes").asInt()).isEqualTo(100);
-        assertThat(updatedReport.get("resolvedBy").asText()).isEqualTo("TEST_ADMIN");
+        assertThat(updatedReport.has("resolvedBy")).isFalse();
 
         ActivityRecord correctedActivityRecord = activityRecordRepository
                 .findByIdWithDetails(fixture.activityRecord().getId())
@@ -208,9 +208,9 @@ class ScreenTimeOcrErrorReportEndToEndHttpApiTest {
     }
 
     @Test
-    @DisplayName("실제 HTTP API로 activityRecordId 없이 OCR 오류 신고를 생성한다")
-    void createReport_allowsMissingActivityRecordIdThroughHttpApi() throws Exception {
-        Fixture fixture = saveFixture();
+    @DisplayName("실제 HTTP API로 activityRecordId 없이 생성된 OCR 오류 신고를 admin이 보정한다")
+    void adminCorrect_createsActivityRecordWhenReportHasNoActivityRecordThroughHttpApi() throws Exception {
+        ParticipantFixture fixture = saveParticipantFixture();
         String userBearer = bearer(fixture.user().getId());
 
         JsonNode createdReport = postJson(
@@ -234,6 +234,57 @@ class ScreenTimeOcrErrorReportEndToEndHttpApiTest {
         ScreenTimeOcrErrorReport report = reportRepository.findById(reportId).orElseThrow();
         assertThat(report.getActivityRecordId()).isNull();
         assertThat(report.getGroupChallengeParticipantId()).isEqualTo(fixture.participant().getId());
+
+        JsonNode updatedReport = patchAdminJson(
+                "/admin/screen-time-ocr-error-reports/" + reportId,
+                "test-admin-token",
+                """
+                        {
+                          "action": "CORRECT",
+                          "correctedTotalUsedMinutes": 100,
+                          "adminNote": "activityRecordId 없는 신고 검수"
+                        }
+                        """,
+                200
+        );
+        assertThat(updatedReport.get("status").asText()).isEqualTo("CORRECTED");
+
+        ScreenTimeOcrErrorReport correctedReport = reportRepository.findById(reportId).orElseThrow();
+        assertThat(correctedReport.getActivityRecordId()).isNotNull();
+
+        ActivityRecord createdActivityRecord = activityRecordRepository
+                .findByIdWithDetails(correctedReport.getActivityRecordId())
+                .orElseThrow();
+        ActivityRecordDetail totalUsageDetail = createdActivityRecord.getDetails().getFirst();
+        assertThat(createdActivityRecord.getGroupChallengeParticipant().getId()).isEqualTo(fixture.participant().getId());
+        assertThat(totalUsageDetail.getUseMinutes()).isEqualTo(100);
+        assertThat(totalUsageDetail.isAchieved()).isTrue();
+
+        ChallengeRecord challengeRecord = challengeRecordRepository
+                .findByActivityRecordId(createdActivityRecord.getId())
+                .orElseThrow();
+        assertThat(challengeRecord.getStatus()).isEqualTo(ChallengeRecordStatus.AFTER_RECORD_SUCCESS);
+    }
+
+    private ParticipantFixture saveParticipantFixture() {
+        int sequence = FIXTURE_SEQUENCE.incrementAndGet();
+        UsageGoalType totalUsage = usageGoalTypeRepository.save(
+                UsageGoalType.create((long) sequence, UsageGoalTypeCode.TOTAL_USAGE)
+        );
+        User user = userRepository.save(User.createNew("신고자"));
+
+        Group group = groupRepository.save(Group.createNew("OCR무기록" + sequence, "OR0" + sequence));
+        GroupChallenge challenge = GroupChallenge.createFirst(group.getId());
+        challenge.activate(LocalDateTime.of(2026, 5, 10, 0, 0));
+        groupChallengeRepository.save(challenge);
+
+        GroupMember groupMember = groupMemberRepository.save(GroupMember.createMember(user.getId(), group.getId()));
+        GroupChallengeParticipant participant = participantRepository.save(
+                GroupChallengeParticipant.join(groupMember.getId(), challenge.getId())
+        );
+        saveGoal(user, totalUsage, 120, LocalDateTime.of(2026, 5, 11, 9, 0));
+
+        return new ParticipantFixture(user, participant);
     }
 
     private Fixture saveFixture() {
@@ -377,6 +428,12 @@ class ScreenTimeOcrErrorReportEndToEndHttpApiTest {
             User user,
             GroupChallengeParticipant participant,
             ActivityRecord activityRecord
+    ) {
+    }
+
+    private record ParticipantFixture(
+            User user,
+            GroupChallengeParticipant participant
     ) {
     }
 }

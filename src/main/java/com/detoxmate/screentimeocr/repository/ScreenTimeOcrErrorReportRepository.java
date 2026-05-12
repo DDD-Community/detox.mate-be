@@ -32,7 +32,6 @@ public interface ScreenTimeOcrErrorReportRepository extends JpaRepository<Screen
                         report.correctedTotalUsedMinutes,
                         report.status,
                         report.adminNote,
-                        report.resolvedBy,
                         report.resolvedAt,
                         report.createdAt,
                         report.updatedAt
