@@ -34,4 +34,17 @@ class UploadObjectKeyFactoryTest {
                 .startsWith("profile-images/7/")
                 .endsWith("-avatar.png");
     }
+
+    @Test
+    void screen_time_ocr_report_image용_objectKey를_생성한다() {
+        String objectKey = uploadObjectKeyFactory.create(
+                7L,
+                UploadPurpose.SCREEN_TIME_OCR_REPORT_IMAGE,
+                "screen time.png"
+        );
+
+        assertThat(objectKey)
+                .startsWith("screen-time-ocr-reports/7/2026/04/")
+                .endsWith("-screen-time.png");
+    }
 }
