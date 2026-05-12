@@ -64,7 +64,7 @@ public class ScreenTimeOcrErrorReportAdminService {
 
     @Transactional
     public ScreenTimeOcrErrorReportUpdateResponse update(
-            Long adminUserId,
+            String adminActor,
             Long reportId,
             ScreenTimeOcrErrorReportUpdateRequest request
     ) {
@@ -72,8 +72,8 @@ public class ScreenTimeOcrErrorReportAdminService {
         validatePending(report);
 
         switch (validatedAction(request)) {
-            case CORRECT -> correct(adminUserId, report, request);
-            case REJECT -> report.reject(adminUserId, now(), request.adminNote());
+            case CORRECT -> correct(adminActor, report, request);
+            case REJECT -> report.reject(adminActor, now(), request.adminNote());
         }
 
         return toUpdateResponse(report);
@@ -92,7 +92,7 @@ public class ScreenTimeOcrErrorReportAdminService {
                 report.getCorrectedTotalUsedMinutes(),
                 report.getStatus(),
                 report.getAdminNote(),
-                report.getResolvedByUserId(),
+                report.getResolvedBy(),
                 report.getResolvedAt(),
                 report.getCreatedAt(),
                 report.getUpdatedAt()
@@ -100,7 +100,7 @@ public class ScreenTimeOcrErrorReportAdminService {
     }
 
     private void correct(
-            Long adminUserId,
+            String adminActor,
             ScreenTimeOcrErrorReport report,
             ScreenTimeOcrErrorReportUpdateRequest request
     ) {
@@ -115,7 +115,7 @@ public class ScreenTimeOcrErrorReportAdminService {
         challengeRecord.correctCertificationResult(certificationResult(allAchieved));
         report.markCorrected(
                 request.correctedTotalUsedMinutes(),
-                adminUserId,
+                adminActor,
                 now(),
                 request.adminNote()
         );
@@ -167,7 +167,7 @@ public class ScreenTimeOcrErrorReportAdminService {
                 report.getOcrTotalUsedMinutes(),
                 report.getCorrectedTotalUsedMinutes(),
                 report.getAdminNote(),
-                report.getResolvedByUserId(),
+                report.getResolvedBy(),
                 report.getResolvedAt()
         );
     }

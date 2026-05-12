@@ -47,10 +47,6 @@ public class User {
     @Column(name = "status", length = 20)
     private UserStatus status;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "role", length = 20)
-    private UserRole role;
-
     @Column(name = "withdrawn_at")
     private LocalDateTime withdrawnAt;
 
@@ -58,7 +54,6 @@ public class User {
         this.displayName = displayName;
         this.profileImageObjectKey = profileImageObjectKey;
         this.status = UserStatus.ACTIVE;
-        this.role = UserRole.USER;
     }
 
     public static User createNew(String displayName) {
@@ -83,14 +78,6 @@ public class User {
 
     public boolean isWithdrawn() {
         return status == UserStatus.WITHDRAWN;
-    }
-
-    public boolean isAdmin() {
-        return role == UserRole.ADMIN;
-    }
-
-    public void grantAdminRole() {
-        role = UserRole.ADMIN;
     }
 
     public String getPublicDisplayName() {

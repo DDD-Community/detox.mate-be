@@ -22,7 +22,7 @@ public class DevCorsConfig implements WebMvcConfigurer {
     );
 
     static final List<String> ALLOWED_METHODS = List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS");
-    static final List<String> ALLOWED_HEADERS = List.of("Authorization", "Content-Type", "Accept");
+    static final List<String> ALLOWED_HEADERS = List.of("Authorization", "X-Admin-Token", "Content-Type", "Accept");
     static final boolean ALLOW_CREDENTIALS = false;
     static final long MAX_AGE = 3600L;
 

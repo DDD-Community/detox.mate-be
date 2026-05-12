@@ -17,6 +17,9 @@ springdoc:
     url: /openapi3.yaml
 
 app:
+  admin:
+    review-token: ${ADMIN_REVIEW_TOKEN:}
+    actor-name: ${ADMIN_REVIEW_ACTOR:MVP_ADMIN}
   storage:
     image-read-base-url: ${STORAGE_IMAGE_READ_BASE_URL}
     s3:
