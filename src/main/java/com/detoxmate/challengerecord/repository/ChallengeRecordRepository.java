@@ -46,6 +46,16 @@ public interface ChallengeRecordRepository extends JpaRepository<ChallengeRecord
             LocalDate endDate
     );
 
+    List<ChallengeRecord> findAllByGroupChallengeParticipantIdInAndRecordDateBetweenOrderByRecordDateAscIdAsc(
+            List<Long> groupChallengeParticipantIds,
+            LocalDate startDate,
+            LocalDate endDate
+    );
+
+    List<ChallengeRecord> findAllByGroupChallengeParticipantIdInOrderByRecordDateAscIdAsc(
+            List<Long> groupChallengeParticipantIds
+    );
+
     @Query("""
             select cr
             from ChallengeRecord cr

@@ -6,18 +6,20 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public record GroupMemberProfileResponse(
-        Long id,
+        Long groupMemberId,
         Long userId,
         Long groupId,
         String displayName,
         String profileImageUrl,
         String role,
-        String status,
+        String memberStatus,
         LocalDateTime joinedAt,
-        int dayCount,
+        String goalStatus,
         @JsonProperty("isUserWithdrawn")
         boolean userWithdrawn,
         List<GroupMemberUsageGoalResponse> currentGoals,
-        MemberStatsResponse stats
+        GroupMemberGoalChangeAvailabilityResponse goalChangeAvailability,
+        GroupMemberActivitySummaryResponse activitySummary,
+        GroupMemberWeeklySummaryResponse weeklySummary
 ) {
 }

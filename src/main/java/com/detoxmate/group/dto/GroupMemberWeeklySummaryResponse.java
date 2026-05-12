@@ -2,11 +2,14 @@ package com.detoxmate.group.dto;
 
 import java.time.LocalDate;
 
-public record MemberRecent7DaysStatsResponse(
+public record GroupMemberWeeklySummaryResponse(
         LocalDate startDate,
         LocalDate endDate,
         int totalDays,
-        int submittedDays,
+        int averageUsedMinutes,
+        Integer goalMinutes,
+        Integer differenceMinutes,
+        int certifiedDays,
         int achievedDays
 ) {
 }

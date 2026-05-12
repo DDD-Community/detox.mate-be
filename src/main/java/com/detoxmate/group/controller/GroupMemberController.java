@@ -14,12 +14,12 @@ public class GroupMemberController {
 
     private final GroupMemberProfileService groupMemberProfileService;
 
-    @GetMapping("/groups/{groupId}/members/{memberId}")
+    @GetMapping("/groups/{groupId}/members/{groupMemberId}")
     public GroupMemberProfileResponse getGroupMemberProfile(
             CurrentUser currentUser,
             @PathVariable("groupId") Long groupId,
-            @PathVariable("memberId") Long memberId
+            @PathVariable("groupMemberId") Long groupMemberId
     ) {
-        return groupMemberProfileService.getGroupMemberProfile(groupId, memberId, currentUser.id());
+        return groupMemberProfileService.getGroupMemberProfile(groupId, groupMemberId, currentUser.id());
     }
 }

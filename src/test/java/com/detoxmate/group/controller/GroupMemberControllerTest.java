@@ -2,11 +2,11 @@ package com.detoxmate.group.controller;
 
 import com.detoxmate.activityrecord.dto.UsageGoalTypeCode;
 import com.detoxmate.auth.CurrentUserResolver;
+import com.detoxmate.group.dto.GroupMemberActivitySummaryResponse;
+import com.detoxmate.group.dto.GroupMemberGoalChangeAvailabilityResponse;
 import com.detoxmate.group.dto.GroupMemberProfileResponse;
 import com.detoxmate.group.dto.GroupMemberUsageGoalResponse;
-import com.detoxmate.group.dto.MemberOverallStatsResponse;
-import com.detoxmate.group.dto.MemberRecent7DaysStatsResponse;
-import com.detoxmate.group.dto.MemberStatsResponse;
+import com.detoxmate.group.dto.GroupMemberWeeklySummaryResponse;
 import com.detoxmate.group.service.GroupMemberProfileService;
 import com.detoxmate.user.dto.MyProfileResponse;
 import com.detoxmate.user.service.UserService;
@@ -27,7 +27,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -82,14 +81,17 @@ class GroupMemberControllerTest {
         com.epages.restdocs.apispec.ParameterDescriptorWithType[] typedPathParameterDescriptors = groupMemberProfileOpenApiPathParameters();
         FieldDescriptor[] responseFieldDescriptors = groupMemberProfileResponseFields();
 
-        mockMvc.perform(get("/groups/{groupId}/members/{memberId}", 1L, 100L)
+        mockMvc.perform(get("/groups/{groupId}/members/{groupMemberId}", 1L, 100L)
                         .header("Authorization", "Bearer access-token"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.id").value(100))
-                .andExpect(jsonPath("$.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.groupMemberId").value(100))
+                .andExpect(jsonPath("$.memberStatus").value("ACTIVE"))
                 .andExpect(jsonPath("$.currentGoals[0].id").value(101))
-                .andExpect(jsonPath("$.stats.overall.achievementRate").value(43))
+                .andExpect(jsonPath("$.currentGoals[0].createdAt").value("2026-05-01T10:00:00"))
+                .andExpect(jsonPath("$.currentGoals[0].setAt").doesNotExist())
+                .andExpect(jsonPath("$.activitySummary.achievementRate").value(75))
+                .andExpect(jsonPath("$.weeklySummary.averageUsedMinutes").value(90))
                 .andDo(document("groups/members/get-by-id",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
@@ -118,7 +120,7 @@ class GroupMemberControllerTest {
         com.epages.restdocs.apispec.ParameterDescriptorWithType[] typedPathParameterDescriptors = groupMemberProfileOpenApiPathParameters();
         FieldDescriptor[] errorResponseFieldDescriptors = errorResponseFields();
 
-        mockMvc.perform(get("/groups/{groupId}/members/{memberId}", 1L, 100L)
+        mockMvc.perform(get("/groups/{groupId}/members/{groupMemberId}", 1L, 100L)
                         .header("Authorization", "Bearer access-token"))
                 .andExpect(status().isForbidden())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
@@ -152,16 +154,15 @@ class GroupMemberControllerTest {
                 "MEMBER",
                 "ACTIVE",
                 LocalDateTime.of(2026, 5, 1, 23, 50),
-                4,
+                "SET",
                 false,
                 List.of(
-                        new GroupMemberUsageGoalResponse(101L, UsageGoalTypeCode.TOTAL_USAGE, 60, LocalDateTime.of(2026, 4, 29, 10, 30)),
-                        new GroupMemberUsageGoalResponse(102L, UsageGoalTypeCode.INSTAGRAM, 30, LocalDateTime.of(2026, 4, 29, 10, 30))
+                        new GroupMemberUsageGoalResponse(101L, UsageGoalTypeCode.TOTAL_USAGE, 120, LocalDateTime.of(2026, 5, 1, 10, 0)),
+                        new GroupMemberUsageGoalResponse(102L, UsageGoalTypeCode.INSTAGRAM, 30, LocalDateTime.of(2026, 5, 1, 10, 0))
                 ),
-                new MemberStatsResponse(
-                        new MemberOverallStatsResponse(LocalDate.of(2026, 4, 29), LocalDate.of(2026, 5, 5), 7, 3, 43),
-                        new MemberRecent7DaysStatsResponse(LocalDate.of(2026, 4, 29), LocalDate.of(2026, 5, 5), 7, 5, 3)
-                )
+                new GroupMemberGoalChangeAvailabilityResponse(false, java.time.LocalDate.of(2026, 5, 15), 1),
+                new GroupMemberActivitySummaryResponse(java.time.LocalDate.of(2026, 5, 5), 8, 75),
+                new GroupMemberWeeklySummaryResponse(java.time.LocalDate.of(2026, 5, 6), java.time.LocalDate.of(2026, 5, 12), 7, 90, 120, 30, 5, 3)
         );
     }
 
@@ -174,7 +175,7 @@ class GroupMemberControllerTest {
     private ParameterDescriptor[] groupMemberProfilePathParameters() {
         return new ParameterDescriptor[] {
                 parameterWithName("groupId").description("그룹 ID"),
-                parameterWithName("memberId").description("그룹 멤버 ID")
+                parameterWithName("groupMemberId").description("그룹 멤버 ID")
         };
     }
 
@@ -183,7 +184,7 @@ class GroupMemberControllerTest {
                 com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName("groupId")
                         .type(SimpleType.INTEGER)
                         .description("그룹 ID"),
-                com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName("memberId")
+                com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName("groupMemberId")
                         .type(SimpleType.INTEGER)
                         .description("그룹 멤버 ID")
         };
@@ -191,34 +192,38 @@ class GroupMemberControllerTest {
 
     private FieldDescriptor[] groupMemberProfileResponseFields() {
         return new FieldDescriptor[] {
-                fieldWithPath("id").type(JsonFieldType.NUMBER).description("그룹 멤버 ID"),
+                fieldWithPath("groupMemberId").type(JsonFieldType.NUMBER).description("그룹 멤버 ID"),
                 fieldWithPath("userId").type(JsonFieldType.NUMBER).description("사용자 ID"),
                 fieldWithPath("groupId").type(JsonFieldType.NUMBER).description("그룹 ID"),
                 fieldWithPath("displayName").type(JsonFieldType.STRING).description("사용자 표시 이름"),
                 fieldWithPath("profileImageUrl").type(JsonFieldType.STRING).description("저장된 프로필 이미지 object key를 읽기 URL로 변환한 값").optional(),
                 fieldWithPath("role").type(JsonFieldType.STRING).description("그룹 내 역할"),
-                fieldWithPath("status").type(JsonFieldType.STRING).description("그룹 멤버 상태"),
+                fieldWithPath("memberStatus").type(JsonFieldType.STRING).description("그룹 멤버 상태"),
                 fieldWithPath("joinedAt").type(JsonFieldType.STRING).description("그룹 참여 일시"),
-                fieldWithPath("dayCount").type(JsonFieldType.NUMBER).description("현재 챌린지 참여일 기준 D-day. 같은 날이면 0"),
+                fieldWithPath("goalStatus").type(JsonFieldType.STRING).description("목표 설정 상태. SET 또는 NOT_SET"),
                 fieldWithPath("isUserWithdrawn").type(JsonFieldType.BOOLEAN).description("회원 탈퇴한 사용자인지 여부"),
                 fieldWithPath("currentGoals").type(JsonFieldType.ARRAY).description("목표 타입별 최신 목표 시간"),
                 fieldWithPath("currentGoals[].id").type(JsonFieldType.NUMBER).description("user usage goal time ID"),
                 fieldWithPath("currentGoals[].usageGoalType").type(JsonFieldType.STRING).description("사용시간 목표 타입"),
                 fieldWithPath("currentGoals[].goalMinutes").type(JsonFieldType.NUMBER).description("목표 사용시간(분)"),
-                fieldWithPath("currentGoals[].setAt").type(JsonFieldType.STRING).description("목표 설정 일시"),
-                fieldWithPath("stats").type(JsonFieldType.OBJECT).description("목표 달성 통계"),
-                fieldWithPath("stats.overall").type(JsonFieldType.OBJECT).description("전체 달성률 통계"),
-                fieldWithPath("stats.overall.startDate").type(JsonFieldType.STRING).description("전체 달성률 계산 시작일"),
-                fieldWithPath("stats.overall.endDate").type(JsonFieldType.STRING).description("전체 달성률 계산 종료일"),
-                fieldWithPath("stats.overall.totalDays").type(JsonFieldType.NUMBER).description("전체 달성률 분모"),
-                fieldWithPath("stats.overall.achievedDays").type(JsonFieldType.NUMBER).description("전체 달성률 기간 중 달성일 수"),
-                fieldWithPath("stats.overall.achievementRate").type(JsonFieldType.NUMBER).description("정수 반올림한 전체 달성률"),
-                fieldWithPath("stats.recent7Days").type(JsonFieldType.OBJECT).description("오늘 포함 최근 7일 통계"),
-                fieldWithPath("stats.recent7Days.startDate").type(JsonFieldType.STRING).description("최근 7일 시작일"),
-                fieldWithPath("stats.recent7Days.endDate").type(JsonFieldType.STRING).description("최근 7일 종료일"),
-                fieldWithPath("stats.recent7Days.totalDays").type(JsonFieldType.NUMBER).description("최근 7일 분모. 항상 7"),
-                fieldWithPath("stats.recent7Days.submittedDays").type(JsonFieldType.NUMBER).description("최근 7일 중 최종 인증 완료일 수"),
-                fieldWithPath("stats.recent7Days.achievedDays").type(JsonFieldType.NUMBER).description("최근 7일 중 목표 달성일 수")
+                fieldWithPath("currentGoals[].createdAt").type(JsonFieldType.STRING).description("목표 설정 일시"),
+                fieldWithPath("goalChangeAvailability").type(JsonFieldType.OBJECT).description("본인 조회 시 목표 변경 가능 상태. 타인 조회이면 null").optional(),
+                fieldWithPath("goalChangeAvailability.canChange").type(JsonFieldType.BOOLEAN).description("목표 변경 가능 여부").optional(),
+                fieldWithPath("goalChangeAvailability.nextChangeAvailableDate").type(JsonFieldType.STRING).description("다음 목표 변경 가능 날짜").optional(),
+                fieldWithPath("goalChangeAvailability.remainingDays").type(JsonFieldType.NUMBER).description("목표 변경까지 남은 날짜 수").optional(),
+                fieldWithPath("activitySummary").type(JsonFieldType.OBJECT).description("첫 인증 기준 전체 상태"),
+                fieldWithPath("activitySummary.firstCertifiedDate").type(JsonFieldType.STRING).description("첫 인증 날짜. 없으면 null").optional(),
+                fieldWithPath("activitySummary.dayCount").type(JsonFieldType.NUMBER).description("첫 인증 기준 D-day 숫자"),
+                fieldWithPath("activitySummary.achievementRate").type(JsonFieldType.NUMBER).description("첫 인증 이후 전체 달성률"),
+                fieldWithPath("weeklySummary").type(JsonFieldType.OBJECT).description("오늘 포함 최근 7일 집계"),
+                fieldWithPath("weeklySummary.startDate").type(JsonFieldType.STRING).description("최근 7일 시작일"),
+                fieldWithPath("weeklySummary.endDate").type(JsonFieldType.STRING).description("최근 7일 종료일"),
+                fieldWithPath("weeklySummary.totalDays").type(JsonFieldType.NUMBER).description("최근 7일 분모. 항상 7"),
+                fieldWithPath("weeklySummary.averageUsedMinutes").type(JsonFieldType.NUMBER).description("미인증일을 0분으로 포함한 평균 사용 시간"),
+                fieldWithPath("weeklySummary.goalMinutes").type(JsonFieldType.NUMBER).description("최신 TOTAL_USAGE 목표 시간. 없으면 null").optional(),
+                fieldWithPath("weeklySummary.differenceMinutes").type(JsonFieldType.NUMBER).description("목표 시간 - 평균 사용 시간. 목표가 없으면 null").optional(),
+                fieldWithPath("weeklySummary.certifiedDays").type(JsonFieldType.NUMBER).description("최근 7일 중 인증한 날짜 수"),
+                fieldWithPath("weeklySummary.achievedDays").type(JsonFieldType.NUMBER).description("최근 7일 중 목표 달성 날짜 수")
         };
     }
 
