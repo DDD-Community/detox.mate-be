@@ -73,7 +73,7 @@ class AuthServiceTest {
     void 처음_로그인한_카카오_계정이면_신규_유저를_생성한다() {
         // given
         FakeKakaoRestApiClient kakaoRestApiClient = new FakeKakaoRestApiClient(
-                new KakaoUserInfo("123456789", "카카오닉네임")
+                new KakaoUserInfo("123456789", "12345678901")
         );
         UserRepository userRepository = mock(UserRepository.class);
         SocialLoginUserRepository socialLoginUserRepository = mock(SocialLoginUserRepository.class);
@@ -92,6 +92,7 @@ class AuthServiceTest {
                 .thenReturn(Optional.empty());
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
             User savedUser = invocation.getArgument(0);
+            assertThat(savedUser.getDisplayName()).isEqualTo("1234567890");
             assertThat(savedUser.getProfileImageObjectKey()).isNull();
             ReflectionTestUtils.setField(savedUser, "id", 1L);
             return savedUser;

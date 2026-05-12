@@ -4,7 +4,7 @@ import com.detoxmate.common.validation.NullOrNotBlank;
 import jakarta.validation.constraints.Size;
 
 public record UpdateMyProfileRequest(
-        @Size(max = 30)
+        @Size(max = 10)
         @NullOrNotBlank
         String displayName,
 

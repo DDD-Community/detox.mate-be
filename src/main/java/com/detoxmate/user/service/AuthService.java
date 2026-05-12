@@ -21,6 +21,8 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class AuthService {
 
+    private static final int MAX_INITIAL_DISPLAY_NAME_LENGTH = 10;
+
     private final KakaoRestApiClient kakaoRestApiClient;
     private final UserRepository userRepository;
     private final SocialLoginUserRepository socialLoginUserRepository;
@@ -73,9 +75,17 @@ public class AuthService {
             String displayName,
             String profileImageObjectKey
     ) {
-        User newUser = userRepository.save(User.createNew(displayName, profileImageObjectKey));
+        User newUser = userRepository.save(User.createNew(truncateDisplayName(displayName), profileImageObjectKey));
         SocialLoginUser socialLoginUser = SocialLoginUser.link(newUser, provider, providerUserId);
         return socialLoginUserRepository.save(socialLoginUser);
+    }
+
+    private String truncateDisplayName(String displayName) {
+        if (displayName == null || displayName.length() <= MAX_INITIAL_DISPLAY_NAME_LENGTH) {
+            return displayName;
+        }
+
+        return displayName.substring(0, MAX_INITIAL_DISPLAY_NAME_LENGTH);
     }
 
     @Transactional
