@@ -137,10 +137,12 @@ operation::screen-time-ocr-error-reports/create[snippets='http-request,request-h
 === List Screen Time OCR Error Reports
 
 operation::admin/screen-time-ocr-error-reports/list[snippets='http-request,request-headers,query-parameters,http-response,response-fields']
+operation::admin/screen-time-ocr-error-reports/list-forbidden[snippets='http-request,request-headers,query-parameters,http-response,response-fields']
 
 === Update Screen Time OCR Error Report
 
 operation::admin/screen-time-ocr-error-reports/update[snippets='http-request,request-headers,path-parameters,request-fields,http-response,response-fields']
+operation::admin/screen-time-ocr-error-reports/update-forbidden[snippets='http-request,request-headers,path-parameters,request-fields,http-response,response-fields']
 
   == Feed API
 

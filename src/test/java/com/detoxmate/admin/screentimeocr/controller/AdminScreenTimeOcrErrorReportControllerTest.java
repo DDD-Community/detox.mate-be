@@ -10,10 +10,12 @@ import com.detoxmate.screentimeocr.dto.ScreenTimeOcrErrorReportUpdateRequest;
 import com.detoxmate.screentimeocr.dto.ScreenTimeOcrErrorReportUpdateResponse;
 import com.detoxmate.screentimeocr.service.ScreenTimeOcrErrorReportAdminService;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
+import com.epages.restdocs.apispec.SimpleType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.restdocs.RestDocumentationContextProvider;
 import org.springframework.restdocs.RestDocumentationExtension;
@@ -23,6 +25,7 @@ import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.restdocs.request.ParameterDescriptor;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -31,7 +34,9 @@ import java.util.List;
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
 import static com.epages.restdocs.apispec.Schema.schema;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
@@ -76,6 +81,8 @@ class AdminScreenTimeOcrErrorReportControllerTest {
     void admin은_screen_time_ocr_error_report_목록을_조회한다() throws Exception {
         HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
         ParameterDescriptor[] queryParameterDescriptors = listQueryParameters();
+        com.epages.restdocs.apispec.ParameterDescriptorWithType[] typedQueryParameterDescriptors =
+                listOpenApiQueryParameters();
         FieldDescriptor[] responseFieldDescriptors = listResponseFields();
 
         when(adminReportService.list(ScreenTimeOcrErrorReportStatus.PENDING, PageRequest.of(0, 20)))
@@ -125,7 +132,7 @@ class AdminScreenTimeOcrErrorReportControllerTest {
                                 .summary("List screen time OCR error reports")
                                 .description("admin이 스크린타임 OCR 오류 신고 목록을 조회한다.")
                                 .requestHeaders(requestHeaderDescriptors)
-                                .queryParameters(queryParameterDescriptors)
+                                .queryParameters(typedQueryParameterDescriptors)
                                 .responseSchema(schema("AdminScreenTimeOcrErrorReportListResponse"))
                                 .responseFields(responseFieldDescriptors)
                                 .build()
@@ -133,9 +140,52 @@ class AdminScreenTimeOcrErrorReportControllerTest {
     }
 
     @Test
+    void admin_token이_틀리면_screen_time_ocr_error_report_목록_조회는_403_에러를_반환한다() throws Exception {
+        HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
+        ParameterDescriptor[] queryParameterDescriptors = listQueryParameters();
+        com.epages.restdocs.apispec.ParameterDescriptorWithType[] typedQueryParameterDescriptors =
+                listOpenApiQueryParameters();
+        FieldDescriptor[] errorResponseFieldDescriptors = errorResponseFields();
+
+        doThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "admin 권한이 필요합니다."))
+                .when(adminAuthorizationService)
+                .requireAdmin("test-admin-token");
+
+        mockMvc.perform(get("/admin/screen-time-ocr-error-reports")
+                        .header("X-Admin-Token", "test-admin-token")
+                        .queryParam("status", "PENDING")
+                        .queryParam("page", "0")
+                        .queryParam("size", "20"))
+                .andExpect(status().isForbidden())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"))
+                .andExpect(jsonPath("$.status").value(403))
+                .andDo(document("admin/screen-time-ocr-error-reports/list-forbidden",
+                        preprocessRequest(prettyPrint()),
+                        preprocessResponse(prettyPrint()),
+                        requestHeaders(requestHeaderDescriptors),
+                        queryParameters(queryParameterDescriptors),
+                        responseFields(errorResponseFieldDescriptors),
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Admin Screen Time OCR Error Report")
+                                .summary("List screen time OCR error reports")
+                                .description("admin이 스크린타임 OCR 오류 신고 목록을 조회한다.")
+                                .requestHeaders(requestHeaderDescriptors)
+                                .queryParameters(typedQueryParameterDescriptors)
+                                .responseSchema(schema("ErrorResponse"))
+                                .responseFields(errorResponseFieldDescriptors)
+                                .build()
+                        )));
+
+        verifyNoInteractions(adminReportService);
+    }
+
+    @Test
     void admin은_screen_time_ocr_error_report를_수정한다() throws Exception {
         HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
         ParameterDescriptor[] pathParameterDescriptors = reportIdPathParameter();
+        com.epages.restdocs.apispec.ParameterDescriptorWithType[] typedPathParameterDescriptors =
+                reportIdOpenApiPathParameter();
         FieldDescriptor[] requestFieldDescriptors = updateRequestFields();
         FieldDescriptor[] responseFieldDescriptors = updateResponseFields();
 
@@ -179,13 +229,63 @@ class AdminScreenTimeOcrErrorReportControllerTest {
                                 .summary("Update screen time OCR error report")
                                 .description("admin이 스크린타임 OCR 오류 신고를 수정 또는 반려한다.")
                                 .requestHeaders(requestHeaderDescriptors)
-                                .pathParameters(pathParameterDescriptors)
+                                .pathParameters(typedPathParameterDescriptors)
                                 .requestSchema(schema("ScreenTimeOcrErrorReportUpdateRequest"))
                                 .responseSchema(schema("ScreenTimeOcrErrorReportUpdateResponse"))
                                 .requestFields(requestFieldDescriptors)
                                 .responseFields(responseFieldDescriptors)
                                 .build()
                         )));
+    }
+
+    @Test
+    void admin_token이_틀리면_screen_time_ocr_error_report_수정은_403_에러를_반환한다() throws Exception {
+        HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
+        ParameterDescriptor[] pathParameterDescriptors = reportIdPathParameter();
+        com.epages.restdocs.apispec.ParameterDescriptorWithType[] typedPathParameterDescriptors =
+                reportIdOpenApiPathParameter();
+        FieldDescriptor[] requestFieldDescriptors = updateRequestFields();
+        FieldDescriptor[] errorResponseFieldDescriptors = errorResponseFields();
+
+        doThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "admin 권한이 필요합니다."))
+                .when(adminAuthorizationService)
+                .requireAdmin("test-admin-token");
+
+        mockMvc.perform(patch("/admin/screen-time-ocr-error-reports/{reportId}", 555L)
+                        .header("X-Admin-Token", "test-admin-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "action": "CORRECT",
+                                  "correctedTotalUsedMinutes": 165,
+                                  "adminNote": "스크린샷 기준 총 사용시간 2시간 45분"
+                                }
+                                """))
+                .andExpect(status().isForbidden())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"))
+                .andExpect(jsonPath("$.status").value(403))
+                .andDo(document("admin/screen-time-ocr-error-reports/update-forbidden",
+                        preprocessRequest(prettyPrint()),
+                        preprocessResponse(prettyPrint()),
+                        requestHeaders(requestHeaderDescriptors),
+                        pathParameters(pathParameterDescriptors),
+                        requestFields(requestFieldDescriptors),
+                        responseFields(errorResponseFieldDescriptors),
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Admin Screen Time OCR Error Report")
+                                .summary("Update screen time OCR error report")
+                                .description("admin이 스크린타임 OCR 오류 신고를 수정 또는 반려한다.")
+                                .requestHeaders(requestHeaderDescriptors)
+                                .pathParameters(typedPathParameterDescriptors)
+                                .requestSchema(schema("ScreenTimeOcrErrorReportUpdateRequest"))
+                                .responseSchema(schema("ErrorResponse"))
+                                .requestFields(requestFieldDescriptors)
+                                .responseFields(errorResponseFieldDescriptors)
+                                .build()
+                        )));
+
+        verifyNoInteractions(adminReportService);
     }
 
     private HeaderDescriptor[] authorizationHeaderDescriptors() {
@@ -202,9 +302,34 @@ class AdminScreenTimeOcrErrorReportControllerTest {
         };
     }
 
+    private com.epages.restdocs.apispec.ParameterDescriptorWithType[] listOpenApiQueryParameters() {
+        return new com.epages.restdocs.apispec.ParameterDescriptorWithType[] {
+                com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName("status")
+                        .type(SimpleType.STRING)
+                        .optional()
+                        .description("신고 상태 필터. 기본값 `PENDING`"),
+                com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName("page")
+                        .type(SimpleType.INTEGER)
+                        .optional()
+                        .description("0-base 페이지 번호. 기본값 `0`"),
+                com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName("size")
+                        .type(SimpleType.INTEGER)
+                        .optional()
+                        .description("페이지 크기. 기본값 `20`")
+        };
+    }
+
     private ParameterDescriptor[] reportIdPathParameter() {
         return new ParameterDescriptor[] {
                 parameterWithName("reportId").description("OCR 오류 신고 ID")
+        };
+    }
+
+    private com.epages.restdocs.apispec.ParameterDescriptorWithType[] reportIdOpenApiPathParameter() {
+        return new com.epages.restdocs.apispec.ParameterDescriptorWithType[] {
+                com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName("reportId")
+                        .type(SimpleType.INTEGER)
+                        .description("OCR 오류 신고 ID")
         };
     }
 
@@ -248,6 +373,14 @@ class AdminScreenTimeOcrErrorReportControllerTest {
                 fieldWithPath("correctedTotalUsedMinutes").type(JsonFieldType.NUMBER).optional().description("admin이 수정한 총 사용 시간(분)"),
                 fieldWithPath("adminNote").type(JsonFieldType.STRING).optional().description("admin 처리 메모"),
                 fieldWithPath("resolvedAt").type(JsonFieldType.STRING).description("처리 시각")
+        };
+    }
+
+    private FieldDescriptor[] errorResponseFields() {
+        return new FieldDescriptor[] {
+                fieldWithPath("code").type(JsonFieldType.STRING).description("에러 코드"),
+                fieldWithPath("message").type(JsonFieldType.STRING).description("에러 메시지"),
+                fieldWithPath("status").type(JsonFieldType.NUMBER).description("HTTP 상태 코드")
         };
     }
 }
