@@ -19,7 +19,7 @@ public class NotificationType {
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "notification_type_name")
+    @Column(name = "notification_type_name",nullable = false, length = 50)
     private NotificationTypeCode typeCode;
 
     private NotificationType(NotificationTypeCode typeCode) {

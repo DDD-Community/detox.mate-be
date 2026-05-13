@@ -214,6 +214,22 @@ class UserServiceTest {
     }
 
     @Test
+    void 알림_수신_설정을_변경한다() {
+        UserRepository userRepository = mock(UserRepository.class);
+        SocialLoginUserRepository socialLoginUserRepository = mock(SocialLoginUserRepository.class);
+        RefreshTokenSessionService refreshTokenSessionService = mock(RefreshTokenSessionService.class);
+        JwtTokenProvider jwtTokenProvider = new JwtTokenProvider(JWT_SECRET, ACCESS_TOKEN_EXPIRES_IN);
+        UserService userService = userService(userRepository, socialLoginUserRepository, refreshTokenSessionService, jwtTokenProvider);
+        User user = User.createNew("카카오닉네임");
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        userService.updatePushNotificationSetting(1L, false);
+
+        assertThat(user.isPushNotificationEnabled()).isFalse();
+    }
+
+    @Test
     void 탈퇴할_accessToken에_해당하는_유저가_없으면_예외를_던진다() {
         // given
         UserRepository userRepository = mock(UserRepository.class);

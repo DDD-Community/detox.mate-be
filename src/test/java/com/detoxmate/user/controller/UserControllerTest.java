@@ -70,9 +70,9 @@ class UserControllerTest {
     @Test
     void Authorization_헤더가_있으면_유저_정보를_반환한다() throws Exception {
         when(userService.getMe("access-token"))
-                .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png"));
+                .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png", true));
         when(userService.getMe(1L))
-                .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png"));
+                .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png", true));
 
         HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
         FieldDescriptor[] responseFieldDescriptors = myProfileResponseFields();
@@ -101,7 +101,7 @@ class UserControllerTest {
     @Test
     void 내_프로필을_수정하면_수정된_유저_정보를_반환한다() throws Exception {
         when(userService.getMe("access-token"))
-                .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png"));
+                .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png", true));
         UpdateMyProfileRequest request = new UpdateMyProfileRequest(
                 "의진",
                 "profile-images/1/550e8400-e29b-41d4-a716-446655440000-profile.png"
@@ -110,7 +110,8 @@ class UserControllerTest {
                 .thenReturn(new MyProfileResponse(
                         1L,
                         "의진",
-                        "https://media.detoxmate.co.kr/profile-images/1/550e8400-e29b-41d4-a716-446655440000-profile.png"
+                        "https://media.detoxmate.co.kr/profile-images/1/550e8400-e29b-41d4-a716-446655440000-profile.png",
+                        true
                 ));
 
         HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
@@ -152,7 +153,7 @@ class UserControllerTest {
     @Test
     void 내_프로필_수정_요청의_필드가_공백이면_400_에러를_반환한다() throws Exception {
         when(userService.getMe("access-token"))
-                .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png"));
+                .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png", true));
 
         mockMvc.perform(patch("/users/me")
                         .header("Authorization", "Bearer access-token")
@@ -172,7 +173,7 @@ class UserControllerTest {
     @Test
     void 내_프로필_수정_요청의_닉네임이_10자를_초과하면_400_에러를_반환한다() throws Exception {
         when(userService.getMe("access-token"))
-                .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png"));
+                .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png", true));
 
         mockMvc.perform(patch("/users/me")
                         .header("Authorization", "Bearer access-token")
@@ -191,7 +192,7 @@ class UserControllerTest {
     @Test
     void 회원_탈퇴를_요청하면_204_응답을_반환한다() throws Exception {
         when(userService.getMe("access-token"))
-                .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png"));
+                .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png", true));
 
         HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
 
@@ -311,6 +312,10 @@ class UserControllerTest {
                 fieldWithPath("profileImageUrl")
                         .type(JsonFieldType.STRING)
                         .description("저장된 프로필 이미지 object key를 읽기 URL로 변환한 값")
+                        .optional(),
+                fieldWithPath("pushNotificationEnabled")
+                        .type(JsonFieldType.BOOLEAN)
+                        .description("푸시 알림 수신 여부")
                         .optional()
         };
     }

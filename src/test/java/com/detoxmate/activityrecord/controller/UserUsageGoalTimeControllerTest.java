@@ -61,7 +61,7 @@ class UserUsageGoalTimeControllerTest {
         userUsageGoalTimeService = mock(UserUsageGoalTimeService.class);
         userService = mock(UserService.class);
         when(userService.getMe("access-token"))
-                .thenReturn(new MyProfileResponse(1L, "지민", "https://example.com/profile.png"));
+                .thenReturn(new MyProfileResponse(1L, "지민", "https://example.com/profile.png", true));
 
         mockMvc = MockMvcBuilders.standaloneSetup(new UserUsageGoalTimeController(userUsageGoalTimeService))
                 .setCustomArgumentResolvers(new CurrentUserResolver(userService))

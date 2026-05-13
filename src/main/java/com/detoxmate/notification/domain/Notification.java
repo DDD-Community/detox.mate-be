@@ -66,6 +66,14 @@ public class Notification {
         return resolved;
     }
 
+    public void updateTemplate(String title, String messageTemplate) {
+        validateTitle(title);
+        validateMessageTemplate(messageTemplate);
+
+        this.title = title;
+        this.messageTemplate = messageTemplate;
+    }
+
     private static void validateType(NotificationType type){
         if(type == null){
             throw new CustomException(NotificationErrorCode.NOTIFICATION_TYPE_REQUIRED);

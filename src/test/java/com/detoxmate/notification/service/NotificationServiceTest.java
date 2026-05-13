@@ -9,6 +9,8 @@ import com.detoxmate.notification.repository.NotificationHistoryRepository;
 import com.detoxmate.notification.repository.NotificationRepository;
 import com.detoxmate.notification.repository.NotificationTypeRepository;
 import com.detoxmate.notification.util.FcmSender;
+import com.detoxmate.user.domain.User;
+import com.detoxmate.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -43,6 +45,8 @@ class NotificationServiceTest {
     NotificationHistoryRepository historyRepository;
     @Autowired
     NotificationTypeRepository notificationTypeRepository;
+    @Autowired
+    UserRepository userRepository;
 
     @MockitoBean
     FcmSender fcmSender;
@@ -66,11 +70,12 @@ class NotificationServiceTest {
     @DisplayName("사용자에게 알림을 전송하면 FCM 푸시가 발송되고 이력이 저장된다")
     void sendNotification_toSingleDevice() {
         // given
+        User user = saveUser("xeulbn");
         saveDefaultNotification();
-        saveToken(1L, "test-token-abc", DevicePlatform.IOS);
+        saveToken(user.getId(), "test-token-abc", DevicePlatform.IOS);
 
         // when
-        notificationService.send(defaultCommand(1L));
+        notificationService.send(defaultCommand(user.getId()));
 
         // then
         assertThat(historyRepository.findAll())
@@ -88,12 +93,13 @@ class NotificationServiceTest {
     @DisplayName("사용자의 여러 디바이스에 각각 FCM 푸시가 전송된다")
     void sendNotification_toMultipleDevices() {
         //given
+        User user = saveUser("xeulbn");
         saveDefaultNotification();
-        saveToken(1L, "test-token-abc-IOS", DevicePlatform.IOS);
-        saveToken(1L, "test-token-abc-AND", DevicePlatform.ANDROID);
+        saveToken(user.getId(), "test-token-abc-IOS", DevicePlatform.IOS);
+        saveToken(user.getId(), "test-token-abc-AND", DevicePlatform.ANDROID);
 
         //when
-        notificationService.send(defaultCommand(1L));
+        notificationService.send(defaultCommand(user.getId()));
 
         //then
         verify(fcmSender).send(eq("test-token-abc-IOS"), anyString(), anyString(), anyMap());
@@ -106,10 +112,11 @@ class NotificationServiceTest {
     @DisplayName("토큰이 없는 사용자에게 전송하면 FCM 호출은 없지만 이력은 저장된다")
     void sendNotification_noTokens() {
         //given
+        User user = saveUser("xeulbn");
         saveDefaultNotification();
 
         //when
-        notificationService.send(defaultCommand(999L));
+        notificationService.send(defaultCommand(user.getId()));
 
         //then
         verify(fcmSender, never()).send(anyString(), anyString(), anyString(), anyMap());
@@ -120,10 +127,11 @@ class NotificationServiceTest {
     @DisplayName("존재하지 않는 타입의 알림을 전송하면 예외가 발생한다")
     void sendNotification_templateNotFound() {
         // given
-        saveToken(1L, "test-token-abc", DevicePlatform.IOS);
+        User user = saveUser("xeulbn");
+        saveToken(user.getId(), "test-token-abc", DevicePlatform.IOS);
 
         //when
-        assertThatThrownBy(() -> notificationService.send(defaultCommand(1L)))
+        assertThatThrownBy(() -> notificationService.send(defaultCommand(user.getId())))
                 .isInstanceOf(CustomException.class)
                 .extracting(e -> ((CustomException) e).getErrorCode())
                 .isEqualTo(NotificationErrorCode.NOTIFICATION_NOT_FOUND);
@@ -137,14 +145,15 @@ class NotificationServiceTest {
     @DisplayName("일부 FCM 전송이 실패해도 나머지 디바이스로는 계속 전송된다")
     void sendNotification_partialFailure_continues() {
         //given
+        User user = saveUser("xeulbn");
         saveDefaultNotification();
-        saveToken(1L, "token-fail", DevicePlatform.IOS);
-        saveToken(1L, "token-ok", DevicePlatform.ANDROID);
+        saveToken(user.getId(), "token-fail", DevicePlatform.IOS);
+        saveToken(user.getId(), "token-ok", DevicePlatform.ANDROID);
         doThrow(new CustomException(FcmSenderErrorCode.FCM_SEND_FAILED))
                 .when(fcmSender).send(eq("token-fail"), anyString(), anyString(), anyMap());
 
         //when
-        notificationService.send(defaultCommand(1L));
+        notificationService.send(defaultCommand(user.getId()));
 
         //then
         verify(fcmSender).send(eq("token-ok"), anyString(), anyString(), anyMap());
@@ -155,9 +164,10 @@ class NotificationServiceTest {
     @DisplayName("FCM이 UNREGISTERED 응답을 주면 해당 토큰은 DB에서 삭제된다")
     void deadTokenCleanup_unregistered() {
         // given
+        User user = saveUser("xeulbn");
         saveDefaultNotification();
-        fcmTokenRepository.save(FcmToken.create(1L, "dead-token", DevicePlatform.ANDROID));
-        fcmTokenRepository.save(FcmToken.create(1L, "alive-token", DevicePlatform.IOS));
+        fcmTokenRepository.save(FcmToken.create(user.getId(), "dead-token", DevicePlatform.ANDROID));
+        fcmTokenRepository.save(FcmToken.create(user.getId(), "alive-token", DevicePlatform.IOS));
 
         // dead-token은 UNREGISTERED 에러
         doThrow(new CustomException(FcmSenderErrorCode.FCM_TOKEN_UNREGISTERED))
@@ -165,7 +175,7 @@ class NotificationServiceTest {
         // alive-token은 성공
 
         // when
-        notificationService.send(defaultCommand(1L));
+        notificationService.send(defaultCommand(user.getId()));
 
         // then — 죽은 토큰은 삭제
         assertThat(fcmTokenRepository.findByToken("dead-token")).isEmpty();
@@ -177,17 +187,38 @@ class NotificationServiceTest {
     @DisplayName("일시적 네트워크 오류(FCM_SEND_FAILED)는 토큰을 삭제하지 않는다")
     void deadTokenCleanup_preservesOnTemporaryFailure() {
         // given
+        User user = saveUser("xeulbn");
         saveDefaultNotification();
-        fcmTokenRepository.save(FcmToken.create(1L, "test-token", DevicePlatform.ANDROID));
+        fcmTokenRepository.save(FcmToken.create(user.getId(), "test-token", DevicePlatform.ANDROID));
 
         doThrow(new CustomException(FcmSenderErrorCode.FCM_SEND_FAILED))
                 .when(fcmSender).send(eq("test-token"), anyString(), anyString(), anyMap());
 
         // when
-        notificationService.send(defaultCommand(1L));
+        notificationService.send(defaultCommand(user.getId()));
 
         // then — 일시 오류니까 보존
         assertThat(fcmTokenRepository.findByToken("test-token")).isPresent();
+    }
+
+    @Test
+    @DisplayName("알림 수신을 거부한 사용자에게는 이력만 저장하고 FCM 푸시는 전송하지 않는다")
+    void sendNotification_pushDisabled_savesHistoryOnly() {
+        // given
+        User user = saveUser("xeulbn");
+        user.updatePushNotificationEnabled(false);
+        saveDefaultNotification();
+        saveToken(user.getId(), "test-token-abc", DevicePlatform.IOS);
+
+        // when
+        notificationService.send(defaultCommand(user.getId()));
+
+        // then
+        assertThat(historyRepository.findAll())
+                .extracting(NotificationHistory::getMessage)
+                .containsExactly("xeulbn님, 오늘 인증까지 1시간 남았습니다.");
+        verify(fcmSender, never()).send(anyString(), anyString(), anyString(), anyMap());
+        assertThat(fcmTokenRepository.findByToken("test-token-abc")).isPresent();
     }
 
     private Notification saveDefaultNotification() {
@@ -198,6 +229,10 @@ class NotificationServiceTest {
 
     private FcmToken saveToken(Long userId, String token, DevicePlatform platform) {
         return fcmTokenRepository.save(FcmToken.create(userId, token, platform));
+    }
+
+    private User saveUser(String displayName) {
+        return userRepository.save(User.createNew(displayName));
     }
 
     private NotificationCommand defaultCommand(Long userId) {

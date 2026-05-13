@@ -120,6 +120,14 @@ public class UserService {
                 ));
     }
 
+    @Transactional
+    public void updatePushNotificationSetting(Long userId, boolean enabled) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(()-> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
+
+        user.updatePushNotificationEnabled(enabled);
+    }
+
     private User getUser(String accessToken) {
         Long userId = jwtTokenProvider.getUserId(accessToken);
         return getUser(userId);
@@ -150,7 +158,8 @@ public class UserService {
         return new MyProfileResponse(
                 user.getId(),
                 user.getPublicDisplayName(),
-                imageReadUrlBuilder.build(user.getPublicProfileImageObjectKey())
+                imageReadUrlBuilder.build(user.getPublicProfileImageObjectKey()),
+                user.isPushNotificationEnabled()
         );
     }
 

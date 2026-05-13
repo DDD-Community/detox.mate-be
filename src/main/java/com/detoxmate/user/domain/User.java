@@ -32,6 +32,9 @@ public class User {
     @Column(name = "display_name", nullable = false, length = 30)
     private String displayName;
 
+    @Column(name = "push_notification_enabled", nullable = false)
+    private boolean pushNotificationEnabled = true;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -54,6 +57,7 @@ public class User {
         this.displayName = displayName;
         this.profileImageObjectKey = profileImageObjectKey;
         this.status = UserStatus.ACTIVE;
+        this.pushNotificationEnabled = true;
     }
 
     public static User createNew(String displayName) {
@@ -105,5 +109,13 @@ public class User {
         withdrawnAt = LocalDateTime.now();
         displayName = WITHDRAWN_DISPLAY_NAME;
         profileImageObjectKey = null;
+    }
+
+    public boolean isPushNotificationEnabled() {
+        return pushNotificationEnabled;
+    }
+
+    public void updatePushNotificationEnabled(boolean enabled) {
+        this.pushNotificationEnabled = enabled;
     }
 }

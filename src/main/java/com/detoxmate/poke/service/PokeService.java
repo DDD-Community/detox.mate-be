@@ -5,9 +5,11 @@ import com.detoxmate.challengerecord.service.ChallengeRecordService;
 import com.detoxmate.challengerecordstatuscount.service.ChallengeRecordStatusCountService;
 import com.detoxmate.common.exception.CustomException;
 import com.detoxmate.common.exception.poke.PokeErrorCode;
+import com.detoxmate.notification.event.PokeCreatedEvent;
 import com.detoxmate.poke.domain.Poke;
 import com.detoxmate.poke.repository.PokeRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +23,8 @@ public class PokeService {
     private final PokeRepository pokeRepository;
     private final ChallengeRecordService challengeRecordService;
     private final ChallengeRecordStatusCountService statusCountService;
+
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public void poke(Long challengeRecordId, Long receiverUserId, Long currentUserId) {
@@ -42,6 +46,12 @@ public class PokeService {
         pokeRepository.save(poke);
 
         statusCountService.increasePokeCount(challengeRecordId);
+
+        eventPublisher.publishEvent(new PokeCreatedEvent(
+                challengeRecordId,
+                currentUserId,
+                receiverUserId
+        ));
     }
 
     @Transactional(readOnly = true)

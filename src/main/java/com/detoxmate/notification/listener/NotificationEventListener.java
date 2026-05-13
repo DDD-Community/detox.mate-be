@@ -137,6 +137,58 @@ public class NotificationEventListener {
         ));
     }
 
+    @Async("notificationTaskExecutor")
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void on(CertificationStartTomorrowEvent event) {
+        String groupName = groupReader.findGroupName(event.groupId());
+
+        List<Long> recipientUserIds = recipientReader.findActiveGroupMemberUserIds(event.groupId());
+        for (Long recipientUserId : recipientUserIds) {
+            notificationService.send(NotificationCommand.history(
+                    recipientUserId,
+                    NotificationTypeCode.CERTIFICATION_START_TOMORROW,
+                    NotificationContext.of("groupName", groupName),
+                    NotificationPayload.feed(event.groupId())
+            ));
+        }
+    }
+
+    @Async("notificationTaskExecutor")
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void on(GoalSettingReminderEvent event) {
+        String targetUserName = userReader.findDisplayName(event.targetUserId());
+
+        notificationService.send(NotificationCommand.history(
+                event.targetUserId(),
+                NotificationTypeCode.GOAL_SETTING_REMINDER,
+                NotificationContext.of("nickname",targetUserName),
+                NotificationPayload.group(event.groupId())
+        ));
+    }
+
+    @Async("notificationTaskExecutor")
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void on(PokeGoalSettingReminderEvent event) {
+        ChallengeRecordNotificationRow info = recipientReader.findChallengeRecordInfo(event.challengeRecordId());
+
+        Map<Long, String> names = userReader.findDisplayNames(
+                Set.of(event.senderUserId(), event.receiverUserId())
+        );
+
+        String senderName = names.get(event.senderUserId());
+        String receiverName = names.get(event.receiverUserId());
+
+        notificationService.send(NotificationCommand.history(
+                event.receiverUserId(),
+                NotificationTypeCode.POKE_GOAL_SETTING_REMINDER,
+                NotificationContext.of(
+                        "nickname",senderName,
+                        "me",receiverName
+                ),
+                NotificationPayload.feed(event.challengeRecordId())
+        ));
+    }
+
     private String truncateComment(String commentBody) {
         if (commentBody == null) {
             return "";

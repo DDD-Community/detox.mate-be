@@ -59,7 +59,7 @@ public class FeedControllerDocsTest {
         UserService userService = mock(UserService.class);
 
         given(userService.getMe("access-token"))
-                .willReturn(new MyProfileResponse(1L, "테스트유저", "https://example.com/profile.png"));
+                .willReturn(new MyProfileResponse(1L, "테스트유저", "https://example.com/profile.png", true));
 
         FeedController controller = new FeedController(feedService);
 

@@ -47,7 +47,7 @@ class GroupDevControllerTest {
         groupService = mock(GroupService.class);
         userService = mock(UserService.class);
         when(userService.getMe("access-token"))
-                .thenReturn(new MyProfileResponse(1L, "지민", "https://..."));
+                .thenReturn(new MyProfileResponse(1L, "지민", "https://...", true));
         mockMvc = MockMvcBuilders.standaloneSetup(new GroupDevController(groupService))
                 .setCustomArgumentResolvers(new CurrentUserResolver(userService))
                 .setControllerAdvice(new com.detoxmate.common.error.GlobalExceptionHandler())
