@@ -28,7 +28,7 @@ public class NotificationScheduler {
     private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
 
-    @Scheduled(cron = "0 0 10 * * *", zone = "Asia/Seoul")
+    @Scheduled(cron = "0 0 16 * * *", zone = "Asia/Seoul")
     public void sendGoalSettingReminders() {
         LocalDate joinedDate = LocalDate.now(clock.withZone(KST)).minusDays(1);
 
