@@ -8,6 +8,6 @@ public record GroupMemberUsageGoalResponse(
         Long id,
         UsageGoalTypeCode usageGoalType,
         Integer goalMinutes,
-        LocalDateTime setAt
+        LocalDateTime createdAt
 ) {
 }

@@ -170,6 +170,25 @@ class UserControllerTest {
     }
 
     @Test
+    void 내_프로필_수정_요청의_닉네임이_10자를_초과하면_400_에러를_반환한다() throws Exception {
+        when(userService.getMe("access-token"))
+                .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png"));
+
+        mockMvc.perform(patch("/users/me")
+                        .header("Authorization", "Bearer access-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "displayName": "12345678901"
+                        }
+                        """))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
     void 회원_탈퇴를_요청하면_204_응답을_반환한다() throws Exception {
         when(userService.getMe("access-token"))
                 .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png"));
@@ -300,7 +319,7 @@ class UserControllerTest {
         return new FieldDescriptor[] {
                 fieldWithPath("displayName")
                         .type(JsonFieldType.STRING)
-                        .description("변경할 사용자 닉네임. 전달하지 않으면 기존 값을 유지한다.")
+                        .description("변경할 사용자 닉네임. 공백 포함 1자 이상 10자 이하. 전달하지 않으면 기존 값을 유지한다.")
                         .optional(),
                 fieldWithPath("profileImageObjectKey")
                         .type(JsonFieldType.STRING)

@@ -15,6 +15,8 @@ public interface GroupChallengeParticipantRepository extends JpaRepository<Group
 
     Optional<GroupChallengeParticipant> findByGroupChallengeIdAndGroupMemberId(Long groupChallengeId, Long groupMemberId);
 
+    List<GroupChallengeParticipant> findAllByGroupMemberIdOrderByJoinedAtAscIdAsc(Long groupMemberId);
+
     @Query("""
             SELECT new com.detoxmate.group.dto.GroupActivityParticipantRow(
                 gcp.groupChallengeId,
