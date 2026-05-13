@@ -1,5 +1,10 @@
 package com.detoxmate.poke.service;
 
+import com.detoxmate.activityrecord.domain.UsageGoalType;
+import com.detoxmate.activityrecord.domain.UserUsageGoalTime;
+import com.detoxmate.activityrecord.dto.UsageGoalTypeCode;
+import com.detoxmate.activityrecord.repository.UsageGoalTypeRepository;
+import com.detoxmate.activityrecord.repository.UserUsageGoalTimeRepository;
 import com.detoxmate.challengerecord.domain.ChallengeRecord;
 import com.detoxmate.challengerecord.domain.ChallengeRecordCertificationResult;
 import com.detoxmate.challengerecord.repository.ChallengeRecordRepository;
@@ -7,13 +12,19 @@ import com.detoxmate.challengerecordstatuscount.domain.ChallengeRecordStatusCoun
 import com.detoxmate.challengerecordstatuscount.repository.ChallengeRecordStatusCountRepository;
 import com.detoxmate.common.exception.CustomException;
 import com.detoxmate.common.exception.poke.PokeErrorCode;
+import com.detoxmate.notification.event.PokeCreatedEvent;
+import com.detoxmate.notification.event.PokeGoalSettingReminderEvent;
 import com.detoxmate.poke.domain.Poke;
 import com.detoxmate.poke.repository.PokeRepository;
+import com.detoxmate.user.domain.User;
+import com.detoxmate.user.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -25,6 +36,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
+@RecordApplicationEvents
 class PokeServiceTest {
 
     @Autowired
@@ -38,6 +50,18 @@ class PokeServiceTest {
 
     @Autowired
     ChallengeRecordStatusCountRepository statusCountRepository;
+
+    @Autowired
+    UserRepository userRepository;
+
+    @Autowired
+    UsageGoalTypeRepository usageGoalTypeRepository;
+
+    @Autowired
+    UserUsageGoalTimeRepository userUsageGoalTimeRepository;
+
+    @Autowired
+    ApplicationEvents applicationEvents;
 
     private static final Long GROUP_CHALLENGE_ID = 10L;
     private static final Long PARTICIPANT_ID = 20L;
@@ -74,6 +98,53 @@ class PokeServiceTest {
                 .orElseThrow();
 
         assertThat(statusCount.getPokeCount()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("목표를 설정한 사용자를 콕 찌르면 일반 콕 찔림 이벤트를 발행한다")
+    void poke_publishesPokeCreatedEventWhenReceiverHasGoal() {
+        // given
+        ChallengeRecord challengeRecord = saveBeforeRecord(TODAY);
+        saveStatusCount(challengeRecord.getId());
+        User sender = saveUser("슬빈");
+        User receiver = saveUser("지민");
+        saveGoal(receiver);
+
+        // when
+        pokeService.poke(challengeRecord.getId(), receiver.getId(), sender.getId());
+
+        // then
+        assertThat(applicationEvents.stream(PokeCreatedEvent.class))
+                .singleElement()
+                .satisfies(event -> {
+                    assertThat(event.challengeRecordId()).isEqualTo(challengeRecord.getId());
+                    assertThat(event.senderUserId()).isEqualTo(sender.getId());
+                    assertThat(event.receiverUserId()).isEqualTo(receiver.getId());
+                });
+        assertThat(applicationEvents.stream(PokeGoalSettingReminderEvent.class)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("목표를 설정하지 않은 사용자를 콕 찌르면 목표 설정 재촉 이벤트를 발행한다")
+    void poke_publishesGoalSettingReminderEventWhenReceiverHasNoGoal() {
+        // given
+        ChallengeRecord challengeRecord = saveBeforeRecord(TODAY);
+        saveStatusCount(challengeRecord.getId());
+        User sender = saveUser("슬빈");
+        User receiver = saveUser("지민");
+
+        // when
+        pokeService.poke(challengeRecord.getId(), receiver.getId(), sender.getId());
+
+        // then
+        assertThat(applicationEvents.stream(PokeGoalSettingReminderEvent.class))
+                .singleElement()
+                .satisfies(event -> {
+                    assertThat(event.challengeRecordId()).isEqualTo(challengeRecord.getId());
+                    assertThat(event.senderUserId()).isEqualTo(sender.getId());
+                    assertThat(event.receiverUserId()).isEqualTo(receiver.getId());
+                });
+        assertThat(applicationEvents.stream(PokeCreatedEvent.class)).isEmpty();
     }
 
     @Test
@@ -278,6 +349,18 @@ class PokeServiceTest {
     private ChallengeRecordStatusCount saveStatusCount(Long challengeRecordId) {
         return statusCountRepository.save(
                 ChallengeRecordStatusCount.create(challengeRecordId)
+        );
+    }
+
+    private User saveUser(String displayName) {
+        return userRepository.save(User.createNew(displayName));
+    }
+
+    private UserUsageGoalTime saveGoal(User user) {
+        UsageGoalType usageGoalType = usageGoalTypeRepository.findByCode(UsageGoalTypeCode.TOTAL_USAGE)
+                .orElseGet(() -> usageGoalTypeRepository.save(UsageGoalType.create(1L, UsageGoalTypeCode.TOTAL_USAGE)));
+        return userUsageGoalTimeRepository.save(
+                UserUsageGoalTime.create(user, usageGoalType, 60)
         );
     }
 

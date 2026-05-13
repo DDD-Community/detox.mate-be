@@ -17,11 +17,13 @@ import com.detoxmate.challengerecord.domain.ChallengeRecordCertificationResult;
 import com.detoxmate.challengerecord.service.ChallengeRecordService;
 import com.detoxmate.group.domain.GroupChallengeParticipant;
 import com.detoxmate.group.repository.GroupChallengeParticipantRepository;
+import com.detoxmate.notification.event.CertificationCreatedEvent;
 import com.detoxmate.upload.config.StorageProperties;
 import com.detoxmate.upload.service.ImageReadUrlBuilder;
 import com.detoxmate.user.domain.User;
 import com.detoxmate.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
 import org.mockito.ArgumentCaptor;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -56,6 +58,7 @@ class ActivityRecordServiceTest {
     private final GroupChallengeParticipantRepository groupChallengeParticipantRepository =
             mock(GroupChallengeParticipantRepository.class);
     private final ChallengeRecordService challengeRecordService = mock(ChallengeRecordService.class);
+    private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
     private final ImageReadUrlBuilder imageReadUrlBuilder =
             new ImageReadUrlBuilder(new StorageProperties(TEST_IMAGE_BASE_URL));
     private final Clock clock = Clock.fixed(TODAY.atTime(9, 0).atZone(KST).toInstant(), KST);
@@ -67,7 +70,8 @@ class ActivityRecordServiceTest {
                     groupChallengeParticipantRepository,
                     imageReadUrlBuilder,
                     challengeRecordService,
-                    clock
+                    clock,
+                    eventPublisher
             );
 
     @Test
@@ -302,6 +306,7 @@ class ActivityRecordServiceTest {
                 10L,
                 ChallengeRecordCertificationResult.SUCCESS
         );
+        verify(eventPublisher).publishEvent(new CertificationCreatedEvent(456L, 1L));
     }
 
     @Test

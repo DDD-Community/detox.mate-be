@@ -81,4 +81,8 @@ public class GroupMemberService {
     public void promoteToOwner(GroupMember groupMember) {
         groupMember.promoteToOwner();
     }
+
+    public long countActiveGroupMembers(Long groupId) {
+        return groupMemberRepository.countByGroupIdAndStatus(groupId, "ACTIVE");
+    }
 }

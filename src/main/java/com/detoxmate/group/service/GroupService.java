@@ -8,6 +8,7 @@ import com.detoxmate.group.dto.GroupChallengeSummaryResponse;
 import com.detoxmate.group.dto.GroupMemberResponse;
 import com.detoxmate.group.dto.GroupResponse;
 import com.detoxmate.group.repository.GroupRepository;
+import com.detoxmate.notification.event.CertificationStartTomorrowEvent;
 import com.detoxmate.notification.event.GroupJoinedEvent;
 import com.detoxmate.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -80,6 +81,10 @@ public class GroupService {
         groupChallengeParticipantService.saveGroupChallengeParticipant(groupMember.getId(), groupChallenge.getId());
 
         eventPublisher.publishEvent(new GroupJoinedEvent(group.getId(), userId));
+
+        if(groupMemberService.countActiveGroupMembers(group.getId())==2) {
+            eventPublisher.publishEvent(new CertificationStartTomorrowEvent(group.getId()));
+        }
 
         List<GroupMemberResponse> members = groupMemberService.getGroupMembers(group.getId());
 

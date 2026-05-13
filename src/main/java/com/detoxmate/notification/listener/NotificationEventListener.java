@@ -42,7 +42,10 @@ public class NotificationEventListener {
         String joinedUserName = userReader.findDisplayName(event.joinedUserId());
         String groupName = groupReader.findGroupName(event.groupId());
 
-        List<Long> recipientUserIds = recipientReader.findActiveGroupMemberUserIds(event.groupId());
+        List<Long> recipientUserIds = recipientReader.findActiveGroupMemberUserIds(event.groupId())
+                .stream()
+                .filter(recipientUserId -> !recipientUserId.equals(event.joinedUserId()))
+                .toList();
 
         for (Long recipientUserId : recipientUserIds) {
             notificationService.send(NotificationCommand.history(
@@ -64,7 +67,10 @@ public class NotificationEventListener {
 
         String actorName = userReader.findDisplayName(event.actorUserId());
 
-        List<Long> recipientUserIds = recipientReader.findGroupChallengeParticipantUserIds(info.groupChallengeId());
+        List<Long> recipientUserIds = recipientReader.findGroupChallengeParticipantUserIds(info.groupChallengeId())
+                .stream()
+                .filter(recipientUserId -> !recipientUserId.equals(event.actorUserId()))
+                .toList();
 
         for (Long recipientUserId : recipientUserIds) {
             notificationService.send(NotificationCommand.history(
@@ -79,8 +85,7 @@ public class NotificationEventListener {
     @Async("notificationTaskExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void on(PokeCreatedEvent event) {
-        ChallengeRecordNotificationRow info =
-                recipientReader.findChallengeRecordInfo(event.challengeRecordId());
+        ChallengeRecordNotificationRow info = recipientReader.findChallengeRecordInfo(event.challengeRecordId());
 
         Map<Long, String> names = userReader.findDisplayNames(
                 Set.of(event.senderUserId(), event.receiverUserId())
@@ -105,6 +110,10 @@ public class NotificationEventListener {
     public void on(ReactionCreatedEvent event) {
         ChallengeRecordNotificationRow info = recipientReader.findChallengeRecordInfo(event.challengeRecordId());
 
+        if (info.authorUserId().equals(event.reactorUserId())) {
+            return;
+        }
+
         String reactorName = userReader.findDisplayName(event.reactorUserId());
 
         notificationService.send(NotificationCommand.history(
@@ -122,6 +131,10 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void on(CommentCreatedEvent event) {
         ChallengeRecordNotificationRow info = recipientReader.findChallengeRecordInfo(event.challengeRecordId());
+
+        if (info.authorUserId().equals(event.commenterUserId())) {
+            return;
+        }
 
         String commenterName = userReader.findDisplayName(event.commenterUserId());
         String commentBody = commentReader.findCommentBody(event.commentId());
@@ -148,7 +161,7 @@ public class NotificationEventListener {
                     recipientUserId,
                     NotificationTypeCode.CERTIFICATION_START_TOMORROW,
                     NotificationContext.of("groupName", groupName),
-                    NotificationPayload.feed(event.groupId())
+                    NotificationPayload.group(event.groupId())
             ));
         }
     }
@@ -185,7 +198,7 @@ public class NotificationEventListener {
                         "nickname",senderName,
                         "me",receiverName
                 ),
-                NotificationPayload.feed(event.challengeRecordId())
+                NotificationPayload.feed(info.groupChallengeId())
         ));
     }
 

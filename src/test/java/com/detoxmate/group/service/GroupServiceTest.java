@@ -12,12 +12,15 @@ import com.detoxmate.group.repository.GroupChallengeParticipantRepository;
 import com.detoxmate.group.repository.GroupChallengeRepository;
 import com.detoxmate.group.repository.GroupMemberRepository;
 import com.detoxmate.group.repository.GroupRepository;
+import com.detoxmate.notification.event.CertificationStartTomorrowEvent;
+import com.detoxmate.notification.event.GroupJoinedEvent;
 import com.detoxmate.upload.config.StorageProperties;
 import com.detoxmate.upload.service.ImageReadUrlBuilder;
 import com.detoxmate.user.domain.User;
 import com.detoxmate.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
@@ -57,6 +60,7 @@ public class GroupServiceTest {
     private final GroupChallengeRepository groupChallengeRepository = mock(GroupChallengeRepository.class);
     private final GroupChallengeParticipantRepository groupChallengeParticipantRepository = mock(GroupChallengeParticipantRepository.class);
     private final UserRepository userRepository = mock(UserRepository.class);
+    private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
 
     // 내부 그룹 서비스 — 실객체
     private final GroupMemberService groupMemberService = new GroupMemberService(
@@ -73,7 +77,13 @@ public class GroupServiceTest {
     private final InviteCodeGenerator inviteCodeGenerator = mock(InviteCodeGenerator.class);
 
     private final GroupService groupService = new GroupService(
-            groupRepository, groupMemberService, groupChallengeService, groupChallengeParticipantService, inviteCodeGenerator, userRepository
+            groupRepository,
+            groupMemberService,
+            groupChallengeService,
+            groupChallengeParticipantService,
+            inviteCodeGenerator,
+            userRepository,
+            eventPublisher
     );
 
     @BeforeEach
@@ -290,11 +300,50 @@ public class GroupServiceTest {
         // then
         verify(groupMemberRepository).save(any(GroupMember.class));
         verify(groupChallengeParticipantRepository).save(any(GroupChallengeParticipant.class));
+        verify(eventPublisher).publishEvent(new GroupJoinedEvent(GROUP_ID, MEMBER_USER_ID));
         assertThat(response.id()).isEqualTo(GROUP_ID);
         assertThat(response.inviteCode()).isEqualTo(INVITE_CODE);
         assertThat(response.myRole()).isEqualTo("MEMBER");
         assertThat(response.members()).hasSize(2);
         assertThat(response.currentChallenge().status()).isEqualTo("RECRUITING");
+    }
+
+    @Test
+    void 그룹_참여로_ACTIVE_멤버가_2명이_되면_내일부터_인증_시작_이벤트를_발행한다() {
+        // given
+        when(groupRepository.findByInviteCode(INVITE_CODE)).thenReturn(Optional.of(recruitingGroup()));
+        when(groupMemberRepository.existsByUserIdAndStatus(MEMBER_USER_ID, "ACTIVE")).thenReturn(false);
+        when(groupChallengeRepository.findTopByGroupIdOrderByChallengeNoDesc(GROUP_ID))
+                .thenReturn(Optional.of(recruitingChallenge()));
+        when(groupMemberRepository.save(any(GroupMember.class))).thenReturn(joinedMember());
+        when(groupMemberRepository.countByGroupIdAndStatus(GROUP_ID, "ACTIVE")).thenReturn(2L);
+        when(groupMemberRepository.findMemberUserQueryResultsByGroupId(GROUP_ID)).thenReturn(groupMembers());
+
+        // when
+        groupService.joinGroup(INVITE_CODE, MEMBER_USER_ID);
+
+        // then
+        verify(eventPublisher).publishEvent(new GroupJoinedEvent(GROUP_ID, MEMBER_USER_ID));
+        verify(eventPublisher).publishEvent(new CertificationStartTomorrowEvent(GROUP_ID));
+    }
+
+    @Test
+    void 그룹_참여_후_ACTIVE_멤버가_2명이_아니면_내일부터_인증_시작_이벤트를_발행하지_않는다() {
+        // given
+        when(groupRepository.findByInviteCode(INVITE_CODE)).thenReturn(Optional.of(recruitingGroup()));
+        when(groupMemberRepository.existsByUserIdAndStatus(MEMBER_USER_ID, "ACTIVE")).thenReturn(false);
+        when(groupChallengeRepository.findTopByGroupIdOrderByChallengeNoDesc(GROUP_ID))
+                .thenReturn(Optional.of(recruitingChallenge()));
+        when(groupMemberRepository.save(any(GroupMember.class))).thenReturn(joinedMember());
+        when(groupMemberRepository.countByGroupIdAndStatus(GROUP_ID, "ACTIVE")).thenReturn(3L);
+        when(groupMemberRepository.findMemberUserQueryResultsByGroupId(GROUP_ID)).thenReturn(groupMembers());
+
+        // when
+        groupService.joinGroup(INVITE_CODE, MEMBER_USER_ID);
+
+        // then
+        verify(eventPublisher).publishEvent(new GroupJoinedEvent(GROUP_ID, MEMBER_USER_ID));
+        verify(eventPublisher, never()).publishEvent(new CertificationStartTomorrowEvent(GROUP_ID));
     }
     @Test
     void 테스트를_위해_그룹과_하위_데이터를_모두_삭제할_수_있다() {

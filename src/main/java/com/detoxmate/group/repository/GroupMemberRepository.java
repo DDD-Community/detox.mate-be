@@ -28,6 +28,8 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
 
     boolean existsByUserIdAndStatus(Long userId, String status);
 
+    long countByGroupIdAndStatus(Long groupId, String status);
+
     @Query("""
             SELECT new com.detoxmate.group.dto.GroupMemberUserQueryResult(
                 gm.id,

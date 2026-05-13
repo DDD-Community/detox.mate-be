@@ -6,6 +6,8 @@ import com.detoxmate.challengerecordstatuscount.service.ChallengeRecordStatusCou
 import com.detoxmate.common.exception.CustomException;
 import com.detoxmate.common.exception.poke.PokeErrorCode;
 import com.detoxmate.notification.event.PokeCreatedEvent;
+import com.detoxmate.notification.event.PokeGoalSettingReminderEvent;
+import com.detoxmate.notification.util.NotificationGoalReader;
 import com.detoxmate.poke.domain.Poke;
 import com.detoxmate.poke.repository.PokeRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,7 @@ public class PokeService {
     private final ChallengeRecordService challengeRecordService;
     private final ChallengeRecordStatusCountService statusCountService;
 
+    private final NotificationGoalReader goalReader;
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
@@ -47,11 +50,21 @@ public class PokeService {
 
         statusCountService.increasePokeCount(challengeRecordId);
 
-        eventPublisher.publishEvent(new PokeCreatedEvent(
+        if (goalReader.hasGoal(receiverUserId)) {
+            eventPublisher.publishEvent(new PokeCreatedEvent(
+                    challengeRecordId,
+                    currentUserId,
+                    receiverUserId
+            ));
+            return;
+        }
+
+        eventPublisher.publishEvent(new PokeGoalSettingReminderEvent(
                 challengeRecordId,
                 currentUserId,
                 receiverUserId
         ));
+
     }
 
     @Transactional(readOnly = true)
