@@ -73,13 +73,23 @@ public class ChallengeRecord {
         validateCertification(activityRecordId, activityRecordParticipantId, result);
 
         this.activityRecordId = activityRecordId;
+        applyCertificationResult(result);
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void correctCertificationResult(ChallengeRecordCertificationResult result) {
+        validateCorrection(result);
+        applyCertificationResult(result);
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    private void applyCertificationResult(ChallengeRecordCertificationResult result) {
         if(result == ChallengeRecordCertificationResult.SUCCESS){
             this.status = ChallengeRecordStatus.AFTER_RECORD_SUCCESS;
         }
         if(result == ChallengeRecordCertificationResult.FAIL){
             this.status = ChallengeRecordStatus.AFTER_RECORD_FAIL;
         }
-        this.updatedAt = LocalDateTime.now();
     }
 
     public boolean isCertified() {
@@ -133,6 +143,16 @@ public class ChallengeRecord {
 
         if (isCertified()) {
             throw new CustomException(ChallengeRecordErrorCode.CHALLENGE_RECORD_ALREADY_CERTIFIED);
+        }
+    }
+
+    private void validateCorrection(ChallengeRecordCertificationResult result) {
+        if (result == null) {
+            throw new CustomException(ChallengeRecordErrorCode.CERTIFICATION_RESULT_REQUIRED);
+        }
+
+        if (!isCertified()) {
+            throw new CustomException(ChallengeRecordErrorCode.ACTIVITY_RECORD_REQUIRED);
         }
     }
 
