@@ -36,6 +36,10 @@ public class UsageGoalType {
         return new UsageGoalType(id, code);
     }
 
+    public boolean isTotalUsage() {
+        return code == UsageGoalTypeCode.TOTAL_USAGE;
+    }
+
     private static void validateId(Long id) {
         if (id == null) {
             throw new IllegalArgumentException("usageGoalTypeId 는 필수입니다.");

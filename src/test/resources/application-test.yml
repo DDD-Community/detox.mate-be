@@ -26,5 +26,7 @@ firebase:
   service-account-path: classpath:firebase/not-found.json
 
 app:
+  admin:
+    review-token: test-admin-token
   storage:
     image-read-base-url: https://example.com/media

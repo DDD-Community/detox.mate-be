@@ -126,6 +126,24 @@ operation::usage-goal-times/current[snippets='http-request,request-headers,http-
 operation::uploads/presigned-urls[snippets='http-request,request-headers,request-fields,http-response,response-fields']
 operation::uploads/presigned-urls-invalid-request[snippets='http-request,request-headers,request-fields,http-response,response-fields']
 
+== Screen Time OCR Error Report API
+
+=== Create Screen Time OCR Error Report
+
+operation::screen-time-ocr-error-reports/create[snippets='http-request,request-headers,request-fields,http-response,response-fields']
+
+== Admin Screen Time OCR Error Report API
+
+=== List Screen Time OCR Error Reports
+
+operation::admin/screen-time-ocr-error-reports/list[snippets='http-request,request-headers,query-parameters,http-response,response-fields']
+operation::admin/screen-time-ocr-error-reports/list-forbidden[snippets='http-request,request-headers,query-parameters,http-response,response-fields']
+
+=== Update Screen Time OCR Error Report
+
+operation::admin/screen-time-ocr-error-reports/update[snippets='http-request,request-headers,path-parameters,request-fields,http-response,response-fields']
+operation::admin/screen-time-ocr-error-reports/update-forbidden[snippets='http-request,request-headers,path-parameters,request-fields,http-response,response-fields']
+
   == Feed API
 
   === Get Group Challenge Overview

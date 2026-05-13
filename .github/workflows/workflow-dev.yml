@@ -76,6 +76,9 @@ jobs:
           DEV_DB_PASSWORD=${{ secrets.DEV_DB_PASSWORD }}
           JWT_SECRET=${{ secrets.JWT_SECRET }}
           JWT_ACCESS_TOKEN_EXPIRES_IN=${{ secrets.JWT_ACCESS_TOKEN_EXPIRES_IN }}
+          ADMIN_REVIEW_TOKEN=${{ secrets.ADMIN_REVIEW_TOKEN }}
+          DISCORD_OCR_REPORT_WEBHOOK_URL=${{ secrets.DISCORD_OCR_REPORT_WEBHOOK_URL }}
+          APP_PUBLIC_BASE_URL=${{ vars.APP_PUBLIC_BASE_URL }}
           STORAGE_IMAGE_READ_BASE_URL=${{ vars.STORAGE_IMAGE_READ_BASE_URL }}
           S3_BUCKET_NAME=${{ vars.S3_BUCKET_NAME }}
           AWS_REGION=${{ vars.AWS_REGION }}
