@@ -18,9 +18,4 @@ public class AwsS3Config {
                 .region(Region.of(properties.region()))
                 .build();
     }
-
-    @Bean
-    Clock clock() {
-        return Clock.systemDefaultZone();
-    }
 }
