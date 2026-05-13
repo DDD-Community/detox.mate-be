@@ -72,7 +72,7 @@ class ScreenTimeOcrErrorReportControllerTest {
         FieldDescriptor[] responseFieldDescriptors = createResponseFields();
 
         when(reportService.create(1L, new ScreenTimeOcrErrorReportCreateRequest(
-                123L,
+                null,
                 10L,
                 LocalDate.of(2026, 5, 12),
                 "screen-time-ocr-reports/1/2026/05/sample.png",
@@ -88,7 +88,6 @@ class ScreenTimeOcrErrorReportControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "activityRecordId": 123,
                                   "groupChallengeParticipantId": 10,
                                   "recordDate": "2026-05-12",
                                   "imageObjectKey": "screen-time-ocr-reports/1/2026/05/sample.png",
@@ -109,7 +108,7 @@ class ScreenTimeOcrErrorReportControllerTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Screen Time OCR Error Report")
                                 .summary("Create screen time OCR error report")
-                                .description("스크린타임 OCR 총 사용시간 오류 신고를 생성한다.")
+                                .description("스크린타임 OCR 총 사용시간 오류 신고를 생성한다. 활동 인증 기록은 없을 수 있으며 admin 보정 시 사후 연결된다.")
                                 .requestHeaders(requestHeaderDescriptors)
                                 .requestSchema(schema("ScreenTimeOcrErrorReportCreateRequest"))
                                 .responseSchema(schema("ScreenTimeOcrErrorReportCreateResponse"))
@@ -147,7 +146,7 @@ class ScreenTimeOcrErrorReportControllerTest {
                 fieldWithPath("activityRecordId")
                         .type(JsonFieldType.NUMBER)
                         .optional()
-                        .description("이미 생성된 활동 인증 기록 ID"),
+                        .description("이미 생성된 활동 인증 기록 ID. 일반 신고 흐름에서는 없을 수 있으며 admin 보정 시 사후 연결된다."),
                 fieldWithPath("groupChallengeParticipantId")
                         .type(JsonFieldType.NUMBER)
                         .description("인증 대상 그룹 챌린지 참여자 ID"),

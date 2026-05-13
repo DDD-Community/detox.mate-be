@@ -227,7 +227,7 @@ class AdminScreenTimeOcrErrorReportControllerTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Admin Screen Time OCR Error Report")
                                 .summary("Update screen time OCR error report")
-                                .description("admin이 스크린타임 OCR 오류 신고를 수정 또는 반려한다.")
+                                .description("admin이 스크린타임 OCR 오류 신고를 수정 또는 반려한다. 수정 시 그룹 챌린지 참여자와 인증 날짜 기준으로 인증 기록을 찾거나 생성한다.")
                                 .requestHeaders(requestHeaderDescriptors)
                                 .pathParameters(typedPathParameterDescriptors)
                                 .requestSchema(schema("ScreenTimeOcrErrorReportUpdateRequest"))
@@ -275,7 +275,7 @@ class AdminScreenTimeOcrErrorReportControllerTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Admin Screen Time OCR Error Report")
                                 .summary("Update screen time OCR error report")
-                                .description("admin이 스크린타임 OCR 오류 신고를 수정 또는 반려한다.")
+                                .description("admin이 스크린타임 OCR 오류 신고를 수정 또는 반려한다. 수정 시 그룹 챌린지 참여자와 인증 날짜 기준으로 인증 기록을 찾거나 생성한다.")
                                 .requestHeaders(requestHeaderDescriptors)
                                 .pathParameters(typedPathParameterDescriptors)
                                 .requestSchema(schema("ScreenTimeOcrErrorReportUpdateRequest"))
@@ -339,7 +339,7 @@ class AdminScreenTimeOcrErrorReportControllerTest {
                 fieldWithPath("items[].id").type(JsonFieldType.NUMBER).description("OCR 오류 신고 ID"),
                 fieldWithPath("items[].userId").type(JsonFieldType.NUMBER).description("신고한 유저 ID"),
                 fieldWithPath("items[].userDisplayName").type(JsonFieldType.STRING).description("신고한 유저 표시 이름"),
-                fieldWithPath("items[].activityRecordId").type(JsonFieldType.NUMBER).optional().description("연결된 활동 인증 기록 ID"),
+                fieldWithPath("items[].activityRecordId").type(JsonFieldType.NUMBER).optional().description("연결된 활동 인증 기록 ID. 신고 생성 시 없을 수 있고 admin 보정 후 연결될 수 있다."),
                 fieldWithPath("items[].groupChallengeParticipantId").type(JsonFieldType.NUMBER).description("연결된 그룹 챌린지 참여자 ID"),
                 fieldWithPath("items[].recordDate").type(JsonFieldType.STRING).description("인증 대상 날짜"),
                 fieldWithPath("items[].imageUrl").type(JsonFieldType.STRING).description("검수용 스크린타임 이미지 URL"),
@@ -360,7 +360,7 @@ class AdminScreenTimeOcrErrorReportControllerTest {
     private FieldDescriptor[] updateRequestFields() {
         return new FieldDescriptor[] {
                 fieldWithPath("action").type(JsonFieldType.STRING).description("처리 동작. `CORRECT` 또는 `REJECT`"),
-                fieldWithPath("correctedTotalUsedMinutes").type(JsonFieldType.NUMBER).optional().description("수정된 총 사용 시간. `CORRECT`일 때 필수"),
+                fieldWithPath("correctedTotalUsedMinutes").type(JsonFieldType.NUMBER).optional().description("수정된 총 사용 시간. `CORRECT`일 때 필수이며 인증 기록의 TOTAL_USAGE 값을 수정한다."),
                 fieldWithPath("adminNote").type(JsonFieldType.STRING).optional().description("admin 처리 메모")
         };
     }
