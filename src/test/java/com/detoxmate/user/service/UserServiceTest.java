@@ -8,6 +8,7 @@ import com.detoxmate.group.service.GroupService;
 import com.detoxmate.notification.repository.FcmTokenRepository;
 import com.detoxmate.upload.config.StorageProperties;
 import com.detoxmate.upload.service.ImageReadUrlBuilder;
+import com.detoxmate.upload.service.ProfileImageUploadPurposePolicy;
 import com.detoxmate.upload.service.UploadObjectKeyValidator;
 import com.detoxmate.user.dto.MyProfileResponse;
 import com.detoxmate.user.domain.User;
@@ -151,7 +152,7 @@ class UserServiceTest {
                 refreshTokenSessionService,
                 jwtTokenProvider,
                 new ImageReadUrlBuilder(new StorageProperties(TEST_IMAGE_BASE_URL)),
-                new UploadObjectKeyValidator(),
+                uploadObjectKeyValidator(),
                 groupMemberService,
                 groupService,
                 fcmTokenRepository
@@ -192,7 +193,7 @@ class UserServiceTest {
                 refreshTokenSessionService,
                 jwtTokenProvider,
                 new ImageReadUrlBuilder(new StorageProperties(TEST_IMAGE_BASE_URL)),
-                new UploadObjectKeyValidator(),
+                uploadObjectKeyValidator(),
                 groupMemberService,
                 groupService,
                 fcmTokenRepository
@@ -242,10 +243,14 @@ class UserServiceTest {
                 refreshTokenSessionService,
                 jwtTokenProvider,
                 new ImageReadUrlBuilder(new StorageProperties(TEST_IMAGE_BASE_URL)),
-                new UploadObjectKeyValidator(),
+                uploadObjectKeyValidator(),
                 mock(GroupMemberService.class),
                 mock(GroupService.class),
                 mock(FcmTokenRepository.class)
         );
+    }
+
+    private UploadObjectKeyValidator uploadObjectKeyValidator() {
+        return new UploadObjectKeyValidator(List.of(new ProfileImageUploadPurposePolicy()));
     }
 }

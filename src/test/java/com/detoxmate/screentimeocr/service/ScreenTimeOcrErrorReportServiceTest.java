@@ -13,6 +13,7 @@ import com.detoxmate.screentimeocr.dto.ScreenTimeOcrErrorReportCreateRequest;
 import com.detoxmate.screentimeocr.dto.ScreenTimeOcrErrorReportCreateResponse;
 import com.detoxmate.screentimeocr.event.ScreenTimeOcrErrorReportCreatedEvent;
 import com.detoxmate.screentimeocr.repository.ScreenTimeOcrErrorReportRepository;
+import com.detoxmate.upload.service.ScreenTimeOcrReportImageUploadPurposePolicy;
 import com.detoxmate.upload.service.UploadObjectKeyValidator;
 import com.detoxmate.user.domain.User;
 import org.junit.jupiter.api.Test;
@@ -20,8 +21,12 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,7 +44,12 @@ class ScreenTimeOcrErrorReportServiceTest {
     private final GroupChallengeParticipantRepository participantRepository =
             mock(GroupChallengeParticipantRepository.class);
     private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
-    private final UploadObjectKeyValidator uploadObjectKeyValidator = new UploadObjectKeyValidator();
+    private final UploadObjectKeyValidator uploadObjectKeyValidator = new UploadObjectKeyValidator(List.of(
+            new ScreenTimeOcrReportImageUploadPurposePolicy(Clock.fixed(
+                    Instant.parse("2026-04-28T03:00:00Z"),
+                    ZoneId.of("Asia/Seoul")
+            ))
+    ));
     private final ScreenTimeOcrErrorReportService reportService = new ScreenTimeOcrErrorReportService(
             reportRepository,
             activityRecordRepository,

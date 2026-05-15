@@ -56,8 +56,7 @@ class S3UploadServiceCharacterizationTest {
                 s3Presigner,
                 storageS3Properties,
                 new UploadContentTypePolicy(),
-                new UploadFileSizePolicy(),
-                new UploadObjectKeyFactory(clock)
+                uploadPurposePolicies()
         );
     }
 
@@ -197,6 +196,14 @@ class S3UploadServiceCharacterizationTest {
             UploadPurpose uploadPurpose
     ) {
         return new PresignedUrlRequest(fileName, contentType, fileSize, uploadPurpose);
+    }
+
+    private java.util.List<UploadPurposePolicy> uploadPurposePolicies() {
+        return java.util.List.of(
+                new ProfileImageUploadPurposePolicy(),
+                new ActivityRecordImageUploadPurposePolicy(clock),
+                new ScreenTimeOcrReportImageUploadPurposePolicy(clock)
+        );
     }
 
     private PutObjectRequest capturedPutObjectRequest() {
