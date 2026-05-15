@@ -28,6 +28,12 @@ class UploadFileSizePolicyTest {
     }
 
     @Test
+    void screen_time_ocr_report_image는_10MB까지_허용한다() {
+        assertThatCode(() -> uploadFileSizePolicy.validate(UploadPurpose.SCREEN_TIME_OCR_REPORT_IMAGE, 10L * MB))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
     void profile_image가_5MB를_초과하면_400_에러를_반환한다() {
         assertThatThrownBy(() -> uploadFileSizePolicy.validate(UploadPurpose.PROFILE_IMAGE, 5L * MB + 1))
                 .isInstanceOf(ResponseStatusException.class)
@@ -40,6 +46,19 @@ class UploadFileSizePolicyTest {
     @Test
     void activity_record_image가_10MB를_초과하면_400_에러를_반환한다() {
         assertThatThrownBy(() -> uploadFileSizePolicy.validate(UploadPurpose.ACTIVITY_RECORD_IMAGE, 10L * MB + 1))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(exception -> {
+                    ResponseStatusException responseStatusException = (ResponseStatusException) exception;
+                    assertThat(responseStatusException.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+                });
+    }
+
+    @Test
+    void screen_time_ocr_report_image가_10MB를_초과하면_400_에러를_반환한다() {
+        assertThatThrownBy(() -> uploadFileSizePolicy.validate(
+                UploadPurpose.SCREEN_TIME_OCR_REPORT_IMAGE,
+                10L * MB + 1
+        ))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(exception -> {
                     ResponseStatusException responseStatusException = (ResponseStatusException) exception;

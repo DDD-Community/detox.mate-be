@@ -16,7 +16,8 @@ class UploadFileSizePolicy {
 
     private static final Map<UploadPurpose, Long> MAX_FILE_SIZE_BY_PURPOSE = Map.of(
             UploadPurpose.PROFILE_IMAGE, 5L * MB,
-            UploadPurpose.ACTIVITY_RECORD_IMAGE, 10L * MB
+            UploadPurpose.ACTIVITY_RECORD_IMAGE, 10L * MB,
+            UploadPurpose.SCREEN_TIME_OCR_REPORT_IMAGE, 10L * MB
     );
 
     void validate(UploadPurpose uploadPurpose, Long fileSize) {
