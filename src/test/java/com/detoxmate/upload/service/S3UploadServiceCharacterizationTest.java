@@ -5,6 +5,7 @@ import com.detoxmate.upload.dto.PresignedUrlRequest;
 import com.detoxmate.upload.dto.PresignedUrlResponse;
 import com.detoxmate.upload.dto.UploadPurpose;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -20,6 +21,7 @@ import java.net.URI;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -61,12 +63,19 @@ class S3UploadServiceCharacterizationTest {
     }
 
     @Test
-    void activity_record_image_presigned_url은_기존_object_key_형식을_유지한다() {
+    @DisplayName("활동 기록 이미지 presigned URL은 기존 object key 형식을 유지한다")
+    void issuePresignedUrl_keepsActivityRecordImageObjectKeyFormat() {
+        // given
+        PresignedUrlRequest request =
+                request("walk photo.png", "image/png", 10L * MB, UploadPurpose.ACTIVITY_RECORD_IMAGE);
+
+        // when
         PresignedUrlResponse response = uploadService.issuePresignedUrl(
                 7L,
-                request("walk photo.png", "image/png", 10L * MB, UploadPurpose.ACTIVITY_RECORD_IMAGE)
+                request
         );
 
+        // then
         assertThat(response.uploadUrl()).isEqualTo(PRESIGNED_URL);
         assertThat(response.objectKey())
                 .startsWith("activity-records/7/2026/04/")
@@ -80,12 +89,19 @@ class S3UploadServiceCharacterizationTest {
     }
 
     @Test
-    void profile_image_presigned_url은_기존_object_key_형식을_유지한다() {
+    @DisplayName("프로필 이미지 presigned URL은 기존 object key 형식을 유지한다")
+    void issuePresignedUrl_keepsProfileImageObjectKeyFormat() {
+        // given
+        PresignedUrlRequest request =
+                request("avatar.png", "image/heic", 5L * MB, UploadPurpose.PROFILE_IMAGE);
+
+        // when
         PresignedUrlResponse response = uploadService.issuePresignedUrl(
                 7L,
-                request("avatar.png", "image/heic", 5L * MB, UploadPurpose.PROFILE_IMAGE)
+                request
         );
 
+        // then
         assertThat(response.uploadUrl()).isEqualTo(PRESIGNED_URL);
         assertThat(response.objectKey())
                 .startsWith("profile-images/7/")
@@ -99,12 +115,19 @@ class S3UploadServiceCharacterizationTest {
     }
 
     @Test
-    void screen_time_ocr_report_image_presigned_url은_기존_object_key_형식을_유지한다() {
+    @DisplayName("스크린 타임 OCR 리포트 이미지 presigned URL은 기존 object key 형식을 유지한다")
+    void issuePresignedUrl_keepsScreenTimeOcrReportImageObjectKeyFormat() {
+        // given
+        PresignedUrlRequest request =
+                request("screen time.png", "image/png", 10L * MB, UploadPurpose.SCREEN_TIME_OCR_REPORT_IMAGE);
+
+        // when
         PresignedUrlResponse response = uploadService.issuePresignedUrl(
                 7L,
-                request("screen time.png", "image/png", 10L * MB, UploadPurpose.SCREEN_TIME_OCR_REPORT_IMAGE)
+                request
         );
 
+        // then
         assertThat(response.uploadUrl()).isEqualTo(PRESIGNED_URL);
         assertThat(response.objectKey())
                 .startsWith("screen-time-ocr-reports/7/2026/04/")
@@ -118,73 +141,122 @@ class S3UploadServiceCharacterizationTest {
     }
 
     @Test
-    void profile_image는_5MB까지_presigned_url을_발급한다() {
+    @DisplayName("프로필 이미지는 5MB까지 presigned URL을 발급한다")
+    void issuePresignedUrl_allowsProfileImageUpTo5MB() {
+        // given
+        PresignedUrlRequest request =
+                request("avatar.png", "image/png", 5L * MB, UploadPurpose.PROFILE_IMAGE);
+
+        // when & then
         assertThatCode(() -> uploadService.issuePresignedUrl(
                 7L,
-                request("avatar.png", "image/png", 5L * MB, UploadPurpose.PROFILE_IMAGE)
+                request
         )).doesNotThrowAnyException();
     }
 
     @Test
-    void profile_image가_5MB를_초과하면_presigned_url을_발급하지_않고_400_에러를_반환한다() {
+    @DisplayName("프로필 이미지가 5MB를 초과하면 presigned URL을 발급하지 않고 400 에러를 반환한다")
+    void issuePresignedUrl_rejectsProfileImageOver5MB() {
+        // given
+        PresignedUrlRequest request =
+                request("avatar.png", "image/png", 5L * MB + 1, UploadPurpose.PROFILE_IMAGE);
+
+        // when & then
         assertBadRequest(() -> uploadService.issuePresignedUrl(
                 7L,
-                request("avatar.png", "image/png", 5L * MB + 1, UploadPurpose.PROFILE_IMAGE)
+                request
         ));
         verifyNoInteractions(s3Presigner);
     }
 
     @Test
-    void activity_record_image는_10MB까지_presigned_url을_발급한다() {
+    @DisplayName("활동 기록 이미지는 10MB까지 presigned URL을 발급한다")
+    void issuePresignedUrl_allowsActivityRecordImageUpTo10MB() {
+        // given
+        PresignedUrlRequest request =
+                request("walk-photo.png", "image/png", 10L * MB, UploadPurpose.ACTIVITY_RECORD_IMAGE);
+
+        // when & then
         assertThatCode(() -> uploadService.issuePresignedUrl(
                 7L,
-                request("walk-photo.png", "image/png", 10L * MB, UploadPurpose.ACTIVITY_RECORD_IMAGE)
+                request
         )).doesNotThrowAnyException();
     }
 
     @Test
-    void activity_record_image가_10MB를_초과하면_presigned_url을_발급하지_않고_400_에러를_반환한다() {
+    @DisplayName("활동 기록 이미지가 10MB를 초과하면 presigned URL을 발급하지 않고 400 에러를 반환한다")
+    void issuePresignedUrl_rejectsActivityRecordImageOver10MB() {
+        // given
+        PresignedUrlRequest request =
+                request("walk-photo.png", "image/png", 10L * MB + 1, UploadPurpose.ACTIVITY_RECORD_IMAGE);
+
+        // when & then
         assertBadRequest(() -> uploadService.issuePresignedUrl(
                 7L,
-                request("walk-photo.png", "image/png", 10L * MB + 1, UploadPurpose.ACTIVITY_RECORD_IMAGE)
+                request
         ));
         verifyNoInteractions(s3Presigner);
     }
 
     @Test
-    void screen_time_ocr_report_image는_10MB까지_presigned_url을_발급한다() {
+    @DisplayName("스크린 타임 OCR 리포트 이미지는 10MB까지 presigned URL을 발급한다")
+    void issuePresignedUrl_allowsScreenTimeOcrReportImageUpTo10MB() {
+        // given
+        PresignedUrlRequest request =
+                request("screen-time.png", "image/png", 10L * MB, UploadPurpose.SCREEN_TIME_OCR_REPORT_IMAGE);
+
+        // when & then
         assertThatCode(() -> uploadService.issuePresignedUrl(
                 7L,
-                request("screen-time.png", "image/png", 10L * MB, UploadPurpose.SCREEN_TIME_OCR_REPORT_IMAGE)
+                request
         )).doesNotThrowAnyException();
     }
 
     @Test
-    void screen_time_ocr_report_image가_10MB를_초과하면_presigned_url을_발급하지_않고_400_에러를_반환한다() {
+    @DisplayName("스크린 타임 OCR 리포트 이미지가 10MB를 초과하면 presigned URL을 발급하지 않고 400 에러를 반환한다")
+    void issuePresignedUrl_rejectsScreenTimeOcrReportImageOver10MB() {
+        // given
+        PresignedUrlRequest request =
+                request("screen-time.png", "image/png", 10L * MB + 1, UploadPurpose.SCREEN_TIME_OCR_REPORT_IMAGE);
+
+        // when & then
         assertBadRequest(() -> uploadService.issuePresignedUrl(
                 7L,
-                request("screen-time.png", "image/png", 10L * MB + 1, UploadPurpose.SCREEN_TIME_OCR_REPORT_IMAGE)
+                request
         ));
         verifyNoInteractions(s3Presigner);
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"image/png", "image/heic", "image/heif"})
-    void 허용된_contentType은_presigned_put_object_request에_그대로_반영한다(String contentType) {
+    @DisplayName("허용된 content type은 presigned put object request에 그대로 반영한다")
+    void issuePresignedUrl_reflectsAllowedContentType(String contentType) {
+        // given
+        PresignedUrlRequest request =
+                request("avatar.png", contentType, 1L * MB, UploadPurpose.PROFILE_IMAGE);
+
+        // when
         uploadService.issuePresignedUrl(
                 7L,
-                request("avatar.png", contentType, 1L * MB, UploadPurpose.PROFILE_IMAGE)
+                request
         );
 
+        // then
         assertThat(capturedPutObjectRequest().contentType()).isEqualTo(contentType);
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"IMAGE/PNG", "image/gif"})
-    void 허용되지_않은_contentType은_presigned_url을_발급하지_않고_400_에러를_반환한다(String contentType) {
+    @DisplayName("허용되지 않은 content type은 presigned URL을 발급하지 않고 400 에러를 반환한다")
+    void issuePresignedUrl_rejectsDisallowedContentType(String contentType) {
+        // given
+        PresignedUrlRequest request =
+                request("avatar.png", contentType, 1L * MB, UploadPurpose.PROFILE_IMAGE);
+
+        // when & then
         assertBadRequest(() -> uploadService.issuePresignedUrl(
                 7L,
-                request("avatar.png", contentType, 1L * MB, UploadPurpose.PROFILE_IMAGE)
+                request
         ));
         verifyNoInteractions(s3Presigner);
     }
@@ -198,8 +270,8 @@ class S3UploadServiceCharacterizationTest {
         return new PresignedUrlRequest(fileName, contentType, fileSize, uploadPurpose);
     }
 
-    private java.util.List<UploadPurposePolicy> uploadPurposePolicies() {
-        return java.util.List.of(
+    private List<UploadPurposePolicy> uploadPurposePolicies() {
+        return List.of(
                 new ProfileImageUploadPurposePolicy(),
                 new ActivityRecordImageUploadPurposePolicy(clock),
                 new ScreenTimeOcrReportImageUploadPurposePolicy(clock)

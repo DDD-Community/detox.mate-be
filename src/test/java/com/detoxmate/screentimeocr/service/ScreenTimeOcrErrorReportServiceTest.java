@@ -16,6 +16,7 @@ import com.detoxmate.screentimeocr.repository.ScreenTimeOcrErrorReportRepository
 import com.detoxmate.upload.service.ScreenTimeOcrReportImageUploadPurposePolicy;
 import com.detoxmate.upload.service.UploadObjectKeyValidator;
 import com.detoxmate.user.domain.User;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -39,16 +40,18 @@ import static org.mockito.Mockito.when;
 
 class ScreenTimeOcrErrorReportServiceTest {
 
+    private static final Clock FIXED_CLOCK = Clock.fixed(
+            Instant.parse("2026-04-28T03:00:00Z"),
+            ZoneId.of("Asia/Seoul")
+    );
+
     private final ScreenTimeOcrErrorReportRepository reportRepository = mock(ScreenTimeOcrErrorReportRepository.class);
     private final ActivityRecordRepository activityRecordRepository = mock(ActivityRecordRepository.class);
     private final GroupChallengeParticipantRepository participantRepository =
             mock(GroupChallengeParticipantRepository.class);
     private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
     private final UploadObjectKeyValidator uploadObjectKeyValidator = new UploadObjectKeyValidator(List.of(
-            new ScreenTimeOcrReportImageUploadPurposePolicy(Clock.fixed(
-                    Instant.parse("2026-04-28T03:00:00Z"),
-                    ZoneId.of("Asia/Seoul")
-            ))
+            new ScreenTimeOcrReportImageUploadPurposePolicy(FIXED_CLOCK)
     ));
     private final ScreenTimeOcrErrorReportService reportService = new ScreenTimeOcrErrorReportService(
             reportRepository,
@@ -59,7 +62,9 @@ class ScreenTimeOcrErrorReportServiceTest {
     );
 
     @Test
-    void report를_PENDING_상태로_저장한다() {
+    @DisplayName("OCR 오류 리포트를 생성하면 PENDING 상태로 저장하고 생성 이벤트를 발행한다")
+    void create_savesPendingReportAndPublishesCreatedEvent() {
+        // given
         User user = user(1L);
         ActivityRecord activityRecord = activityRecord(123L, user, 10L);
         ScreenTimeOcrErrorReportCreateRequest request = createRequest();
@@ -74,8 +79,10 @@ class ScreenTimeOcrErrorReportServiceTest {
             return report;
         });
 
+        // when
         ScreenTimeOcrErrorReportCreateResponse response = reportService.create(1L, request);
 
+        // then
         assertThat(response.id()).isEqualTo(555L);
         assertThat(response.status()).isEqualTo(ScreenTimeOcrErrorReportStatus.PENDING);
         verify(reportRepository).save(any(ScreenTimeOcrErrorReport.class));
@@ -83,7 +90,9 @@ class ScreenTimeOcrErrorReportServiceTest {
     }
 
     @Test
-    void 현재_유저_소유가_아닌_imageObjectKey는_거부한다() {
+    @DisplayName("현재 사용자 소유가 아닌 imageObjectKey는 거부한다")
+    void create_rejectsImageObjectKeyOwnedByDifferentUser() {
+        // given
         ScreenTimeOcrErrorReportCreateRequest request = new ScreenTimeOcrErrorReportCreateRequest(
                 123L,
                 10L,
@@ -92,6 +101,7 @@ class ScreenTimeOcrErrorReportServiceTest {
                 180
         );
 
+        // when & then
         assertThatThrownBy(() -> reportService.create(1L, request))
                 .isInstanceOf(ResponseStatusException.class);
 
