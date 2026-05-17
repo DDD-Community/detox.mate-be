@@ -80,10 +80,13 @@ public class GroupService {
         GroupMember groupMember = groupMemberService.saveGroupMember(userId, group.getId());
         groupChallengeParticipantService.saveGroupChallengeParticipant(groupMember.getId(), groupChallenge.getId());
 
-        eventPublisher.publishEvent(new GroupJoinedEvent(group.getId(), userId));
+        eventPublisher.publishEvent(new GroupJoinedEvent(group.getId(), groupChallenge.getId(),userId));
 
-        if(groupMemberService.countActiveGroupMembers(group.getId())==2) {
-            eventPublisher.publishEvent(new CertificationStartTomorrowEvent(group.getId()));
+        if (groupMemberService.countActiveGroupMembers(group.getId()) == 2) {
+            eventPublisher.publishEvent(new CertificationStartTomorrowEvent(
+                    group.getId(),
+                    groupChallenge.getId()
+            ));
         }
 
         List<GroupMemberResponse> members = groupMemberService.getGroupMembers(group.getId());

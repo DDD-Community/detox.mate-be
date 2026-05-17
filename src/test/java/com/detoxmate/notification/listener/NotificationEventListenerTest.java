@@ -61,13 +61,14 @@ class NotificationEventListenerTest {
     void groupJoinedEvent_createsCommandsForGroupMembers() {
         // given
         Long groupId = 10L;
+        Long groupChallengeId = 20L;
         Long joinedUserId = 1L;
         when(userReader.findDisplayName(joinedUserId)).thenReturn("슬빈");
         when(groupReader.findGroupName(groupId)).thenReturn("디톡스방");
         when(recipientReader.findActiveGroupMemberUserIds(groupId)).thenReturn(List.of(1L, 2L));
 
         // when
-        listener.on(new GroupJoinedEvent(groupId, joinedUserId));
+        listener.on(new GroupJoinedEvent(groupId, groupChallengeId, joinedUserId));
 
         // then
         List<NotificationCommand> commands = captureCommands(1);
@@ -78,8 +79,8 @@ class NotificationEventListenerTest {
             assertThat(command.typeCode()).isEqualTo(NotificationTypeCode.GROUP_JOINED);
             assertThat(command.context().get("nickname")).isEqualTo("슬빈");
             assertThat(command.context().get("groupName")).isEqualTo("디톡스방");
-            assertThat(command.payload().targetType()).isEqualTo(NotificationTargetType.GROUP);
-            assertThat(command.payload().targetId()).isEqualTo(groupId);
+            assertThat(command.payload().targetType()).isEqualTo(NotificationTargetType.FEED);
+            assertThat(command.payload().targetId()).isEqualTo(groupChallengeId);
             assertThat(command.saveHistory()).isTrue();
         });
     }
@@ -231,15 +232,16 @@ class NotificationEventListenerTest {
     }
 
     @Test
-    @DisplayName("내일부터 인증 시작 이벤트는 그룹 멤버 전체에게 그룹 알림 커맨드를 만든다")
+    @DisplayName("내일부터 인증 시작 이벤트는 그룹 멤버 전체에게 피드 알림 커맨드를 만든다")
     void certificationStartTomorrowEvent_createsCommandsForGroupMembers() {
         // given
         Long groupId = 10L;
+        Long groupChallengeId = 20L;
         when(groupReader.findGroupName(groupId)).thenReturn("디톡스방");
         when(recipientReader.findActiveGroupMemberUserIds(groupId)).thenReturn(List.of(1L, 2L));
 
         // when
-        listener.on(new CertificationStartTomorrowEvent(groupId));
+        listener.on(new CertificationStartTomorrowEvent(groupId, groupChallengeId));
 
         // then
         List<NotificationCommand> commands = captureCommands(2);
@@ -249,30 +251,31 @@ class NotificationEventListenerTest {
         assertThat(commands).allSatisfy(command -> {
             assertThat(command.typeCode()).isEqualTo(NotificationTypeCode.CERTIFICATION_START_TOMORROW);
             assertThat(command.context().get("groupName")).isEqualTo("디톡스방");
-            assertThat(command.payload().targetType()).isEqualTo(NotificationTargetType.GROUP);
-            assertThat(command.payload().targetId()).isEqualTo(groupId);
+            assertThat(command.payload().targetType()).isEqualTo(NotificationTargetType.FEED);
+            assertThat(command.payload().targetId()).isEqualTo(groupChallengeId);
             assertThat(command.saveHistory()).isTrue();
         });
     }
 
     @Test
-    @DisplayName("목표 설정 리마인드 이벤트는 목표 미설정 사용자에게 그룹 알림 커맨드를 만든다")
+    @DisplayName("목표 설정 리마인드 이벤트는 목표 미설정 사용자에게 피드 알림 커맨드를 만든다")
     void goalSettingReminderEvent_createsCommandForTargetUser() {
         // given
         Long groupId = 10L;
+        Long groupChallengeId = 20L;
         Long targetUserId = 2L;
         when(userReader.findDisplayName(targetUserId)).thenReturn("지민");
 
         // when
-        listener.on(new GoalSettingReminderEvent(groupId, targetUserId));
+        listener.on(new GoalSettingReminderEvent(groupId, groupChallengeId, targetUserId));
 
         // then
         NotificationCommand command = captureCommand();
         assertThat(command.recipientUserId()).isEqualTo(targetUserId);
         assertThat(command.typeCode()).isEqualTo(NotificationTypeCode.GOAL_SETTING_REMINDER);
         assertThat(command.context().get("nickname")).isEqualTo("지민");
-        assertThat(command.payload().targetType()).isEqualTo(NotificationTargetType.GROUP);
-        assertThat(command.payload().targetId()).isEqualTo(groupId);
+        assertThat(command.payload().targetType()).isEqualTo(NotificationTargetType.FEED);
+        assertThat(command.payload().targetId()).isEqualTo(groupChallengeId);
         assertThat(command.saveHistory()).isTrue();
     }
 

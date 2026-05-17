@@ -37,7 +37,11 @@ public class NotificationScheduler {
 
         scheduleReader.findGoalSettingReminderTargets(joinedFrom, joinedTo)
                 .forEach(target -> eventPublisher.publishEvent(
-                        new GoalSettingReminderEvent(target.groupId(), target.userId())
+                        new GoalSettingReminderEvent(
+                                target.groupId(),
+                                target.groupChallengeId(),
+                                target.userId()
+                        )
                 ));
     }
 

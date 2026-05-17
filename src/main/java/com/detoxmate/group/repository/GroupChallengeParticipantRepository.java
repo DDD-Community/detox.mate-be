@@ -178,6 +178,7 @@ public interface GroupChallengeParticipantRepository extends JpaRepository<Group
     @Query("""
     SELECT new com.detoxmate.notification.dto.GoalSettingReminderTarget(
         gc.groupId,
+        gc.id,
         gm.userId
     )
     FROM GroupChallengeParticipant gcp

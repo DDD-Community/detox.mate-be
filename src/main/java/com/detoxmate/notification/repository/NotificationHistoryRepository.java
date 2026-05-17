@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface NotificationHistoryRepository extends JpaRepository<NotificationHistory,Long> {
@@ -32,5 +33,7 @@ public interface NotificationHistoryRepository extends JpaRepository<Notificatio
           """)
     Long countUnreadActiveByUserId(@Param("userId") Long userId,
                              @Param("now") LocalDateTime now);
+
+    Optional<NotificationHistory> findByIdAndUserId(Long id, Long userId);
 
 }

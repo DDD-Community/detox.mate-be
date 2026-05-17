@@ -55,7 +55,7 @@ public class NotificationEventListener {
                             "nickname", joinedUserName,
                             "groupName", groupName
                     ),
-                    NotificationPayload.group(event.groupId())
+                    NotificationPayload.feed(event.groupChallengeId())
             ));
         }
     }
@@ -146,7 +146,7 @@ public class NotificationEventListener {
                         "nickname", commenterName,
                         "commentBody", truncateComment(commentBody)
                 ),
-                NotificationPayload.feedDetail(event.challengeRecordId())
+                NotificationPayload.commentFeedDetail(event.challengeRecordId(), event.commentId())
         ));
     }
 
@@ -161,7 +161,7 @@ public class NotificationEventListener {
                     recipientUserId,
                     NotificationTypeCode.CERTIFICATION_START_TOMORROW,
                     NotificationContext.of("groupName", groupName),
-                    NotificationPayload.group(event.groupId())
+                    NotificationPayload.feed(event.groupChallengeId())
             ));
         }
     }
@@ -175,7 +175,7 @@ public class NotificationEventListener {
                 event.targetUserId(),
                 NotificationTypeCode.GOAL_SETTING_REMINDER,
                 NotificationContext.of("nickname",targetUserName),
-                NotificationPayload.group(event.groupId())
+                NotificationPayload.feed(event.groupChallengeId())
         ));
     }
 

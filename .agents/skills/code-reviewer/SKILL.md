@@ -6,6 +6,8 @@ Trigger: "코드 리뷰", "리뷰해줘", "설계 리뷰", "DDD 관점 리뷰", 
 - SOLID 원칙, Rich Domain Model 지향 여부, 서비스 비대화 여부, JPA 사용 방식의 적절성을 중점적으로 본다.
 - 특히 빈약한 도메인 모델(anemic domain model), FK 중심 설계, 서비스 계층 과도 비대화 문제를 식별한다.
 allowed-tools: Read, Grep, Glob
+model: sonnet
+version: 1.0.0
 ---
 
 # Code Review Skill - DDD / JPA / SOLID Focus

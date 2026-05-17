@@ -300,7 +300,7 @@ public class GroupServiceTest {
         // then
         verify(groupMemberRepository).save(any(GroupMember.class));
         verify(groupChallengeParticipantRepository).save(any(GroupChallengeParticipant.class));
-        verify(eventPublisher).publishEvent(new GroupJoinedEvent(GROUP_ID, MEMBER_USER_ID));
+        verify(eventPublisher).publishEvent(new GroupJoinedEvent(GROUP_ID, RECRUITING_CHALLENGE_ID, MEMBER_USER_ID));
         assertThat(response.id()).isEqualTo(GROUP_ID);
         assertThat(response.inviteCode()).isEqualTo(INVITE_CODE);
         assertThat(response.myRole()).isEqualTo("MEMBER");
@@ -323,8 +323,8 @@ public class GroupServiceTest {
         groupService.joinGroup(INVITE_CODE, MEMBER_USER_ID);
 
         // then
-        verify(eventPublisher).publishEvent(new GroupJoinedEvent(GROUP_ID, MEMBER_USER_ID));
-        verify(eventPublisher).publishEvent(new CertificationStartTomorrowEvent(GROUP_ID));
+        verify(eventPublisher).publishEvent(new GroupJoinedEvent(GROUP_ID, RECRUITING_CHALLENGE_ID, MEMBER_USER_ID));
+        verify(eventPublisher).publishEvent(new CertificationStartTomorrowEvent(GROUP_ID, RECRUITING_CHALLENGE_ID));
     }
 
     @Test
@@ -342,8 +342,8 @@ public class GroupServiceTest {
         groupService.joinGroup(INVITE_CODE, MEMBER_USER_ID);
 
         // then
-        verify(eventPublisher).publishEvent(new GroupJoinedEvent(GROUP_ID, MEMBER_USER_ID));
-        verify(eventPublisher, never()).publishEvent(new CertificationStartTomorrowEvent(GROUP_ID));
+        verify(eventPublisher).publishEvent(new GroupJoinedEvent(GROUP_ID, RECRUITING_CHALLENGE_ID, MEMBER_USER_ID));
+        verify(eventPublisher, never()).publishEvent(new CertificationStartTomorrowEvent(GROUP_ID, RECRUITING_CHALLENGE_ID));
     }
     @Test
     void 테스트를_위해_그룹과_하위_데이터를_모두_삭제할_수_있다() {
