@@ -1,9 +1,11 @@
 package com.detoxmate.user.controller;
 
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
+import com.detoxmate.auth.dto.AppleSocialLoginRequest;
 import com.detoxmate.auth.dto.AuthLoginResponse;
 import com.detoxmate.auth.dto.RefreshTokenResponse;
 import com.detoxmate.user.service.AuthService;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +32,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.mockito.Mockito.mock;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -133,6 +137,99 @@ class AuthControllerTest {
                                 .summary("Kakao social login")
                                 .description("카카오 access token으로 서비스 access token과 refresh token을 발급한다.")
                                 .requestSchema(schema("KakaoSocialLoginRequest"))
+                                .responseSchema(schema("ErrorResponse"))
+                                .requestFields(requestFieldDescriptors)
+                                .responseFields(errorResponseFieldDescriptors)
+                                .build()
+                        )));
+
+        verifyNoInteractions(authService);
+    }
+
+    @Test
+    @DisplayName("Apple 로그인 요청이 유효하면 로그인 응답을 반환한다")
+    void appleAuth_returnsLoginResponseWhenRequestIsValid() throws Exception {
+        // given
+        when(authService.loginWithApple(any(AppleSocialLoginRequest.class))).thenReturn(new AuthLoginResponse(
+                1L,
+                "애플유저",
+                null,
+                "service-access-token",
+                "service-refresh-token",
+                true
+        ));
+
+        FieldDescriptor[] requestFieldDescriptors = appleLoginRequestFields();
+        FieldDescriptor[] responseFieldDescriptors = kakaoLoginSuccessResponseFields();
+
+        // when & then
+        mockMvc.perform(post("/auth/social/apple")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "identityToken": "apple-id-token-jwt",
+                          "rawNonce": "apple-raw-nonce",
+                          "displayName": "애플유저"
+                        }
+                        """))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.isNewUser").value(true))
+                .andExpect(jsonPath("$.accessToken").value("service-access-token"))
+                .andExpect(jsonPath("$.refreshToken").value("service-refresh-token"))
+                .andDo(document("auth/social/apple",
+                        preprocessRequest(prettyPrint()),
+                        preprocessResponse(prettyPrint()),
+                        requestFields(requestFieldDescriptors),
+                        responseFields(responseFieldDescriptors),
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Auth")
+                                .summary("Apple social login")
+                                .description("Apple identity token과 raw nonce로 서비스 access token과 refresh token을 발급한다.")
+                                .requestSchema(schema("AppleSocialLoginRequest"))
+                                .responseSchema(schema("AuthLoginResponse"))
+                                .requestFields(requestFieldDescriptors)
+                                .responseFields(responseFieldDescriptors)
+                                .build()
+                        )));
+
+        verify(authService).loginWithApple(argThat(request ->
+                request.identityToken().equals("apple-id-token-jwt")
+                        && request.rawNonce().equals("apple-raw-nonce")
+                        && request.displayName().equals("애플유저")
+        ));
+    }
+
+    @Test
+    @DisplayName("Apple 로그인 필수값이 공백이면 400 에러를 반환한다")
+    void appleAuth_returnsBadRequestWhenRequiredFieldsAreBlank() throws Exception {
+        FieldDescriptor[] requestFieldDescriptors = appleLoginRequestFields();
+        FieldDescriptor[] errorResponseFieldDescriptors = errorResponseFields();
+
+        // when & then
+        mockMvc.perform(post("/auth/social/apple")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "identityToken": "   ",
+                          "rawNonce": "   ",
+                          "displayName": null
+                        }
+                        """))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.status").value(400))
+                .andDo(document("auth/social/apple-invalid-request",
+                        preprocessRequest(prettyPrint()),
+                        preprocessResponse(prettyPrint()),
+                        requestFields(requestFieldDescriptors),
+                        responseFields(errorResponseFieldDescriptors),
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Auth")
+                                .summary("Apple social login")
+                                .description("Apple identity token과 raw nonce로 서비스 access token과 refresh token을 발급한다.")
+                                .requestSchema(schema("AppleSocialLoginRequest"))
                                 .responseSchema(schema("ErrorResponse"))
                                 .requestFields(requestFieldDescriptors)
                                 .responseFields(errorResponseFieldDescriptors)
@@ -289,6 +386,21 @@ class AuthControllerTest {
                 fieldWithPath("providerAccessToken")
                         .type(JsonFieldType.STRING)
                         .description("카카오 OAuth access token")
+        };
+    }
+
+    private FieldDescriptor[] appleLoginRequestFields() {
+        return new FieldDescriptor[] {
+                fieldWithPath("identityToken")
+                        .type(JsonFieldType.STRING)
+                        .description("Apple SDK가 반환한 ID token JWT"),
+                fieldWithPath("rawNonce")
+                        .type(JsonFieldType.STRING)
+                        .description("FE가 로그인 요청마다 생성한 일회용 랜덤 문자열"),
+                fieldWithPath("displayName")
+                        .type(JsonFieldType.STRING)
+                        .optional()
+                        .description("Apple SDK에서 얻은 사용자 이름. 최초 동의 이후에는 없을 수 있음")
         };
     }
 

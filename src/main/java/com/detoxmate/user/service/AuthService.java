@@ -1,5 +1,6 @@
 package com.detoxmate.user.service;
 
+import com.detoxmate.auth.dto.AppleSocialLoginRequest;
 import com.detoxmate.auth.JwtTokenProvider;
 import com.detoxmate.auth.domain.RefreshTokenSession;
 import com.detoxmate.auth.dto.AuthLoginResponse;
@@ -22,8 +23,10 @@ import java.util.Optional;
 public class AuthService {
 
     private static final int MAX_INITIAL_DISPLAY_NAME_LENGTH = 10;
+    private static final String APPLE_FALLBACK_DISPLAY_NAME = "AppleUser";
 
     private final KakaoRestApiClient kakaoRestApiClient;
+    private final AppleIdentityTokenVerifier appleIdentityTokenVerifier;
     private final UserRepository userRepository;
     private final SocialLoginUserRepository socialLoginUserRepository;
     private final JwtTokenProvider jwtTokenProvider;
@@ -37,6 +40,18 @@ public class AuthService {
                 SocialProvider.KAKAO,
                 kakaoUserInfo.providerUserId(),
                 kakaoUserInfo.nickname(),
+                null
+        );
+    }
+
+    @Transactional
+    public AuthLoginResponse loginWithApple(AppleSocialLoginRequest request) {
+        String providerUserId = appleIdentityTokenVerifier.verify(request.identityToken(), request.rawNonce());
+
+        return loginWithSocialUser(
+                SocialProvider.APPLE,
+                providerUserId,
+                resolveInitialAppleDisplayName(request.displayName()),
                 null
         );
     }
@@ -86,6 +101,14 @@ public class AuthService {
         }
 
         return displayName.substring(0, MAX_INITIAL_DISPLAY_NAME_LENGTH);
+    }
+
+    private String resolveInitialAppleDisplayName(String displayName) {
+        if (displayName == null || displayName.isBlank()) {
+            return APPLE_FALLBACK_DISPLAY_NAME;
+        }
+
+        return displayName;
     }
 
     @Transactional
