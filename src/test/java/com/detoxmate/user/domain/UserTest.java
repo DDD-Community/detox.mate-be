@@ -17,8 +17,18 @@ class UserTest {
         assertThat(user.getProfileImageObjectKey()).isEqualTo("profile-images/1/profile.png");
         assertThat(user.isActive()).isTrue();
         assertThat(user.isWithdrawn()).isFalse();
+        assertThat(user.isPushNotificationEnabled()).isTrue();
         assertThat(user.getCreatedAt()).isNull();
         assertThat(user.getUpdatedAt()).isNull();
+    }
+
+    @Test
+    void 알림_수신_여부를_변경한다() {
+        User user = User.createNew("kakao-nickname");
+
+        user.updatePushNotificationEnabled(false);
+
+        assertThat(user.isPushNotificationEnabled()).isFalse();
     }
 
     @Test

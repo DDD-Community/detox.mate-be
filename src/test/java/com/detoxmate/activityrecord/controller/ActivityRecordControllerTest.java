@@ -64,7 +64,7 @@ class ActivityRecordControllerTest {
         activityRecordService = mock(ActivityRecordService.class);
         userService = mock(UserService.class);
         when(userService.getMe("access-token"))
-                .thenReturn(new MyProfileResponse(1L, "지민", "https://example.com/profile.png"));
+                .thenReturn(new MyProfileResponse(1L, "지민", "https://example.com/profile.png", true));
 
         mockMvc = MockMvcBuilders.standaloneSetup(new ActivityRecordController(activityRecordService))
                 .setCustomArgumentResolvers(new CurrentUserResolver(userService))

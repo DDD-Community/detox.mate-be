@@ -5,12 +5,14 @@ import com.detoxmate.challengerecord.service.ChallengeRecordService;
 import com.detoxmate.challengerecordstatuscount.service.ChallengeRecordStatusCountService;
 import com.detoxmate.common.exception.CustomException;
 import com.detoxmate.common.exception.reaction.ReactionErrorCode;
+import com.detoxmate.notification.event.ReactionCreatedEvent;
 import com.detoxmate.reaction.domain.Reaction;
 import com.detoxmate.reaction.domain.ReactionBody;
 import com.detoxmate.reaction.dto.request.CreateReactionRequest;
 import com.detoxmate.reaction.dto.response.ReactionResponse;
 import com.detoxmate.reaction.repository.ReactionRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +25,8 @@ public class ReactionService {
     private final ReactionRepository reactionRepository;
     private final ChallengeRecordService challengeRecordService;
     private final ChallengeRecordStatusCountService statusCountService;
+
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public ReactionResponse create(Long challengeRecordId, CreateReactionRequest request, Long currentUserId) {
@@ -39,6 +43,11 @@ public class ReactionService {
         Reaction saved = reactionRepository.save(reaction);
 
         statusCountService.increaseReactionCount(challengeRecordId);
+
+        eventPublisher.publishEvent(new ReactionCreatedEvent(
+                challengeRecordId,
+                currentUserId
+        ));
 
         return toReactionResponse(saved);
     }

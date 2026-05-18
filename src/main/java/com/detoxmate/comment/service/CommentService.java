@@ -13,10 +13,12 @@ import com.detoxmate.comment.dto.response.CommentResponse;
 import com.detoxmate.comment.repository.CommentRepository;
 import com.detoxmate.common.exception.CustomException;
 import com.detoxmate.common.exception.challengerecord.ChallengeRecordErrorCode;
+import com.detoxmate.notification.event.CommentCreatedEvent;
 import com.detoxmate.user.dto.UserProfileSummary;
 import com.detoxmate.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +37,8 @@ public class CommentService {
     private final ChallengeRecordService challengeRecordService;
     private final ChallengeRecordStatusCountService statusCountService;
     private final UserService userService;
+
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public CommentListResponse list(Long challengeRecordId, String cursor, int size) {
@@ -76,6 +80,11 @@ public class CommentService {
         Comment saved = commentRepository.save(comment);
 
         increaseCommentCount(challengeRecordId, commentStatus);
+        eventPublisher.publishEvent(new CommentCreatedEvent(
+                challengeRecordId,
+                currentUserId,
+                saved.getId()
+        ));
 
         return toCommentResponse(saved);
     }

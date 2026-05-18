@@ -11,6 +11,7 @@ import com.detoxmate.notification.repository.FcmTokenRepository;
 import com.detoxmate.notification.repository.NotificationHistoryRepository;
 import com.detoxmate.notification.repository.NotificationRepository;
 import com.detoxmate.notification.util.FcmSender;
+import com.detoxmate.notification.util.NotificationUserReader;
 import com.detoxmate.notification.util.TokenMasker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,9 +30,11 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final FcmTokenRepository fcmTokenRepository;
+
     private final NotificationHistoryRepository historyRepository;
     private final FcmSender fcmSender;
     private final TransactionTemplate transactionTemplate;
+    private final NotificationUserReader notificationUserReader;
 
     public void send(NotificationCommand command) {
         DispatchContext context = prepareWithinTx(command);
@@ -51,20 +54,23 @@ public class NotificationService {
             Notification notification = notificationRepository.findByTypeCode(command.typeCode())
                     .orElseThrow(() -> new CustomException(NotificationErrorCode.NOTIFICATION_NOT_FOUND));
 
-            List<FcmToken> tokens = fcmTokenRepository.findAllByUserId(command.recipientUserId());
-
             String body = notification.resolve(command.context());
 
             if (command.saveHistory()) {
                 historyRepository.save(NotificationHistory.fromResolvedMessage(
                         notification,
                         command.recipientUserId(),
-                        body
+                        body,
+                        command.payload()
                 ));
             }
 
+            boolean pushEnabled = notificationUserReader.isPushNotificationEnabled(command.recipientUserId());
+            List<String> tokens = pushEnabled ? fcmTokenRepository.findAllByUserId(command.recipientUserId())
+                    .stream().map(FcmToken::getToken).toList(): List.of();
+
             return new DispatchContext(
-                    tokens.stream().map(FcmToken::getToken).toList(),
+                    tokens,
                     notification.getTitle(),
                     body,
                     command.payload().toFcmData(command.typeCode())

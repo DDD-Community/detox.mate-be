@@ -39,44 +39,85 @@ public class NotificationHistory {
     @Column(name = "notification_history_message", nullable = false, length = MESSAGE_MAX_LENGTH)
     private String message;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "target_type",nullable = false,length = 30)
+    private NotificationTargetType targetType;
+
+    @Column(name = "target_id")
+    private Long targetId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "source_type", nullable = false, length = 30)
+    private NotificationSourceType sourceType;
+
+    @Column(name = "source_id")
+    private Long sourceId;
+
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
     @Column(name = "expired_at")
     private LocalDateTime expiredAt;
 
-    private NotificationHistory(Notification notification, Long userId, String title, String message, LocalDateTime createdAt, LocalDateTime expiredAt){
+    private NotificationHistory(Notification notification, Long userId, String title, String message,
+                                NotificationTargetType targetType, Long targetId,
+                                NotificationSourceType sourceType, Long sourceId,
+                                LocalDateTime createdAt, LocalDateTime expiredAt){
         this.notification = notification;
         this.userId = userId;
         this.isRead = false;
         this.title = title;
         this.message = message;
+        this.targetType = targetType;
+        this.targetId = targetId;
+        this.sourceType = sourceType;
+        this.sourceId = sourceId;
         this.createdAt = createdAt;
         this.expiredAt = expiredAt;
     }
 
     public static NotificationHistory fromResolvedMessage(Notification notification, Long userId, String message) {
-        return fromResolvedMessage(notification, userId, message, null);
+        return fromResolvedMessage(notification, userId, message, NotificationPayload.none(), null);
     }
 
     public static NotificationHistory fromResolvedMessage(Notification notification,
-                                           Long userId,
-                                           String message,
-                                           LocalDateTime expiredAt){
+                                                          Long userId,
+                                                          String message,
+                                                          LocalDateTime expiredAt) {
 
+        return fromResolvedMessage(notification, userId, message, NotificationPayload.none(), expiredAt);
+    }
+
+    public static NotificationHistory fromResolvedMessage(Notification notification, Long userId, String message, NotificationPayload payload) {
+        return fromResolvedMessage(notification, userId, message, payload, null);
+    }
+
+    public static NotificationHistory fromResolvedMessage(Notification notification,
+                                                          Long userId,
+                                                          String message,
+                                                          NotificationPayload payload,
+                                                          LocalDateTime expiredAt) {
         validateNotification(notification);
         validateUserId(userId);
         validateMessage(message);
+
+        NotificationPayload safePayload = payload == null ? NotificationPayload.none() : payload;
 
         return new NotificationHistory(
                 notification,
                 userId,
                 notification.getTitle(),
                 message,
+                safePayload.targetType(),
+                safePayload.targetId(),
+                safePayload.sourceType(),
+                safePayload.sourceId(),
                 LocalDateTime.now(),
                 expiredAt
         );
     }
+
 
     public void markAsRead(){
         this.isRead = true;

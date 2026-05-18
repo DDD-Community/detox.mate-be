@@ -8,8 +8,11 @@ import com.detoxmate.group.dto.GroupChallengeSummaryResponse;
 import com.detoxmate.group.dto.GroupMemberResponse;
 import com.detoxmate.group.dto.GroupResponse;
 import com.detoxmate.group.repository.GroupRepository;
+import com.detoxmate.notification.event.CertificationStartTomorrowEvent;
+import com.detoxmate.notification.event.GroupJoinedEvent;
 import com.detoxmate.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -32,6 +35,8 @@ public class GroupService {
     private final GroupChallengeParticipantService groupChallengeParticipantService;
     private final InviteCodeGenerator inviteCodeGenerator;
     private final UserRepository userRepository;
+
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public GroupResponse createGroup(Long creatorUserId, String groupName) {
@@ -74,6 +79,15 @@ public class GroupService {
 
         GroupMember groupMember = groupMemberService.saveGroupMember(userId, group.getId());
         groupChallengeParticipantService.saveGroupChallengeParticipant(groupMember.getId(), groupChallenge.getId());
+
+        eventPublisher.publishEvent(new GroupJoinedEvent(group.getId(), groupChallenge.getId(),userId));
+
+        if (groupMemberService.countActiveGroupMembers(group.getId()) == 2) {
+            eventPublisher.publishEvent(new CertificationStartTomorrowEvent(
+                    group.getId(),
+                    groupChallenge.getId()
+            ));
+        }
 
         List<GroupMemberResponse> members = groupMemberService.getGroupMembers(group.getId());
 

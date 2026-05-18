@@ -57,7 +57,7 @@ class GroupActivityCalendarControllerTest {
         userService = mock(UserService.class);
 
         when(userService.getMe("access-token"))
-                .thenReturn(new MyProfileResponse(1L, "나", "https://example.com/profile/me.png"));
+                .thenReturn(new MyProfileResponse(1L, "나", "https://example.com/profile/me.png", true));
 
         mockMvc = MockMvcBuilders.standaloneSetup(
                         new GroupActivityCalendarController(groupActivityCalendarService)

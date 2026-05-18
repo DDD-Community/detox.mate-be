@@ -4,10 +4,10 @@ WHERE NOT EXISTS (
     SELECT 1 FROM usage_goal_type WHERE description = 'TOTAL_USAGE'
 );
 
-INSERT INTO users (user_id, display_name, created_at, updated_at, profile_image_object_key) VALUES
-(__ME_USER_ID__, '캘린더 나', '__ME_JOINED_AT__', '__ME_JOINED_AT__', 'profiles/fixtures/calendar-me.png'),
-(__JISOO_USER_ID__, '캘린더 지수', '__JISOO_JOINED_AT__', '__JISOO_JOINED_AT__', 'profiles/fixtures/calendar-jisoo.png'),
-(__MINJUN_USER_ID__, '캘린더 민준', '__MINJUN_JOINED_AT__', '__MINJUN_JOINED_AT__', 'profiles/fixtures/calendar-minjun.png');
+INSERT INTO users (user_id, display_name, created_at, updated_at, profile_image_object_key, push_notification_enabled) VALUES
+(__ME_USER_ID__, '캘린더 나', '__ME_JOINED_AT__', '__ME_JOINED_AT__', 'profiles/fixtures/calendar-me.png', true),
+(__JISOO_USER_ID__, '캘린더 지수', '__JISOO_JOINED_AT__', '__JISOO_JOINED_AT__', 'profiles/fixtures/calendar-jisoo.png', true),
+(__MINJUN_USER_ID__, '캘린더 민준', '__MINJUN_JOINED_AT__', '__MINJUN_JOINED_AT__', 'profiles/fixtures/calendar-minjun.png', true);
 
 INSERT INTO __GROUPS_TABLE__ (group_id, name, invite_code, created_at, updated_at) VALUES
 (__GROUP_ID__, '캘린더시드', 'ACR01', '__ME_JOINED_AT__', '__ME_JOINED_AT__');

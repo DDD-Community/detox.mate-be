@@ -144,6 +144,28 @@ operation::admin/screen-time-ocr-error-reports/list-forbidden[snippets='http-req
 operation::admin/screen-time-ocr-error-reports/update[snippets='http-request,request-headers,path-parameters,request-fields,http-response,response-fields']
 operation::admin/screen-time-ocr-error-reports/update-forbidden[snippets='http-request,request-headers,path-parameters,request-fields,http-response,response-fields']
 
+== Notification API
+
+=== Register FCM Token
+
+operation::notifications/tokens-register[snippets='http-request,request-headers,request-fields,http-response']
+
+=== Delete FCM Token
+
+operation::notifications/tokens-delete[snippets='http-request,request-headers,request-fields,http-response']
+
+=== Update Notification Setting
+
+operation::notifications/settings-update[snippets='http-request,request-headers,request-fields,http-response']
+
+=== Get Notifications
+
+operation::notifications/list-get[snippets='http-request,request-headers,http-response,response-fields']
+
+=== Get Notification Navigation
+
+operation::notifications/navigation-get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+
   == Feed API
 
   === Get Group Challenge Overview

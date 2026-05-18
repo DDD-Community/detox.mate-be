@@ -16,10 +16,12 @@ import com.detoxmate.challengerecord.domain.ChallengeRecordCertificationResult;
 import com.detoxmate.challengerecord.service.ChallengeRecordService;
 import com.detoxmate.group.domain.GroupChallengeParticipant;
 import com.detoxmate.group.repository.GroupChallengeParticipantRepository;
+import com.detoxmate.notification.event.CertificationCreatedEvent;
 import com.detoxmate.upload.service.ImageReadUrlBuilder;
 import com.detoxmate.user.domain.User;
 import com.detoxmate.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,6 +52,8 @@ public class ActivityRecordService {
     private final ImageReadUrlBuilder imageReadUrlBuilder;
     private final ChallengeRecordService challengeRecordService;
     private final Clock clock;
+
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public ActivityRecordAchievementCheckResponse checkAchievement(
@@ -92,7 +96,12 @@ public class ActivityRecordService {
         );
 
         ActivityRecord savedActivityRecord = activityRecordRepository.save(activityRecord);
-        certifyChallengeRecord(savedActivityRecord, groupChallengeParticipant, results, recordDate);
+        ChallengeRecord challengeRecord = certifyChallengeRecord(savedActivityRecord, groupChallengeParticipant, results, recordDate);
+
+        eventPublisher.publishEvent(new CertificationCreatedEvent(
+                challengeRecord.getId(),
+                userId
+        ));
         return toCreateResponse(savedActivityRecord, results);
     }
 
@@ -207,7 +216,7 @@ public class ActivityRecordService {
         return new ActivityRecordAchievementCheckResponse(results, allAchieved);
     }
 
-    private void certifyChallengeRecord(
+    private ChallengeRecord certifyChallengeRecord(
             ActivityRecord savedActivityRecord,
             GroupChallengeParticipant groupChallengeParticipant,
             List<ActivityRecordDetailResult> results,
@@ -225,6 +234,8 @@ public class ActivityRecordService {
                 groupChallengeParticipant.getId(),
                 certificationResult(results)
         );
+
+        return challengeRecord;
     }
 
     private ChallengeRecordCertificationResult certificationResult(List<ActivityRecordDetailResult> results) {

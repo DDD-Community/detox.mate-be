@@ -35,4 +35,10 @@ public class NotificationUserReader {
 
         return displayNames;
     }
+
+    public boolean isPushNotificationEnabled(Long userId) {
+        return userRepository.findById(userId)
+                .map(User::isPushNotificationEnabled)
+                .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
+    }
 }
