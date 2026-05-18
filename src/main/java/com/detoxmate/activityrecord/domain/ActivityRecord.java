@@ -22,6 +22,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @Getter
 @Entity
@@ -83,6 +84,16 @@ public class ActivityRecord {
         ActivityRecordDetail detail = ActivityRecordDetail.create(this, userUsageGoalTime, useMinutes, isAchieved);
         details.add(detail);
         return detail;
+    }
+
+    public boolean correctTotalUsageMinutes(int correctedTotalUsedMinutes) {
+        ActivityRecordDetail totalUsageDetail = details.stream()
+                .filter(detail -> detail.getUsageGoalType().isTotalUsage())
+                .findFirst()
+                .orElseThrow(() -> new NoSuchElementException("TOTAL_USAGE detail 을 찾을 수 없습니다."));
+
+        totalUsageDetail.correctUseMinutes(correctedTotalUsedMinutes);
+        return details.stream().allMatch(ActivityRecordDetail::isAchieved);
     }
 
     private static void validateUser(User user) {

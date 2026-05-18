@@ -215,7 +215,7 @@ class UploadControllerTest {
                         .description("업로드 파일 크기(byte)"),
                 fieldWithPath("uploadPurpose")
                         .type(JsonFieldType.STRING)
-                        .description("업로드 목적 (`ACTIVITY_RECORD_IMAGE`, `PROFILE_IMAGE`)")
+                        .description("업로드 목적 (`ACTIVITY_RECORD_IMAGE`, `PROFILE_IMAGE`, `SCREEN_TIME_OCR_REPORT_IMAGE`)")
         };
     }
 

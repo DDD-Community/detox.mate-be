@@ -195,6 +195,23 @@ class ChallengeRecordTest {
                 .isEqualTo(ChallengeRecordErrorCode.CHALLENGE_RECORD_ALREADY_CERTIFIED);
     }
 
+    @Test
+    @DisplayName("admin 보정은 이미 인증된 챌린지 기록의 성공/실패 상태를 다시 설정한다")
+    void correctCertificationResult_changesCertifiedStatus() {
+        ChallengeRecord record = createRecord();
+        record.certify(
+                ACTIVITY_RECORD_ID,
+                GROUP_CHALLENGE_PARTICIPANT_ID,
+                ChallengeRecordCertificationResult.FAIL
+        );
+
+        record.correctCertificationResult(ChallengeRecordCertificationResult.SUCCESS);
+
+        assertThat(record.getActivityRecordId()).isEqualTo(ACTIVITY_RECORD_ID);
+        assertThat(record.getStatus()).isEqualTo(ChallengeRecordStatus.AFTER_RECORD_SUCCESS);
+        assertThat(record.isCertificationSucceeded()).isTrue();
+    }
+
     private ChallengeRecord createRecord() {
         return ChallengeRecord.create(
                 GROUP_CHALLENGE_ID,

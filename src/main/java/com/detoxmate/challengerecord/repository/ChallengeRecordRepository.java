@@ -89,6 +89,8 @@ public interface ChallengeRecordRepository extends JpaRepository<ChallengeRecord
             """)
     Optional<ChallengeRecordNotificationRow> findChallengeRecordNotificationRow(Long challengeRecordId);
 
+    Optional<ChallengeRecord> findByActivityRecordId(Long activityRecordId);
+
     @Query("""
     SELECT new com.detoxmate.notification.dto.StreakWarningTarget(
         gc.groupId,

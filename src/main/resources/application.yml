@@ -17,6 +17,12 @@ springdoc:
     url: /openapi3.yaml
 
 app:
+  admin:
+    review-token: ${ADMIN_REVIEW_TOKEN:}
+  discord:
+    ocr-report:
+      webhook-url: ${DISCORD_OCR_REPORT_WEBHOOK_URL:}
+      api-base-url: ${APP_PUBLIC_BASE_URL:}
   storage:
     image-read-base-url: ${STORAGE_IMAGE_READ_BASE_URL}
     s3:
