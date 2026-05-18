@@ -193,7 +193,7 @@ class NotificationControllerDocsTest {
     void 알림_목록을_조회한다() throws Exception {
         given(notificationHistoryService.getMyNotifications(eq(1L)))
                 .willReturn(new NotificationHistoryListResponse(
-                        2,
+                        3,
                         List.of(
                                 new NotificationHistoryGroupResponse(
                                         "오늘",
@@ -219,6 +219,17 @@ class NotificationControllerDocsTest {
                                                         "COMMENT",
                                                         300L,
                                                         LocalDateTime.of(2026, 5, 17, 13, 0)
+                                                ),
+                                                new NotificationHistoryItemResponse(
+                                                        102L,
+                                                        "스트릭 알림",
+                                                        "1명이 더 인증하지 않으면 우리 그룹 스트릭이 깨져요!",
+                                                        false,
+                                                        "FEED",
+                                                        10L,
+                                                        "NONE",
+                                                        null,
+                                                        LocalDateTime.of(2026, 5, 17, 23, 30)
                                                 )
                                         )
                                 )
@@ -313,7 +324,7 @@ class NotificationControllerDocsTest {
                 fieldWithPath("groups[].notifications[].message").type(STRING).description("치환이 완료된 알림 본문"),
                 fieldWithPath("groups[].notifications[].read").type(BOOLEAN).description("읽음 여부"),
                 fieldWithPath("groups[].notifications[].targetType").type(STRING).description("알림 이동 대상 타입 (NONE | GROUP | FEED | FEED_DETAIL | GROUP_CHALLENGE)"),
-                fieldWithPath("groups[].notifications[].targetId").type(VARIES).optional().description("알림 이동 대상 ID. targetType이 NONE이면 null"),
+                fieldWithPath("groups[].notifications[].targetId").type(VARIES).optional().description("알림 이동 대상 ID. FEED이면 groupChallengeId, FEED_DETAIL이면 challengeRecordId, GROUP이면 groupId, NONE이면 null"),
                 fieldWithPath("groups[].notifications[].sourceType").type(STRING).description("알림 발생 원인 타입 (NONE | COMMENT | REACTION | POKE | CHALLENGE_RECORD)"),
                 fieldWithPath("groups[].notifications[].sourceId").type(VARIES).optional().description("알림 발생 원인 ID. sourceType이 NONE이면 null"),
                 fieldWithPath("groups[].notifications[].createdAt").type(STRING).description("알림 생성 시각")

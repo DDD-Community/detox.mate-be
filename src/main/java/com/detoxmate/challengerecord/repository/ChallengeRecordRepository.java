@@ -93,11 +93,11 @@ public interface ChallengeRecordRepository extends JpaRepository<ChallengeRecord
 
     @Query("""
     SELECT new com.detoxmate.notification.dto.StreakWarningTarget(
-        gc.groupId,
-        gc.id,
-        COUNT(DISTINCT gcp.id),
-        COUNT(DISTINCT cr.groupChallengeParticipantId)
-    )
+            gc.groupId,
+            gc.id,
+            COUNT(DISTINCT gcp.id),
+            COUNT(DISTINCT cr.groupChallengeParticipantId)
+        )
     FROM GroupChallenge gc
     JOIN GroupChallengeParticipant gcp ON gcp.groupChallengeId = gc.id
     JOIN GroupMember gm ON gm.id = gcp.groupMemberId

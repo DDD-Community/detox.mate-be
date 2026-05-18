@@ -78,7 +78,7 @@ public class NotificationScheduler {
                                     userId,
                                     NotificationTypeCode.STREAK_WARNING,
                                     NotificationContext.of("remainingCount", String.valueOf(remainingCount)),
-                                    NotificationPayload.group(target.groupId())
+                                    NotificationPayload.feed(target.groupChallengeId())
                             )));
                 });
     }
