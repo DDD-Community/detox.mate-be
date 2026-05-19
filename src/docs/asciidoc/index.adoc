@@ -9,6 +9,11 @@
 operation::auth/social/kakao[snippets='http-request,request-fields,http-response,response-fields']
 operation::auth/social/kakao-invalid-request[snippets='http-request,request-fields,http-response,response-fields']
 
+=== Apple Social Login
+
+operation::auth/social/apple[snippets='http-request,request-fields,http-response,response-fields']
+operation::auth/social/apple-invalid-request[snippets='http-request,request-fields,http-response,response-fields']
+
 === Refresh Access Token
 
 operation::auth/refresh[snippets='http-request,request-fields,http-response,response-fields']

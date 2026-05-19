@@ -17,6 +17,15 @@ Use this skill when writing new tests, repairing brittle tests, or reviewing whe
 - Prefer assertions on returned values, persisted state, emitted externally observable effects, and user-visible outcomes.
 - Treat `toHaveBeenCalledWith(...)`, `verify(...)`, and spy-count assertions as secondary evidence, not the main proof.
 
+## Repo Test Conventions
+
+When editing tests in `detox.mate-be`, preserve the conventions that appear across test layers:
+
+- Use Korean `@DisplayName` values that describe the observable behavior or domain rule.
+- Keep test method names in English and behavior-oriented, commonly `<methodUnderTest>_<expectedBehavior>` or `<methodUnderTest>_<condition>_<expectedBehavior>`.
+- Structure non-trivial tests with `// given`, `// when`, and `// then`; use `// when & then` when the action and assertion are naturally one expression.
+- Do not treat layer-specific details such as real repositories, fixed clocks, or database side-effect assertions as repo-wide conventions unless the surrounding test layer already uses them.
+
 ## Workflow
 
 ### 1. Find the real behavior

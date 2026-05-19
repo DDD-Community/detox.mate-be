@@ -19,6 +19,9 @@ springdoc:
 app:
   admin:
     review-token: ${ADMIN_REVIEW_TOKEN:}
+  apple:
+    auth:
+      client-id: ${APPLE_CLIENT_ID:}
   discord:
     ocr-report:
       webhook-url: ${DISCORD_OCR_REPORT_WEBHOOK_URL:}
