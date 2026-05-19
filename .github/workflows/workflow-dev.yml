@@ -117,6 +117,7 @@ jobs:
             -v /home/ec2-user/logs:/logs \
             -v /opt/detoxmate/firebase:/opt/detoxmate/firebase:ro \
             -e SPRING_PROFILES_ACTIVE=dev \
+            -e LOG_PATH=/logs \
             ${{ env.APP_NAME }}:latest
 
       - name: Remove .env file
