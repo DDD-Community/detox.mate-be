@@ -1,17 +1,17 @@
-name: Detoxmate Dev CI/CD
+name: Detoxmate Prod CI/CD
 
 on:
   push:
     branches:
-      - dev
+      - main
   workflow_dispatch:
 
 env:
   APP_NAME: detoxmate
-  IMAGE_TAG: dev
-  CONTAINER_NAME: detoxmate-dev
-  HOST_PORT: 8080
-  CONTAINER_PORT: 8080
+  IMAGE_TAG: prod
+  CONTAINER_NAME: detoxmate-prod
+  HOST_PORT: 8081
+  CONTAINER_PORT: 8081
 
 jobs:
   build:
@@ -47,7 +47,7 @@ jobs:
   deploy:
     name: Deploy on EC2
     needs: build
-    environment: dev
+    environment: prod
     runs-on: [self-hosted, linux, ARM64]
 
     steps:
@@ -72,10 +72,10 @@ jobs:
       - name: Create .env file
         run: |
           cat <<EOF > deploy/.env
-          SPRING_PROFILES_ACTIVE=dev
-          DEV_DB_URL=${{ secrets.DB_URL }}
-          DEV_DB_USERNAME=${{ secrets.DB_USERNAME }}
-          DEV_DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          SPRING_PROFILES_ACTIVE=prod
+          PROD_DB_URL=${{ secrets.DB_URL }}
+          PROD_DB_USERNAME=${{ secrets.DB_USERNAME }}
+          PROD_DB_PASSWORD=${{ secrets.DB_PASSWORD }}
           JWT_SECRET=${{ secrets.JWT_SECRET }}
           JWT_ACCESS_TOKEN_EXPIRES_IN=${{ secrets.JWT_ACCESS_TOKEN_EXPIRES_IN }}
           ADMIN_REVIEW_TOKEN=${{ secrets.ADMIN_REVIEW_TOKEN }}
@@ -94,7 +94,7 @@ jobs:
           FROM eclipse-temurin:21-jre
           WORKDIR /app
           COPY app.jar app.jar
-          EXPOSE 8080
+          EXPOSE 8081
           ENTRYPOINT ["java", "-jar", "app.jar"]
           EOF
 
@@ -113,9 +113,9 @@ jobs:
             --restart unless-stopped \
             -p ${{ env.HOST_PORT }}:${{ env.CONTAINER_PORT }} \
             --env-file deploy/.env \
-            -v /home/ec2-user/logs/dev:/logs \
-            -v /opt/detoxmate/firebase/dev:/opt/detoxmate/firebase:ro \
-            -e SPRING_PROFILES_ACTIVE=dev \
+            -v /home/ec2-user/logs/prod:/logs \
+            -v /opt/detoxmate/firebase/prod:/opt/detoxmate/firebase:ro \
+            -e SPRING_PROFILES_ACTIVE=prod \
             -e LOG_PATH=/logs \
             ${{ env.APP_NAME }}:${{ env.IMAGE_TAG }}
 
