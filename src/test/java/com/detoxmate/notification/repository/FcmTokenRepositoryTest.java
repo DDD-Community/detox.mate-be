@@ -118,4 +118,20 @@ class FcmTokenRepositoryTest {
 
         assertThat(fcmTokenRepository.findByToken("token-A")).isPresent();
     }
+
+    @Test
+    @DisplayName("bulk token delete는 이미 삭제된 토큰을 다시 삭제해도 예외 없이 0을 반환한다")
+    void deleteByTokenInBulk_isIdempotent() {
+        // given
+        fcmTokenRepository.save(FcmToken.create(1L, "dead-token", DevicePlatform.IOS));
+
+        // when
+        int firstDeletedCount = fcmTokenRepository.deleteByTokenInBulk(List.of("dead-token"));
+        int secondDeletedCount = fcmTokenRepository.deleteByTokenInBulk(List.of("dead-token"));
+
+        // then
+        assertThat(firstDeletedCount).isEqualTo(1);
+        assertThat(secondDeletedCount).isZero();
+        assertThat(fcmTokenRepository.findByToken("dead-token")).isEmpty();
+    }
 }

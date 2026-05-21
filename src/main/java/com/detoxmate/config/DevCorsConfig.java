@@ -18,7 +18,9 @@ public class DevCorsConfig implements WebMvcConfigurer {
             "http://localhost:3002",
             "http://localhost:3003",
             "http://localhost:3004",
-            "http://localhost:3005"
+            "http://localhost:3005",
+            "https://api-dev.detoxmate.co.kr",
+            "https://api.detoxmate.co.kr"
     );
 
     static final List<String> ALLOWED_METHODS = List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS");
