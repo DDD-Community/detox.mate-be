@@ -18,9 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 @Slf4j
@@ -112,10 +110,15 @@ public class NotificationService {
             return;
         }
 
-        transactionTemplate.executeWithoutResult(status -> {
-            tokens.forEach(fcmTokenRepository::deleteByToken);
-        });
-        log.info("[Notification][clean-up-dead-tokens] Cleaned up {} dead FCM tokens",tokens.size());
+        Set<String> uniqueTokens = new LinkedHashSet<>(tokens);
+
+        Integer deletedCount = transactionTemplate.execute(status ->
+                fcmTokenRepository.deleteByTokenInBulk(uniqueTokens)
+        );
+
+        log.info("[Notification][clean-up-dead-tokens] Cleaned up {} dead FCM tokens. requestedTokens={}",
+                deletedCount,
+                uniqueTokens.size());
     }
 
     private record DispatchContext(List<String> tokens, String title, String body, Map<String, String> data) {
