@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 8081
 
   servlet:
     session:
@@ -26,7 +26,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
@@ -44,6 +44,9 @@ management:
     health:
       probes:
         enabled: true
+
+firebase:
+  service-account-path: file:/opt/detoxmate/firebase/detoxmate-prod-firebase-account.json
 
 auth:
   jwt:
