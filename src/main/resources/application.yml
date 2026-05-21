@@ -1,0 +1,34 @@
+spring:
+  thymeleaf:
+    encoding: UTF-8
+  application:
+    name: detoxmate
+  profiles:
+    default: local
+    group:
+      dev: dev
+      local: local
+      prod: prod
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    disable-swagger-default-url: true
+    url: /openapi3.yaml
+
+app:
+  admin:
+    review-token: ${ADMIN_REVIEW_TOKEN:}
+  apple:
+    auth:
+      client-id: ${APPLE_CLIENT_ID:}
+  discord:
+    ocr-report:
+      webhook-url: ${DISCORD_OCR_REPORT_WEBHOOK_URL:}
+      api-base-url: ${APP_PUBLIC_BASE_URL:}
+  storage:
+    image-read-base-url: ${STORAGE_IMAGE_READ_BASE_URL}
+    s3:
+      region: ${AWS_REGION:ap-northeast-2}
+      bucket-name: ${S3_BUCKET_NAME}
+      presigned-url-expires-in: ${S3_PRESIGNED_URL_EXPIRES_IN:600}

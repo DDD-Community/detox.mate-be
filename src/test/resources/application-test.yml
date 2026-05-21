@@ -1,0 +1,32 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:detoxmate-test;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  main:
+    allow-bean-definition-overriding: true
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+    open-in-view: false
+
+auth:
+  jwt:
+    secret: this-is-a-very-long-secret-key-for-test-only
+    access-token-expires-in: 3600
+  refresh-token:
+    expires-in: 15552000
+
+firebase:
+  service-account-path: classpath:firebase/not-found.json
+
+app:
+  admin:
+    review-token: test-admin-token
+  storage:
+    image-read-base-url: https://example.com/media

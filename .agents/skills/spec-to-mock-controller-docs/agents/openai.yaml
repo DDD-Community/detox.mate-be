@@ -1,0 +1,4 @@
+interface:
+  display_name: "Spec to Mock Docs"
+  short_description: "텍스트 API 명세로 mock controller와 문서를 생성"
+  default_prompt: "Use $spec-to-mock-controller-docs to turn this API text spec into a mock controller, DTOs, REST Docs tests, and Swagger UI output."

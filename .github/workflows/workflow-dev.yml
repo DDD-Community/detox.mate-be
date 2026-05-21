@@ -1,0 +1,144 @@
+name: Detoxmate Dev CI/CD
+
+on:
+  push:
+    branches:
+      - dev
+  workflow_dispatch:
+
+env:
+  APP_NAME: detoxmate
+  IMAGE_TAG: dev
+  CONTAINER_NAME: detoxmate-dev
+  HOST_PORT: 8080
+  CONTAINER_PORT: 8080
+
+jobs:
+  build:
+    name: Build Jar
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Grant execute permission to gradlew
+        run: chmod +x ./gradlew
+
+      - name: Build bootJar
+        run: ./gradlew clean bootJar
+
+      - name: Upload jar artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: spring-boot-jar
+          path: build/libs/*.jar
+          retention-days: 1
+
+  deploy:
+    name: Deploy on EC2
+    needs: build
+    environment: dev
+    runs-on: [self-hosted, linux, ARM64]
+
+    steps:
+      - name: Download jar artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: spring-boot-jar
+          path: deploy
+
+      - name: Check downloaded files
+        run: ls -al deploy
+
+      - name: Rename jar for docker build
+        run: |
+          JAR_FILE=$(find deploy -name "*.jar" ! -name "*-plain.jar" | head -n 1)
+          if [ -z "$JAR_FILE" ]; then
+            echo "Executable jar not found"
+            exit 1
+          fi
+          cp "$JAR_FILE" deploy/app.jar
+
+      - name: Create .env file
+        run: |
+          cat <<EOF > deploy/.env
+          SPRING_PROFILES_ACTIVE=dev
+          DEV_DB_URL=${{ secrets.DB_URL }}
+          DEV_DB_USERNAME=${{ secrets.DB_USERNAME }}
+          DEV_DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          JWT_ACCESS_TOKEN_EXPIRES_IN=${{ secrets.JWT_ACCESS_TOKEN_EXPIRES_IN }}
+          ADMIN_REVIEW_TOKEN=${{ secrets.ADMIN_REVIEW_TOKEN }}
+          DISCORD_OCR_REPORT_WEBHOOK_URL=${{ secrets.DISCORD_OCR_REPORT_WEBHOOK_URL }}
+          APPLE_CLIENT_ID=${{ vars.APPLE_CLIENT_ID }}
+          APP_PUBLIC_BASE_URL=${{ vars.APP_PUBLIC_BASE_URL }}
+          STORAGE_IMAGE_READ_BASE_URL=${{ vars.STORAGE_IMAGE_READ_BASE_URL }}
+          S3_BUCKET_NAME=${{ vars.S3_BUCKET_NAME }}
+          AWS_REGION=${{ vars.AWS_REGION }}
+          S3_PRESIGNED_URL_EXPIRES_IN=${{ vars.S3_PRESIGNED_URL_EXPIRES_IN }}
+          EOF
+
+      - name: Create Dockerfile
+        run: |
+          cat <<'EOF' > deploy/Dockerfile
+          FROM eclipse-temurin:21-jre
+          WORKDIR /app
+          COPY app.jar app.jar
+          EXPOSE 8080
+          ENTRYPOINT ["java", "-jar", "app.jar"]
+          EOF
+
+      - name: Build docker image locally
+        run: |
+          docker build -t ${{ env.APP_NAME }}:${{ env.IMAGE_TAG }} ./deploy
+
+      - name: Stop and remove old container
+        run: |
+          docker rm -f ${{ env.CONTAINER_NAME }} || true
+
+      - name: Run new container
+        run: |
+          docker run -d \
+            --name ${{ env.CONTAINER_NAME }} \
+            --restart unless-stopped \
+            -p ${{ env.HOST_PORT }}:${{ env.CONTAINER_PORT }} \
+            --env-file deploy/.env \
+            -v /home/ec2-user/logs/dev:/logs \
+            -v /opt/detoxmate/firebase/dev:/opt/detoxmate/firebase:ro \
+            -e SPRING_PROFILES_ACTIVE=dev \
+            -e LOG_PATH=/logs \
+            ${{ env.APP_NAME }}:${{ env.IMAGE_TAG }}
+
+      - name: Verify deployment health
+        run: |
+          for i in {1..12}; do
+            if curl -fsS http://localhost:${{ env.HOST_PORT }}/actuator/health; then
+              exit 0
+            fi
+            docker ps --filter "name=${{ env.CONTAINER_NAME }}"
+            sleep 5
+          done
+          docker logs --tail 200 ${{ env.CONTAINER_NAME }}
+          exit 1
+
+      - name: Remove .env file
+        if: always()
+        run: rm -f deploy/.env
+
+      - name: Cleanup runner and docker cache
+        if: always()
+        run: |
+          rm -rf deploy || true
+          docker image prune -af || true
+          docker builder prune -af || true
+          rm -rf /home/ec2-user/actions-runner/_work/_temp/* || true

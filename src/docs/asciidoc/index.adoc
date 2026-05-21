@@ -1,0 +1,224 @@
+= Detoxmate API Docs
+:toc: left
+:toclevels: 2
+
+== Auth API
+
+=== Kakao Social Login
+
+operation::auth/social/kakao[snippets='http-request,request-fields,http-response,response-fields']
+operation::auth/social/kakao-invalid-request[snippets='http-request,request-fields,http-response,response-fields']
+
+=== Apple Social Login
+
+operation::auth/social/apple[snippets='http-request,request-fields,http-response,response-fields']
+operation::auth/social/apple-invalid-request[snippets='http-request,request-fields,http-response,response-fields']
+
+=== Refresh Access Token
+
+operation::auth/refresh[snippets='http-request,request-fields,http-response,response-fields']
+operation::auth/refresh-invalid-request[snippets='http-request,request-fields,http-response,response-fields']
+
+=== Logout
+
+operation::auth/logout[snippets='http-request,request-fields,http-response']
+operation::auth/logout-invalid-request[snippets='http-request,request-fields,http-response,response-fields']
+
+== Dev Auth API
+
+=== Test Login
+
+operation::dev-auth/test-login[snippets='http-request,request-fields,http-response,response-fields']
+operation::dev-auth/test-login-invalid-request[snippets='http-request,request-fields,http-response,response-fields']
+operation::dev-auth/test-login-unsupported-key[snippets='http-request,request-fields,http-response,response-fields']
+
+== Dev Fixture API
+
+=== Seed Activity Calendar Rich Fixture With SQL Snapshot
+
+operation::dev-fixtures/activity-calendar-rich[snippets='http-request,http-response,response-fields']
+
+== User API
+
+=== Get My Profile
+
+operation::users/me-get[snippets='http-request,request-headers,http-response,response-fields']
+operation::users/me-get-unauthorized[snippets='http-request,request-headers,http-response,response-fields']
+
+=== Update My Profile
+
+operation::users/me-patch[snippets='http-request,request-headers,request-fields,http-response,response-fields']
+
+=== Withdraw My Account
+
+operation::users/me-delete[snippets='http-request,request-headers,http-response']
+operation::users/me-delete-unauthorized[snippets='http-request,request-headers,http-response,response-fields']
+
+== Group API
+
+=== Create Group
+
+operation::groups/create[snippets='http-request,request-fields,http-response,response-fields']
+
+=== Join Group
+
+operation::groups/join[snippets='http-request,request-fields,http-response,response-fields']
+
+=== Get My Groups
+
+operation::me/groups-get[snippets='http-request,http-response,response-fields']
+
+=== Get Group Detail
+
+operation::groups/get-by-id[snippets='http-request,path-parameters,http-response,response-fields']
+
+=== Update Group
+
+operation::groups/patch[snippets='http-request,request-headers,path-parameters,request-fields,http-response,response-fields']
+
+=== Leave Group
+
+operation::groups/members/me-delete[snippets='http-request,request-headers,path-parameters,http-response']
+
+== Group Member API
+
+=== Get Group Member Profile
+
+operation::groups/members/get-by-id[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+operation::groups/members/get-by-id-forbidden[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+
+== Group Activity Calendar API
+
+=== Get Group Activity Calendar Summary
+
+operation::group-challenges/activity-calendar/get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+
+== Group Challenge API
+
+=== Get My Group Challenges
+
+operation::me/group-challenges-get[snippets='http-request,query-parameters,http-response,response-fields']
+
+=== Get Group Challenge Detail
+
+operation::group-challenges/get-by-id[snippets='http-request,path-parameters,http-response,response-fields']
+
+== Activity Record API
+
+=== Check Activity Record Achievement
+
+operation::activity-records/achievement-check[snippets='http-request,request-headers,request-fields,http-response,response-fields']
+
+=== Create Activity Record
+
+operation::activity-records/create[snippets='http-request,request-headers,request-fields,http-response,response-fields']
+operation::activity-records/create-invalid-request[snippets='http-request,request-headers,request-fields,http-response,response-fields']
+
+== Usage Goal Time API
+
+=== Set My Usage Goal Times
+
+operation::usage-goal-times/set[snippets='http-request,request-headers,request-fields,http-response,response-fields']
+
+=== Get My Current Usage Goal Times
+
+operation::usage-goal-times/current[snippets='http-request,request-headers,http-response,response-fields']
+
+== Upload API
+
+=== Issue Presigned URL
+
+operation::uploads/presigned-urls[snippets='http-request,request-headers,request-fields,http-response,response-fields']
+operation::uploads/presigned-urls-invalid-request[snippets='http-request,request-headers,request-fields,http-response,response-fields']
+
+== Screen Time OCR Error Report API
+
+=== Create Screen Time OCR Error Report
+
+operation::screen-time-ocr-error-reports/create[snippets='http-request,request-headers,request-fields,http-response,response-fields']
+
+== Admin Screen Time OCR Error Report API
+
+=== List Screen Time OCR Error Reports
+
+operation::admin/screen-time-ocr-error-reports/list[snippets='http-request,request-headers,query-parameters,http-response,response-fields']
+operation::admin/screen-time-ocr-error-reports/list-forbidden[snippets='http-request,request-headers,query-parameters,http-response,response-fields']
+
+=== Update Screen Time OCR Error Report
+
+operation::admin/screen-time-ocr-error-reports/update[snippets='http-request,request-headers,path-parameters,request-fields,http-response,response-fields']
+operation::admin/screen-time-ocr-error-reports/update-forbidden[snippets='http-request,request-headers,path-parameters,request-fields,http-response,response-fields']
+
+== Notification API
+
+=== Register FCM Token
+
+operation::notifications/tokens-register[snippets='http-request,request-headers,request-fields,http-response']
+
+=== Delete FCM Token
+
+operation::notifications/tokens-delete[snippets='http-request,request-headers,request-fields,http-response']
+
+=== Update Notification Setting
+
+operation::notifications/settings-update[snippets='http-request,request-headers,request-fields,http-response']
+
+=== Get Notifications
+
+operation::notifications/list-get[snippets='http-request,request-headers,http-response,response-fields']
+
+=== Get Notification Navigation
+
+operation::notifications/navigation-get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+
+  == Feed API
+
+  === Get Group Challenge Overview
+
+  operation::group-challenges/overview-get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+
+  === Get Home Feed (Deprecated)
+
+  operation::group-challenges/home-feed-get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+
+  === Get Today's Challenge Record Feed
+
+  operation::group-challenges/challenge-records-today-get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+
+  === Get History Challenge Record Feed
+
+  operation::group-challenges/challenge-records-history-get[snippets='http-request,request-headers,path-parameters,query-parameters,http-response,response-fields']
+
+  === Get Feed Detail
+
+  operation::group-challenges/challenge-record-detail-get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+
+  === Get Feed Detail (Deprecated)
+
+  operation::challenge-records/feed-detail-get-deprecated[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+
+  == Reaction API
+
+  === Create Reaction
+
+  operation::challenge-records/reaction-create[snippets='http-request,request-headers,path-parameters,request-fields,http-response,response-fields']
+
+  === Delete Reaction
+
+  operation::challenge-records/reaction-delete[snippets='http-request,request-headers,path-parameters,http-response']
+
+  == Comment API
+
+  === List Comments
+
+  operation::challenge-records/comments-list-get[snippets='http-request,request-headers,path-parameters,query-parameters,http-response,response-fields']
+
+  === Create Comment
+
+  operation::challenge-records/comment-create[snippets='http-request,request-headers,path-parameters,request-fields,http-response,response-fields']
+
+  == Poke API
+
+  === Poke Member
+
+  operation::challenge-records/poke-create[snippets='http-request,request-headers,path-parameters,http-response']

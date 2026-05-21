@@ -1,8 +1,24 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        maven {
+            url 'https://plugins.gradle.org/m2/'
+        }
+    }
+    dependencies {
+        classpath 'com.epages:restdocs-api-spec-gradle-plugin:0.20.0'
+        classpath 'org.springframework.boot:spring-boot-jackson2:4.0.1'
+    }
+}
+
 plugins {
     id 'java'
     id 'org.springframework.boot' version '4.0.5'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'org.asciidoctor.jvm.convert' version '4.0.5'
 }
+
+apply plugin: 'com.epages.restdocs-api-spec'
 
 group = 'com'
 version = '0.0.1-SNAPSHOT'
@@ -18,18 +34,104 @@ repositories {
     mavenCentral()
 }
 
+configurations {
+    asciidoctorExt
+}
+
+ext {
+    snippetsDir = file('build/generated-snippets')
+}
+
+asciidoctorj {
+    version = '3.0.0'
+}
+
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+    asciidoctorExt 'org.springframework.restdocs:spring-restdocs-asciidoctor:4.0.0'
+    implementation platform('software.amazon.awssdk:bom:2.42.41')
+
+    // Web
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.2'
+    implementation 'org.springframework.security:spring-security-oauth2-jose'
+
+    // Database
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
     runtimeOnly 'com.mysql:mysql-connector-j'
-    testImplementation 'org.springframework.boot:spring-boot-starter-data-jdbc-test'
-    testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
+
+    // Monitoring
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+    implementation 'io.jsonwebtoken:jjwt-api:0.13.0'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.13.0'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
+
+    //lombok
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    //firebase
+    implementation 'com.google.firebase:firebase-admin:9.8.0'
+
+    // aws
+    implementation 'software.amazon.awssdk:s3'
+
+    // Test
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
+    testImplementation 'com.epages:restdocs-api-spec-mockmvc:0.20.0'
+    testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc:4.0.0'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+    testRuntimeOnly 'com.h2database:h2'
+}
+
+openapi3 {
+    server = '/'
+    title = 'Detoxmate API'
+    description = 'Test-driven OpenAPI specification generated from Spring REST Docs'
+    version = project.version.toString()
+    format = 'yaml'
 }
 
 tasks.named('test') {
     useJUnitPlatform()
+    doFirst {
+        delete snippetsDir
+    }
+    outputs.dir snippetsDir
+}
+
+tasks.named('asciidoctor') {
+    configurations 'asciidoctorExt'
+    inputs.dir snippetsDir
+    dependsOn tasks.named('test')
+}
+
+tasks.register('copyOpenapi3Spec', Copy) {
+    dependsOn 'openapi3'
+    from(layout.buildDirectory.file('api-spec/openapi3.yaml'))
+    into(layout.buildDirectory.dir('resources/main/static'))
+}
+
+tasks.named('bootRun') {
+    dependsOn tasks.named('copyOpenapi3Spec')
+}
+
+tasks.named('bootJar') {
+    dependsOn tasks.named('copyOpenapi3Spec')
+    exclude 'firebase/**'
+}
+
+tasks.named('jar') {
+    dependsOn tasks.named('copyOpenapi3Spec')
+    exclude 'firebase/**'
+}
+
+tasks.named('resolveMainClassName') {
+    dependsOn tasks.named('copyOpenapi3Spec')
 }

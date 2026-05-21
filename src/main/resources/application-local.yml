@@ -1,0 +1,57 @@
+server:
+  port: 8080
+
+  servlet:
+    session:
+      timeout: 120m
+      cookie:
+        name: JSESSIONID        # 쿠키 이름
+        http-only: true         # JS에서 접근 불가
+        secure: false           # https에서만 필요 시 true
+        same-site: "none"
+
+spring:
+  thymeleaf:
+    encoding: UTF-8
+  application:
+    name: detoxmate
+  config:
+    activate:
+      on-profile: local
+    import: optional:file:.env.local[.properties]
+
+  datasource:
+    url: ${LOCAL_DB_URL}
+    username: ${LOCAL_DB_USERNAME}
+    password: ${LOCAL_DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+    open-in-view: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus, health, info
+  metrics:
+    tags:
+      application: detoxmate
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+firebase:
+  service-account-path: classpath:firebase/detoxmate-dev-firebase-account.json
+
+auth:
+  jwt:
+    secret: ${JWT_SECRET}
+    access-token-expires-in: ${JWT_ACCESS_TOKEN_EXPIRES_IN:3600}
+  refresh-token:
+    expires-in: ${REFRESH_TOKEN_EXPIRES_IN:15552000}

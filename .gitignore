@@ -4,6 +4,7 @@ build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
+.gradle-home/
 
 ### STS ###
 .apt_generated
@@ -35,3 +36,30 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Environment Variables ###
+.env
+.env.local
+.env.*.local
+
+.claude/skills/shared/config/discord-webhook-url.txt
+.agents/skills/shared/config/discord-webhook-url.txt
+.omc/
+
+/second-brain
+
+/logs
+
+/docs
+
+.claude/worktrees
+
+##Firebase ##
+src/main/resources/firebase/detoxmate-dev-firebase-account.json
+src/main/resources/firebase/detoxmate-prod-firebase-account.json
+
+# example은 커밋 허용 구조 공유용
+!src/main/resources/firebase/service-account.example.json
+
+.DS_Store
+**/.DS_Store
