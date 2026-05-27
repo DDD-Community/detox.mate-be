@@ -83,7 +83,6 @@ jobs:
           APPLE_CLIENT_ID=${{ vars.APPLE_CLIENT_ID }}
           APPLE_TEAM_ID=${{ vars.APPLE_TEAM_ID }}
           APPLE_KEY_ID=${{ vars.APPLE_KEY_ID }}
-          APPLE_PRIVATE_KEY=${{ secrets.APPLE_PRIVATE_KEY }}
           KAKAO_ADMIN_KEY=${{ secrets.KAKAO_ADMIN_KEY }}
           PROVIDER_TOKEN_ENCRYPTION_KEY=${{ secrets.PROVIDER_TOKEN_ENCRYPTION_KEY }}
           APP_PUBLIC_BASE_URL=${{ vars.APP_PUBLIC_BASE_URL }}
@@ -112,6 +111,8 @@ jobs:
           docker rm -f ${{ env.CONTAINER_NAME }} || true
 
       - name: Run new container
+        env:
+          APPLE_PRIVATE_KEY: ${{ secrets.APPLE_PRIVATE_KEY }}
         run: |
           docker run -d \
             --name ${{ env.CONTAINER_NAME }} \
@@ -122,6 +123,7 @@ jobs:
             -v /opt/detoxmate/firebase/dev:/opt/detoxmate/firebase:ro \
             -e SPRING_PROFILES_ACTIVE=dev \
             -e LOG_PATH=/logs \
+            -e APPLE_PRIVATE_KEY \
             ${{ env.APP_NAME }}:${{ env.IMAGE_TAG }}
 
       - name: Verify deployment health
