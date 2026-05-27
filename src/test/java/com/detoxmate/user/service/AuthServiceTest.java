@@ -8,6 +8,7 @@ import com.detoxmate.auth.dto.RefreshTokenResponse;
 import com.detoxmate.auth.service.RefreshTokenSessionService;
 import com.detoxmate.upload.config.StorageProperties;
 import com.detoxmate.upload.service.ImageReadUrlBuilder;
+import com.detoxmate.user.config.KakaoAuthProperties;
 import com.detoxmate.user.domain.SocialLoginUser;
 import com.detoxmate.user.domain.SocialProvider;
 import com.detoxmate.user.domain.User;
@@ -16,6 +17,7 @@ import com.detoxmate.user.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.client.RestClient;
 
 import java.util.Optional;
 
@@ -45,6 +47,8 @@ class AuthServiceTest {
         AuthService authService = new AuthService(
                 kakaoRestApiClient,
                 mock(AppleIdentityTokenVerifier.class),
+                mock(AppleRestApiClient.class),
+                mock(ProviderTokenCipher.class),
                 userRepository,
                 socialLoginUserRepository,
                 jwtTokenProvider,
@@ -85,6 +89,8 @@ class AuthServiceTest {
         AuthService authService = new AuthService(
                 kakaoRestApiClient,
                 mock(AppleIdentityTokenVerifier.class),
+                mock(AppleRestApiClient.class),
+                mock(ProviderTokenCipher.class),
                 userRepository,
                 socialLoginUserRepository,
                 jwtTokenProvider,
@@ -122,6 +128,8 @@ class AuthServiceTest {
     void loginWithApple_returnsExistingUserWhenAppleAccountExists() {
         // given
         AppleIdentityTokenVerifier appleIdentityTokenVerifier = mock(AppleIdentityTokenVerifier.class);
+        AppleRestApiClient appleRestApiClient = mock(AppleRestApiClient.class);
+        ProviderTokenCipher providerTokenCipher = mock(ProviderTokenCipher.class);
         UserRepository userRepository = mock(UserRepository.class);
         SocialLoginUserRepository socialLoginUserRepository = mock(SocialLoginUserRepository.class);
         JwtTokenProvider jwtTokenProvider = new JwtTokenProvider(JWT_SECRET, ACCESS_TOKEN_EXPIRES_IN);
@@ -129,6 +137,8 @@ class AuthServiceTest {
         AuthService authService = new AuthService(
                 mock(KakaoRestApiClient.class),
                 appleIdentityTokenVerifier,
+                appleRestApiClient,
+                providerTokenCipher,
                 userRepository,
                 socialLoginUserRepository,
                 jwtTokenProvider,
@@ -138,6 +148,7 @@ class AuthServiceTest {
         AppleSocialLoginRequest request = new AppleSocialLoginRequest(
                 "apple-id-token",
                 "apple-raw-nonce",
+                "apple-authorization-code",
                 "새로받은이름"
         );
         User existingUser = User.createNew("기존애플유저", "profile-images/11/existing.png");
@@ -146,6 +157,10 @@ class AuthServiceTest {
 
         when(appleIdentityTokenVerifier.verify("apple-id-token", "apple-raw-nonce"))
                 .thenReturn("apple-sub-123");
+        when(appleRestApiClient.exchangeAuthorizationCode("apple-authorization-code"))
+                .thenReturn("apple-refresh-token");
+        when(providerTokenCipher.encrypt("apple-refresh-token"))
+                .thenReturn("encrypted-apple-refresh-token");
         when(socialLoginUserRepository.findByProviderAndProviderUserId(SocialProvider.APPLE, "apple-sub-123"))
                 .thenReturn(Optional.of(existingSocialLoginUser));
         when(refreshTokenSessionService.issueRefreshToken(existingUser)).thenReturn("service-refresh-token");
@@ -159,6 +174,7 @@ class AuthServiceTest {
         assertThat(response.isNewUser()).isFalse();
         assertThat(response.profileImageUrl()).isEqualTo(TEST_IMAGE_BASE_URL + "/profile-images/11/existing.png");
         assertThat(response.refreshToken()).isEqualTo("service-refresh-token");
+        assertThat(existingSocialLoginUser.getProviderRefreshToken()).isEqualTo("encrypted-apple-refresh-token");
         verify(socialLoginUserRepository).findByProviderAndProviderUserId(SocialProvider.APPLE, "apple-sub-123");
         verify(userRepository, never()).save(any(User.class));
         verify(socialLoginUserRepository, never()).save(any(SocialLoginUser.class));
@@ -170,6 +186,8 @@ class AuthServiceTest {
     void loginWithApple_createsUserAndSocialLoginWhenAppleAccountIsNew() {
         // given
         AppleIdentityTokenVerifier appleIdentityTokenVerifier = mock(AppleIdentityTokenVerifier.class);
+        AppleRestApiClient appleRestApiClient = mock(AppleRestApiClient.class);
+        ProviderTokenCipher providerTokenCipher = mock(ProviderTokenCipher.class);
         UserRepository userRepository = mock(UserRepository.class);
         SocialLoginUserRepository socialLoginUserRepository = mock(SocialLoginUserRepository.class);
         JwtTokenProvider jwtTokenProvider = new JwtTokenProvider(JWT_SECRET, ACCESS_TOKEN_EXPIRES_IN);
@@ -177,6 +195,8 @@ class AuthServiceTest {
         AuthService authService = new AuthService(
                 mock(KakaoRestApiClient.class),
                 appleIdentityTokenVerifier,
+                appleRestApiClient,
+                providerTokenCipher,
                 userRepository,
                 socialLoginUserRepository,
                 jwtTokenProvider,
@@ -186,11 +206,16 @@ class AuthServiceTest {
         AppleSocialLoginRequest request = new AppleSocialLoginRequest(
                 "apple-id-token",
                 "apple-raw-nonce",
+                "apple-authorization-code",
                 "애플닉네임123456"
         );
 
         when(appleIdentityTokenVerifier.verify("apple-id-token", "apple-raw-nonce"))
                 .thenReturn("apple-sub-456");
+        when(appleRestApiClient.exchangeAuthorizationCode("apple-authorization-code"))
+                .thenReturn("apple-refresh-token");
+        when(providerTokenCipher.encrypt("apple-refresh-token"))
+                .thenReturn("encrypted-apple-refresh-token");
         when(socialLoginUserRepository.findByProviderAndProviderUserId(SocialProvider.APPLE, "apple-sub-456"))
                 .thenReturn(Optional.empty());
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
@@ -204,6 +229,7 @@ class AuthServiceTest {
             SocialLoginUser savedSocialLoginUser = invocation.getArgument(0);
             assertThat(savedSocialLoginUser.getProvider()).isEqualTo(SocialProvider.APPLE);
             assertThat(savedSocialLoginUser.getProviderUserId()).isEqualTo("apple-sub-456");
+            assertThat(savedSocialLoginUser.getProviderRefreshToken()).isEqualTo("encrypted-apple-refresh-token");
             return savedSocialLoginUser;
         });
         when(refreshTokenSessionService.issueRefreshToken(any(User.class))).thenReturn("service-refresh-token");
@@ -224,6 +250,8 @@ class AuthServiceTest {
     void loginWithApple_usesFallbackDisplayNameWhenDisplayNameIsMissing() {
         // given
         AppleIdentityTokenVerifier appleIdentityTokenVerifier = mock(AppleIdentityTokenVerifier.class);
+        AppleRestApiClient appleRestApiClient = mock(AppleRestApiClient.class);
+        ProviderTokenCipher providerTokenCipher = mock(ProviderTokenCipher.class);
         UserRepository userRepository = mock(UserRepository.class);
         SocialLoginUserRepository socialLoginUserRepository = mock(SocialLoginUserRepository.class);
         JwtTokenProvider jwtTokenProvider = new JwtTokenProvider(JWT_SECRET, ACCESS_TOKEN_EXPIRES_IN);
@@ -231,6 +259,8 @@ class AuthServiceTest {
         AuthService authService = new AuthService(
                 mock(KakaoRestApiClient.class),
                 appleIdentityTokenVerifier,
+                appleRestApiClient,
+                providerTokenCipher,
                 userRepository,
                 socialLoginUserRepository,
                 jwtTokenProvider,
@@ -240,11 +270,16 @@ class AuthServiceTest {
         AppleSocialLoginRequest request = new AppleSocialLoginRequest(
                 "apple-id-token",
                 "apple-raw-nonce",
+                "apple-authorization-code",
                 null
         );
 
         when(appleIdentityTokenVerifier.verify("apple-id-token", "apple-raw-nonce"))
                 .thenReturn("apple-sub-789");
+        when(appleRestApiClient.exchangeAuthorizationCode("apple-authorization-code"))
+                .thenReturn("apple-refresh-token");
+        when(providerTokenCipher.encrypt("apple-refresh-token"))
+                .thenReturn("encrypted-apple-refresh-token");
         when(socialLoginUserRepository.findByProviderAndProviderUserId(SocialProvider.APPLE, "apple-sub-789"))
                 .thenReturn(Optional.empty());
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
@@ -275,6 +310,8 @@ class AuthServiceTest {
         AuthService authService = new AuthService(
                 mock(KakaoRestApiClient.class),
                 mock(AppleIdentityTokenVerifier.class),
+                mock(AppleRestApiClient.class),
+                mock(ProviderTokenCipher.class),
                 userRepository,
                 socialLoginUserRepository,
                 jwtTokenProvider,
@@ -315,6 +352,8 @@ class AuthServiceTest {
         AuthService authService = new AuthService(
                 mock(KakaoRestApiClient.class),
                 mock(AppleIdentityTokenVerifier.class),
+                mock(AppleRestApiClient.class),
+                mock(ProviderTokenCipher.class),
                 userRepository,
                 socialLoginUserRepository,
                 jwtTokenProvider,
@@ -335,6 +374,7 @@ class AuthServiceTest {
         private String lastProviderAccessToken;
 
         private FakeKakaoRestApiClient(KakaoUserInfo kakaoUserInfo) {
+            super(RestClient.builder().baseUrl("https://kapi.kakao.com").build(), new KakaoAuthProperties(""));
             this.kakaoUserInfo = kakaoUserInfo;
         }
 

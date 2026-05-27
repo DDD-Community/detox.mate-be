@@ -3,6 +3,7 @@ package com.detoxmate.user;
 import com.detoxmate.user.controller.DevAuthController;
 import com.detoxmate.user.service.AuthService;
 import com.detoxmate.user.service.DevAuthService;
+import com.detoxmate.user.service.ProviderAccountDisconnectService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
@@ -18,6 +19,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -46,6 +48,9 @@ class UserWithdrawalEndToEndHttpApiTest {
 
     @Autowired
     JdbcTemplate jdbcTemplate;
+
+    @MockitoBean
+    ProviderAccountDisconnectService providerAccountDisconnectService;
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final ObjectMapper objectMapper = new ObjectMapper();
