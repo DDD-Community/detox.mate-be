@@ -10,9 +10,9 @@ import com.detoxmate.upload.dto.UploadPurpose;
 import com.detoxmate.upload.service.ImageReadUrlBuilder;
 import com.detoxmate.upload.service.UploadObjectKeyValidator;
 import com.detoxmate.user.dto.MyProfileResponse;
-import com.detoxmate.user.domain.User;
 import com.detoxmate.user.dto.UpdateMyProfileRequest;
 import com.detoxmate.user.dto.UserProfileSummary;
+import com.detoxmate.user.domain.User;
 import com.detoxmate.user.repository.SocialLoginUserRepository;
 import com.detoxmate.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,8 +21,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Map;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -38,6 +38,7 @@ public class UserService {
     private final GroupMemberService groupMemberService;
     private final GroupService groupService;
     private final FcmTokenRepository fcmTokenRepository;
+    private final ProviderAccountDisconnectService providerAccountDisconnectService;
 
     @Transactional(readOnly = true)
     public MyProfileResponse getMe(String accessToken) {
@@ -76,6 +77,9 @@ public class UserService {
         if (user.isWithdrawn()) {
             return;
         }
+
+        var socialLoginUsers = socialLoginUserRepository.findAllByUserId(userId);
+        socialLoginUsers.forEach(providerAccountDisconnectService::disconnect);
 
         List<Long> activeGroupIds = groupMemberService.getActiveGroupMembers(userId).stream()
                 .map(GroupMember::getGroupId)

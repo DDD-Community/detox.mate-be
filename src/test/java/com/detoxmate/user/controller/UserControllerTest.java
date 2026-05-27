@@ -207,7 +207,7 @@ class UserControllerTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("User")
                                 .summary("Withdraw my account")
-                                .description("로그인 사용자의 회원 탈퇴를 수행한다.")
+                                .description("로그인 사용자의 소셜 provider 연결을 해제한 뒤 회원 탈퇴를 수행한다.")
                                 .requestHeaders(requestHeaderDescriptors)
                                 .build()
                         )));
@@ -234,7 +234,7 @@ class UserControllerTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("User")
                                 .summary("Withdraw my account")
-                                .description("로그인 사용자의 회원 탈퇴를 수행한다.")
+                                .description("로그인 사용자의 소셜 provider 연결을 해제한 뒤 회원 탈퇴를 수행한다.")
                                 .requestHeaders(requestHeaderDescriptors)
                                 .responseSchema(schema("ErrorResponse"))
                                 .responseFields(errorResponseFieldDescriptors)
