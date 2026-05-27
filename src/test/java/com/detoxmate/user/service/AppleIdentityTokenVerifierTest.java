@@ -101,7 +101,7 @@ class AppleIdentityTokenVerifierTest {
         // given
         AppleIdentityTokenVerifier verifier = new AppleIdentityTokenVerifier(
                 new StubJwtDecoder(jwt(Map.of("sub", "apple-sub", "nonce", HASHED_NONCE))),
-                new AppleAuthProperties("")
+                new AppleAuthProperties("", "team-id", "key-id", "private-key")
         );
 
         // when & then
@@ -114,7 +114,7 @@ class AppleIdentityTokenVerifierTest {
     private AppleIdentityTokenVerifier verifier(JwtDecoder jwtDecoder) {
         return new AppleIdentityTokenVerifier(
                 jwtDecoder,
-                new AppleAuthProperties(CLIENT_ID)
+                new AppleAuthProperties(CLIENT_ID, "team-id", "key-id", "private-key")
         );
     }
 

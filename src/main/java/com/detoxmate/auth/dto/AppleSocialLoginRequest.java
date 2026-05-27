@@ -7,6 +7,8 @@ public record AppleSocialLoginRequest(
         String identityToken,
         @NotBlank(message = "rawNonce is required")
         String rawNonce,
+        @NotBlank(message = "authorizationCode is required")
+        String authorizationCode,
         String displayName
 ) {
 }

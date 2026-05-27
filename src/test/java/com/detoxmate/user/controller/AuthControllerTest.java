@@ -169,6 +169,7 @@ class AuthControllerTest {
                         {
                           "identityToken": "apple-id-token-jwt",
                           "rawNonce": "apple-raw-nonce",
+                          "authorizationCode": "apple-authorization-code",
                           "displayName": "애플유저"
                         }
                         """))
@@ -185,7 +186,7 @@ class AuthControllerTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Auth")
                                 .summary("Apple social login")
-                                .description("Apple identity token과 raw nonce로 서비스 access token과 refresh token을 발급한다.")
+                                .description("Apple identity token, raw nonce, authorization code로 서비스 access token과 refresh token을 발급한다.")
                                 .requestSchema(schema("AppleSocialLoginRequest"))
                                 .responseSchema(schema("AuthLoginResponse"))
                                 .requestFields(requestFieldDescriptors)
@@ -196,6 +197,7 @@ class AuthControllerTest {
         verify(authService).loginWithApple(argThat(request ->
                 request.identityToken().equals("apple-id-token-jwt")
                         && request.rawNonce().equals("apple-raw-nonce")
+                        && request.authorizationCode().equals("apple-authorization-code")
                         && request.displayName().equals("애플유저")
         ));
     }
@@ -213,6 +215,7 @@ class AuthControllerTest {
                         {
                           "identityToken": "   ",
                           "rawNonce": "   ",
+                          "authorizationCode": "   ",
                           "displayName": null
                         }
                         """))
@@ -228,7 +231,7 @@ class AuthControllerTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Auth")
                                 .summary("Apple social login")
-                                .description("Apple identity token과 raw nonce로 서비스 access token과 refresh token을 발급한다.")
+                                .description("Apple identity token, raw nonce, authorization code로 서비스 access token과 refresh token을 발급한다.")
                                 .requestSchema(schema("AppleSocialLoginRequest"))
                                 .responseSchema(schema("ErrorResponse"))
                                 .requestFields(requestFieldDescriptors)
@@ -397,6 +400,9 @@ class AuthControllerTest {
                 fieldWithPath("rawNonce")
                         .type(JsonFieldType.STRING)
                         .description("FE가 로그인 요청마다 생성한 일회용 랜덤 문자열"),
+                fieldWithPath("authorizationCode")
+                        .type(JsonFieldType.STRING)
+                        .description("Apple SDK가 반환한 authorization code. 서버가 Apple refresh token을 발급받아 탈퇴 시 revoke하는 데 사용"),
                 fieldWithPath("displayName")
                         .type(JsonFieldType.STRING)
                         .optional()
