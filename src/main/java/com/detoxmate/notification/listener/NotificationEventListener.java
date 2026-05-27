@@ -50,6 +50,7 @@ public class NotificationEventListener {
         for (Long recipientUserId : recipientUserIds) {
             notificationService.send(NotificationCommand.history(
                     recipientUserId,
+                    event.joinedUserId(),
                     NotificationTypeCode.GROUP_JOINED,
                     NotificationContext.of(
                             "nickname", joinedUserName,
@@ -75,6 +76,7 @@ public class NotificationEventListener {
         for (Long recipientUserId : recipientUserIds) {
             notificationService.send(NotificationCommand.history(
                     recipientUserId,
+                    event.actorUserId(),
                     NotificationTypeCode.CERTIFICATION_CREATED,
                     NotificationContext.of("nickname", actorName),
                     NotificationPayload.feed(info.groupChallengeId())
@@ -96,6 +98,7 @@ public class NotificationEventListener {
 
         notificationService.send(NotificationCommand.history(
                 event.receiverUserId(),
+                event.senderUserId(),
                 NotificationTypeCode.POKE_RECEIVED,
                 NotificationContext.of(
                         "nickname", senderName,
@@ -118,6 +121,7 @@ public class NotificationEventListener {
 
         notificationService.send(NotificationCommand.history(
                 info.authorUserId(),
+                event.reactorUserId(),
                 NotificationTypeCode.REACTION_CREATED,
                 NotificationContext.of(
                         "nickname", reactorName,
@@ -141,6 +145,7 @@ public class NotificationEventListener {
 
         notificationService.send(NotificationCommand.history(
                 info.authorUserId(),
+                event.commenterUserId(),
                 NotificationTypeCode.COMMENT_CREATED,
                 NotificationContext.of(
                         "nickname", commenterName,
@@ -193,6 +198,7 @@ public class NotificationEventListener {
 
         notificationService.send(NotificationCommand.history(
                 event.receiverUserId(),
+                event.senderUserId(),
                 NotificationTypeCode.POKE_GOAL_SETTING_REMINDER,
                 NotificationContext.of(
                         "nickname",senderName,

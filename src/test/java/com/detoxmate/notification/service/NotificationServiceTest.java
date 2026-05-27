@@ -71,16 +71,20 @@ class NotificationServiceTest {
     void sendNotification_toSingleDevice() {
         // given
         User user = saveUser("xeulbn");
+        User sender = saveUser("sender");
         saveDefaultNotification();
         saveToken(user.getId(), "test-token-abc", DevicePlatform.IOS);
 
         // when
-        notificationService.send(defaultCommand(user.getId()));
+        notificationService.send(defaultCommand(user.getId(), sender.getId()));
 
         // then
         assertThat(historyRepository.findAll())
                 .extracting(NotificationHistory::getMessage)
                 .containsExactly("xeulbn님, 오늘 인증까지 1시간 남았습니다.");
+        assertThat(historyRepository.findAll())
+                .extracting(NotificationHistory::getSenderUserId)
+                .containsExactly(sender.getId());
         verify(fcmSender).send(
                 eq("test-token-abc"),
                 eq(DEFAULT_TITLE),
@@ -236,8 +240,13 @@ class NotificationServiceTest {
     }
 
     private NotificationCommand defaultCommand(Long userId) {
+        return defaultCommand(userId, null);
+    }
+
+    private NotificationCommand defaultCommand(Long userId, Long senderUserId) {
         return NotificationCommand.history(
                 userId,
+                senderUserId,
                 NotificationTypeCode.CERTIFICATION_CREATED,
                 NotificationContext.of("nickname", "xeulbn"),
                 NotificationPayload.none()
