@@ -19,6 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -37,6 +39,7 @@ public class GroupService {
     private final UserRepository userRepository;
 
     private final ApplicationEventPublisher eventPublisher;
+    private final Clock clock;
 
     @Transactional
     public GroupResponse createGroup(Long creatorUserId, String groupName) {
@@ -82,7 +85,12 @@ public class GroupService {
 
         eventPublisher.publishEvent(new GroupJoinedEvent(group.getId(), groupChallenge.getId(),userId));
 
-        if (groupMemberService.countActiveGroupMembers(group.getId()) == 2) {
+        long activeMemberCount = groupMemberService.countActiveGroupMembers(group.getId());
+        if (activeMemberCount >= 2 && groupChallenge.getStatus() == GroupChallengeStatus.RECRUITING) {
+            groupChallenge.activate(LocalDateTime.now(clock));
+        }
+
+        if (activeMemberCount == 2) {
             eventPublisher.publishEvent(new CertificationStartTomorrowEvent(
                     group.getId(),
                     groupChallenge.getId()

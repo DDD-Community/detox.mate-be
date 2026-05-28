@@ -25,7 +25,9 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
@@ -53,6 +55,9 @@ public class GroupServiceTest {
     private static final String TEST_IMAGE_BASE_URL = "https://media.detoxmate.co.kr";
     private static final LocalDateTime GROUP_CREATED_AT = LocalDateTime.of(2026, 4, 19, 10, 0);
     private static final LocalDateTime MEMBER_JOINED_AT = LocalDateTime.of(2026, 4, 19, 10, 30);
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+    private static final LocalDateTime CHALLENGE_ACTIVATED_AT = LocalDateTime.of(2026, 5, 29, 9, 0);
+    private static final Clock CLOCK = Clock.fixed(CHALLENGE_ACTIVATED_AT.atZone(KST).toInstant(), KST);
 
     // DB 경계 — mock
     private final GroupRepository groupRepository = mock(GroupRepository.class);
@@ -83,7 +88,8 @@ public class GroupServiceTest {
             groupChallengeParticipantService,
             inviteCodeGenerator,
             userRepository,
-            eventPublisher
+            eventPublisher,
+            CLOCK
     );
 
     @BeforeEach
@@ -325,6 +331,28 @@ public class GroupServiceTest {
         // then
         verify(eventPublisher).publishEvent(new GroupJoinedEvent(GROUP_ID, RECRUITING_CHALLENGE_ID, MEMBER_USER_ID));
         verify(eventPublisher).publishEvent(new CertificationStartTomorrowEvent(GROUP_ID, RECRUITING_CHALLENGE_ID));
+    }
+
+    @Test
+    void 그룹_참여로_ACTIVE_멤버가_2명이_되면_모집중_챌린지를_ACTIVE로_전환한다() {
+        // given
+        GroupChallenge recruitingChallenge = recruitingChallenge();
+        when(groupRepository.findByInviteCode(INVITE_CODE)).thenReturn(Optional.of(recruitingGroup()));
+        when(groupMemberRepository.existsByUserIdAndStatus(MEMBER_USER_ID, "ACTIVE")).thenReturn(false);
+        when(groupChallengeRepository.findTopByGroupIdOrderByChallengeNoDesc(GROUP_ID))
+                .thenReturn(Optional.of(recruitingChallenge));
+        when(groupMemberRepository.save(any(GroupMember.class))).thenReturn(joinedMember());
+        when(groupMemberRepository.countByGroupIdAndStatus(GROUP_ID, "ACTIVE")).thenReturn(2L);
+        when(groupMemberRepository.findMemberUserQueryResultsByGroupId(GROUP_ID)).thenReturn(groupMembers());
+
+        // when
+        GroupResponse response = groupService.joinGroup(INVITE_CODE, MEMBER_USER_ID);
+
+        // then
+        assertThat(recruitingChallenge.getStatus()).isEqualTo(GroupChallengeStatus.ACTIVE);
+        assertThat(recruitingChallenge.getStartAt()).isEqualTo(CHALLENGE_ACTIVATED_AT);
+        assertThat(response.currentChallenge().status()).isEqualTo("ACTIVE");
+        assertThat(response.currentChallenge().startAt()).isEqualTo(CHALLENGE_ACTIVATED_AT);
     }
 
     @Test
