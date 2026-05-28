@@ -5,6 +5,8 @@ import com.detoxmate.notification.dto.NotificationHistoryGroupResponse;
 import com.detoxmate.notification.dto.NotificationHistoryItemResponse;
 import com.detoxmate.notification.dto.NotificationHistoryListResponse;
 import com.detoxmate.notification.repository.NotificationHistoryRepository;
+import com.detoxmate.user.dto.UserProfileSummary;
+import com.detoxmate.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +18,11 @@ import java.time.ZoneId;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static java.time.temporal.ChronoUnit.DAYS;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +31,7 @@ public class NotificationHistoryService {
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     private final NotificationHistoryRepository historyRepository;
+    private final UserService userService;
     private final Clock clock;
 
     @Transactional(readOnly = true)
@@ -32,13 +40,17 @@ public class NotificationHistoryService {
 
         List<NotificationHistory> histories = historyRepository.findActiveByUserId(userId, now);
         long unreadCount = historyRepository.countUnreadActiveByUserId(userId, now);
+        Map<Long, UserProfileSummary> senderProfiles = findSenderProfiles(histories);
 
         Map<String, List<NotificationHistoryItemResponse>> grouped = histories.stream()
                 .collect(
-                        java.util.stream.Collectors.groupingBy(
+                        Collectors.groupingBy(
                                 history -> groupLabel(history.getCreatedAt(), now.toLocalDate()),
                                 LinkedHashMap::new,
-                                java.util.stream.Collectors.mapping(this::toItemResponse, java.util.stream.Collectors.toList())
+                                Collectors.mapping(
+                                        history -> toItemResponse(history, senderProfiles),
+                                        Collectors.toList()
+                                )
                         )
                 );
 
@@ -49,11 +61,27 @@ public class NotificationHistoryService {
         return new NotificationHistoryListResponse(unreadCount, groups);
     }
 
-    private NotificationHistoryItemResponse toItemResponse(NotificationHistory history) {
+    private Map<Long, UserProfileSummary> findSenderProfiles(List<NotificationHistory> histories) {
+        Set<Long> senderUserIds = histories.stream()
+                .map(NotificationHistory::getSenderUserId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        return userService.getProfileSummariesByIds(senderUserIds);
+    }
+
+    private NotificationHistoryItemResponse toItemResponse(
+            NotificationHistory history,
+            Map<Long, UserProfileSummary> senderProfiles
+    ) {
+        UserProfileSummary senderProfile = senderProfiles.get(history.getSenderUserId());
+
         return new NotificationHistoryItemResponse(
                 history.getId(),
                 history.getTitle(),
                 history.getMessage(),
+                history.getSenderUserId(),
+                senderProfile == null ? null : senderProfile.profileImageUrl(),
                 history.isRead(),
                 history.getTargetType().name(),
                 history.getTargetId(),
@@ -65,7 +93,7 @@ public class NotificationHistoryService {
 
     private String groupLabel(LocalDateTime createdAt, LocalDate today) {
         LocalDate createdDate = createdAt.toLocalDate();
-        long days = java.time.temporal.ChronoUnit.DAYS.between(createdDate, today);
+        long days = DAYS.between(createdDate, today);
 
         if (days == 0) {
             return "오늘";

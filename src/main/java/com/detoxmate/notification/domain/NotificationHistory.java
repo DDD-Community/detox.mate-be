@@ -30,6 +30,9 @@ public class NotificationHistory {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
+    @Column(name = "sender_user_id")
+    private Long senderUserId;
+
     @Column(name = "is_read", nullable = false)
     private boolean isRead;
 
@@ -60,12 +63,13 @@ public class NotificationHistory {
     @Column(name = "expired_at")
     private LocalDateTime expiredAt;
 
-    private NotificationHistory(Notification notification, Long userId, String title, String message,
+    private NotificationHistory(Notification notification, Long userId, Long senderUserId, String title, String message,
                                 NotificationTargetType targetType, Long targetId,
                                 NotificationSourceType sourceType, Long sourceId,
                                 LocalDateTime createdAt, LocalDateTime expiredAt){
         this.notification = notification;
         this.userId = userId;
+        this.senderUserId = senderUserId;
         this.isRead = false;
         this.title = title;
         this.message = message;
@@ -78,7 +82,7 @@ public class NotificationHistory {
     }
 
     public static NotificationHistory fromResolvedMessage(Notification notification, Long userId, String message) {
-        return fromResolvedMessage(notification, userId, message, NotificationPayload.none(), null);
+        return fromResolvedMessage(notification, userId, null, message, NotificationPayload.none(), null);
     }
 
     public static NotificationHistory fromResolvedMessage(Notification notification,
@@ -86,15 +90,24 @@ public class NotificationHistory {
                                                           String message,
                                                           LocalDateTime expiredAt) {
 
-        return fromResolvedMessage(notification, userId, message, NotificationPayload.none(), expiredAt);
+        return fromResolvedMessage(notification, userId, null, message, NotificationPayload.none(), expiredAt);
     }
 
     public static NotificationHistory fromResolvedMessage(Notification notification, Long userId, String message, NotificationPayload payload) {
-        return fromResolvedMessage(notification, userId, message, payload, null);
+        return fromResolvedMessage(notification, userId, null, message, payload, null);
     }
 
     public static NotificationHistory fromResolvedMessage(Notification notification,
                                                           Long userId,
+                                                          String message,
+                                                          NotificationPayload payload,
+                                                          LocalDateTime expiredAt) {
+        return fromResolvedMessage(notification, userId, null, message, payload, expiredAt);
+    }
+
+    public static NotificationHistory fromResolvedMessage(Notification notification,
+                                                          Long userId,
+                                                          Long senderUserId,
                                                           String message,
                                                           NotificationPayload payload,
                                                           LocalDateTime expiredAt) {
@@ -107,6 +120,7 @@ public class NotificationHistory {
         return new NotificationHistory(
                 notification,
                 userId,
+                senderUserId,
                 notification.getTitle(),
                 message,
                 safePayload.targetType(),

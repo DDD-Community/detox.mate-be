@@ -58,8 +58,10 @@ public class NotificationService {
                 historyRepository.save(NotificationHistory.fromResolvedMessage(
                         notification,
                         command.recipientUserId(),
+                        command.senderUserId(),
                         body,
-                        command.payload()
+                        command.payload(),
+                        null
                 ));
             }
 
