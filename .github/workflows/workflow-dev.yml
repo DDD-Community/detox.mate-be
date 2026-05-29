@@ -121,6 +121,8 @@ jobs:
             --env-file deploy/.env \
             -v /home/ec2-user/logs/dev:/logs \
             -v /opt/detoxmate/firebase/dev:/opt/detoxmate/firebase:ro \
+            -e TZ=Asia/Seoul \
+            -e JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Seoul \
             -e SPRING_PROFILES_ACTIVE=dev \
             -e LOG_PATH=/logs \
             -e APPLE_PRIVATE_KEY \
