@@ -115,6 +115,8 @@ jobs:
             --env-file deploy/.env \
             -v /home/ec2-user/logs/prod:/logs \
             -v /opt/detoxmate/firebase/prod:/opt/detoxmate/firebase:ro \
+            -e TZ=Asia/Seoul \
+            -e JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Seoul \
             -e SPRING_PROFILES_ACTIVE=prod \
             -e LOG_PATH=/logs \
             ${{ env.APP_NAME }}:${{ env.IMAGE_TAG }}
