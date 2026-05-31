@@ -56,6 +56,7 @@ public class FeedService {
                 source.challenge().getId(),
                 source.group().getId(),
                 source.group().getName(),
+                source.group().getInviteCode(),
                 source.challenge().getChallengeNo(),
                 source.challenge().getStatus().name(),
                 source.challenge().getStartAt(),
