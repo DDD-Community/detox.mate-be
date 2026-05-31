@@ -6,7 +6,7 @@ public record GroupChallengeOverviewResponse(
         Long groupChallengeId,
         Long groupId,
         String groupName,
-        String invitationCode,
+        String inviteCode,
         int challengeNo,
         String status,
         LocalDateTime startAt,

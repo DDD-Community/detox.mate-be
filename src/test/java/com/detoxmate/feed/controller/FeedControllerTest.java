@@ -99,7 +99,7 @@ class FeedControllerTest {
                 .andExpect(jsonPath("$.groupChallengeId").value(challenge.getId()))
                 .andExpect(jsonPath("$.groupId").value(group.getId()))
                 .andExpect(jsonPath("$.groupName").value("수능방"))
-                .andExpect(jsonPath("$.invitationCode").value("ABCDE"))
+                .andExpect(jsonPath("$.inviteCode").value("ABCDE"))
                 .andExpect(jsonPath("$.challengeNo").value(1))
                 .andExpect(jsonPath("$.status").value("RECRUITING"))
                 .andExpect(jsonPath("$.streakCount").value(0));
