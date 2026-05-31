@@ -326,6 +326,7 @@ public class FeedControllerDocsTest {
                 fieldWithPath("groupChallengeId").type(NUMBER).description("그룹 챌린지 ID"),
                 fieldWithPath("groupId").type(NUMBER).description("그룹 ID"),
                 fieldWithPath("groupName").type(STRING).description("그룹 이름"),
+                fieldWithPath("invitationCode").type(STRING).description("그룹 초대 코드"),
                 fieldWithPath("challengeNo").type(NUMBER).description("그룹 내 챌린지 회차"),
                 fieldWithPath("status").type(STRING).description("그룹 챌린지 상태"),
                 fieldWithPath("startAt").type(STRING).optional().description("챌린지 시작 시각"),

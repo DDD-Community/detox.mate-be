@@ -119,6 +119,7 @@ class FeedServiceTest {
         assertThat(response.groupChallengeId()).isEqualTo(challenge.getId());
         assertThat(response.groupId()).isEqualTo(group.getId());
         assertThat(response.groupName()).isEqualTo("수능방");
+        assertThat(response.invitationCode()).isEqualTo("ABCDE");
         assertThat(response.challengeNo()).isEqualTo(1);
         assertThat(response.status()).isEqualTo("RECRUITING");
         assertThat(response.streakCount()).isZero();

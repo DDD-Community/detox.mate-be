@@ -21,6 +21,7 @@ public class HomeFeedMockData {
                 1L,
                 10L,
                 "수능방",
+                "ABCDE",
                 3,
                 "ACTIVE",
                 LocalDateTime.of(2026, 5, 3, 9, 0),
