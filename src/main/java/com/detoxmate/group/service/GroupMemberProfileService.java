@@ -215,7 +215,7 @@ public class GroupMemberProfileService {
                 .mapToInt(ActivityRecordDetail::getUseMinutes)
                 .sum();
 
-        return (int) Math.round(totalUsedMinutes / (double) WEEKLY_SUMMARY_DAYS);
+        return (int) Math.round(totalUsedMinutes / (double) certifiedDays(records));
     }
 
     private List<ChallengeRecord> records(List<Long> participantIds, LocalDate startDate, LocalDate endDate) {

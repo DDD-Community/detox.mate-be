@@ -86,9 +86,9 @@ class GroupMemberProfileEndToEndHttpApiTest {
         assertThat(meProfile.at("/weeklySummary/startDate").asText()).isEqualTo("2026-04-10");
         assertThat(meProfile.at("/weeklySummary/endDate").asText()).isEqualTo("2026-04-16");
         assertThat(meProfile.at("/weeklySummary/totalDays").asInt()).isEqualTo(7);
-        assertThat(meProfile.at("/weeklySummary/averageUsedMinutes").asInt()).isEqualTo(64);
+        assertThat(meProfile.at("/weeklySummary/averageUsedMinutes").asInt()).isEqualTo(90);
         assertThat(meProfile.at("/weeklySummary/goalMinutes").asInt()).isEqualTo(120);
-        assertThat(meProfile.at("/weeklySummary/differenceMinutes").asInt()).isEqualTo(56);
+        assertThat(meProfile.at("/weeklySummary/differenceMinutes").asInt()).isEqualTo(30);
         assertThat(meProfile.at("/weeklySummary/certifiedDays").asInt()).isEqualTo(5);
         assertThat(meProfile.at("/weeklySummary/achievedDays").asInt()).isEqualTo(5);
 
@@ -98,7 +98,7 @@ class GroupMemberProfileEndToEndHttpApiTest {
         assertThat(jisooProfile.at("/activitySummary/firstCertifiedDate").asText()).isEqualTo("2026-04-10");
         assertThat(jisooProfile.at("/activitySummary/dayCount").asInt()).isEqualTo(7);
         assertThat(jisooProfile.at("/activitySummary/achievementRate").asInt()).isEqualTo(71);
-        assertThat(jisooProfile.at("/weeklySummary/averageUsedMinutes").asInt()).isEqualTo(57);
+        assertThat(jisooProfile.at("/weeklySummary/averageUsedMinutes").asInt()).isEqualTo(80);
         assertThat(jisooProfile.at("/weeklySummary/certifiedDays").asInt()).isEqualTo(5);
         assertThat(jisooProfile.at("/weeklySummary/achievedDays").asInt()).isEqualTo(5);
 
