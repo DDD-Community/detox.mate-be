@@ -21,6 +21,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -81,8 +82,9 @@ class NotificationHistoryServiceTest {
         NotificationHistoryListResponse response = notificationHistoryService.getMyNotifications(recipientUserId);
 
         // then
-        NotificationHistoryItemResponse item = response.groups().getFirst().notifications().getFirst();
+        NotificationHistoryItemResponse item = response.notifications().getFirst();
         assertThat(item.senderUserId()).isEqualTo(senderUserId);
         assertThat(item.senderProfileImageUrl()).isEqualTo("https://cdn.detoxmate.co.kr/profile/2.png");
+        assertThat(item.createdAt().getOffset()).isEqualTo(ZoneOffset.ofHours(9));
     }
 }

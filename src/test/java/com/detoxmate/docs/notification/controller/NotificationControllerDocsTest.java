@@ -3,7 +3,6 @@ package com.detoxmate.docs.notification.controller;
 import com.detoxmate.auth.CurrentUserResolver;
 import com.detoxmate.notification.controller.FcmTokenController;
 import com.detoxmate.notification.controller.NotificationHistoryController;
-import com.detoxmate.notification.dto.NotificationHistoryGroupResponse;
 import com.detoxmate.notification.dto.NotificationHistoryItemResponse;
 import com.detoxmate.notification.dto.NotificationHistoryListResponse;
 import com.detoxmate.notification.dto.NotificationNavigationResponse;
@@ -26,7 +25,8 @@ import org.springframework.restdocs.request.ParameterDescriptor;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
@@ -195,49 +195,44 @@ class NotificationControllerDocsTest {
                 .willReturn(new NotificationHistoryListResponse(
                         3,
                         List.of(
-                                new NotificationHistoryGroupResponse(
-                                        "오늘",
-                                        List.of(
-                                                new NotificationHistoryItemResponse(
-                                                        100L,
-                                                        "인증 알림",
-                                                        "슬빈님이 인증을 업로드했습니다. 반응을 남겨보세요!",
-                                                        1L,
-                                                        "https://cdn.detoxmate.co.kr/profile/1.png",
-                                                        false,
-                                                        "FEED",
-                                                        10L,
-                                                        "NONE",
-                                                        null,
-                                                        LocalDateTime.of(2026, 5, 17, 14, 30)
-                                                ),
-                                                new NotificationHistoryItemResponse(
-                                                        101L,
-                                                        "댓글 알림",
-                                                        "의진님이 댓글을 남겼습니다: \"좋아요\"",
-                                                        2L,
-                                                        "https://cdn.detoxmate.co.kr/profile/2.png",
-                                                        true,
-                                                        "FEED_DETAIL",
-                                                        200L,
-                                                        "COMMENT",
-                                                        300L,
-                                                        LocalDateTime.of(2026, 5, 17, 13, 0)
-                                                ),
-                                                new NotificationHistoryItemResponse(
-                                                        102L,
-                                                        "스트릭 알림",
-                                                        "1명이 더 인증하지 않으면 우리 그룹 스트릭이 깨져요!",
-                                                        null,
-                                                        null,
-                                                        false,
-                                                        "FEED",
-                                                        10L,
-                                                        "NONE",
-                                                        null,
-                                                        LocalDateTime.of(2026, 5, 17, 23, 30)
-                                                )
-                                        )
+                                new NotificationHistoryItemResponse(
+                                        100L,
+                                        "인증 알림",
+                                        "슬빈님이 인증을 업로드했습니다. 반응을 남겨보세요!",
+                                        1L,
+                                        "https://cdn.detoxmate.co.kr/profile/1.png",
+                                        false,
+                                        "FEED",
+                                        10L,
+                                        "NONE",
+                                        null,
+                                        OffsetDateTime.of(2026, 5, 17, 14, 30, 0, 0, ZoneOffset.ofHours(9))
+                                ),
+                                new NotificationHistoryItemResponse(
+                                        101L,
+                                        "댓글 알림",
+                                        "의진님이 댓글을 남겼습니다: \"좋아요\"",
+                                        2L,
+                                        "https://cdn.detoxmate.co.kr/profile/2.png",
+                                        true,
+                                        "FEED_DETAIL",
+                                        200L,
+                                        "COMMENT",
+                                        300L,
+                                        OffsetDateTime.of(2026, 5, 17, 13, 0, 0, 0, ZoneOffset.ofHours(9))
+                                ),
+                                new NotificationHistoryItemResponse(
+                                        102L,
+                                        "스트릭 알림",
+                                        "1명이 더 인증하지 않으면 우리 그룹 스트릭이 깨져요!",
+                                        null,
+                                        null,
+                                        false,
+                                        "FEED",
+                                        10L,
+                                        "NONE",
+                                        null,
+                                        OffsetDateTime.of(2026, 5, 17, 23, 30, 0, 0, ZoneOffset.ofHours(9))
                                 )
                         )
                 ));
@@ -256,7 +251,7 @@ class NotificationControllerDocsTest {
                         resource(builder()
                                 .tag("Notification")
                                 .summary("알림 목록 조회")
-                                .description("로그인 사용자의 활성 알림 히스토리를 날짜 라벨별로 그룹핑해서 조회한다.")
+                                .description("로그인 사용자의 활성 알림 히스토리를 최신순으로 조회한다. 날짜 그룹핑은 클라이언트가 createdAt 기준으로 수행한다.")
                                 .requestHeaders(requestHeaderDescriptors)
                                 .responseSchema(schema("NotificationHistoryListResponse"))
                                 .responseFields(responseFieldDescriptors)
@@ -322,20 +317,18 @@ class NotificationControllerDocsTest {
     private FieldDescriptor[] notificationHistoryListResponseFields() {
         return new FieldDescriptor[] {
                 fieldWithPath("unreadCount").type(NUMBER).description("읽지 않은 활성 알림 개수"),
-                fieldWithPath("groups").type(ARRAY).description("날짜 라벨별 알림 그룹"),
-                fieldWithPath("groups[].label").type(STRING).description("날짜 그룹 라벨 (오늘 | 어제 | N일 전 | MM월 DD일 | YY년 MM월 DD일)"),
-                fieldWithPath("groups[].notifications").type(ARRAY).description("해당 날짜 그룹의 알림 목록"),
-                fieldWithPath("groups[].notifications[].id").type(NUMBER).description("알림 히스토리 ID"),
-                fieldWithPath("groups[].notifications[].title").type(STRING).description("알림 제목"),
-                fieldWithPath("groups[].notifications[].message").type(STRING).description("치환이 완료된 알림 본문"),
-                fieldWithPath("groups[].notifications[].senderUserId").type(VARIES).optional().description("알림 발신자 사용자 ID. 시스템 알림이면 null"),
-                fieldWithPath("groups[].notifications[].senderProfileImageUrl").type(VARIES).optional().description("알림 발신자 프로필 이미지 URL. 시스템 알림이거나 발신자 프로필 이미지가 없으면 null"),
-                fieldWithPath("groups[].notifications[].read").type(BOOLEAN).description("읽음 여부"),
-                fieldWithPath("groups[].notifications[].targetType").type(STRING).description("알림 이동 대상 타입 (NONE | GROUP | FEED | FEED_DETAIL | GROUP_CHALLENGE)"),
-                fieldWithPath("groups[].notifications[].targetId").type(VARIES).optional().description("알림 이동 대상 ID. FEED이면 groupChallengeId, FEED_DETAIL이면 challengeRecordId, GROUP이면 groupId, NONE이면 null"),
-                fieldWithPath("groups[].notifications[].sourceType").type(STRING).description("알림 발생 원인 타입 (NONE | COMMENT | REACTION | POKE | CHALLENGE_RECORD)"),
-                fieldWithPath("groups[].notifications[].sourceId").type(VARIES).optional().description("알림 발생 원인 ID. sourceType이 NONE이면 null"),
-                fieldWithPath("groups[].notifications[].createdAt").type(STRING).description("알림 생성 시각")
+                fieldWithPath("notifications").type(ARRAY).description("활성 알림 목록. 최신순으로 정렬된다."),
+                fieldWithPath("notifications[].id").type(NUMBER).description("알림 히스토리 ID"),
+                fieldWithPath("notifications[].title").type(STRING).description("알림 제목"),
+                fieldWithPath("notifications[].message").type(STRING).description("치환이 완료된 알림 본문"),
+                fieldWithPath("notifications[].senderUserId").type(VARIES).optional().description("알림 발신자 사용자 ID. 시스템 알림이면 null"),
+                fieldWithPath("notifications[].senderProfileImageUrl").type(VARIES).optional().description("알림 발신자 프로필 이미지 URL. 시스템 알림이거나 발신자 프로필 이미지가 없으면 null"),
+                fieldWithPath("notifications[].read").type(BOOLEAN).description("읽음 여부"),
+                fieldWithPath("notifications[].targetType").type(STRING).description("알림 이동 대상 타입 (NONE | GROUP | FEED | FEED_DETAIL | GROUP_CHALLENGE)"),
+                fieldWithPath("notifications[].targetId").type(VARIES).optional().description("알림 이동 대상 ID. FEED이면 groupChallengeId, FEED_DETAIL이면 challengeRecordId, GROUP이면 groupId, NONE이면 null"),
+                fieldWithPath("notifications[].sourceType").type(STRING).description("알림 발생 원인 타입 (NONE | COMMENT | REACTION | POKE | CHALLENGE_RECORD)"),
+                fieldWithPath("notifications[].sourceId").type(VARIES).optional().description("알림 발생 원인 ID. sourceType이 NONE이면 null"),
+                fieldWithPath("notifications[].createdAt").type(STRING).description("알림 생성 시각. ISO-8601 offset 포함 KST 시각. 예: 2026-05-17T14:30:00+09:00")
         };
     }
 
