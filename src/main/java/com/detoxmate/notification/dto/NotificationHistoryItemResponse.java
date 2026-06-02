@@ -1,6 +1,6 @@
 package com.detoxmate.notification.dto;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 public record NotificationHistoryItemResponse(
         Long id,
@@ -13,6 +13,6 @@ public record NotificationHistoryItemResponse(
         Long targetId,
         String sourceType,
         Long sourceId,
-        LocalDateTime createdAt
+        OffsetDateTime createdAt
 ) {
 }
