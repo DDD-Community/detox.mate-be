@@ -96,7 +96,7 @@ public class NotificationScheduler {
                         target.userId(),
                         NotificationTypeCode.WEEKLY_GOAL_SUMMARY,
                         NotificationContext.of("achievementCount", String.valueOf(target.achievementCount())),
-                        NotificationPayload.none()
+                        NotificationPayload.myPage()
                 )));
     }
 

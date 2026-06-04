@@ -20,7 +20,7 @@ public record NotificationPayload(
         if (sourceType == null) {
             sourceType = NotificationSourceType.NONE;
         }
-        if (targetType != NotificationTargetType.NONE && targetId == null) {
+        if (requiresTargetId(targetType) && targetId == null) {
             throw new CustomException(NotificationErrorCode.NOTIFICATION_TARGET_ID_REQUIRED);
         }
         if (sourceType != NotificationSourceType.NONE && sourceId == null) {
@@ -46,6 +46,15 @@ public record NotificationPayload(
 
     public static NotificationPayload commentFeedDetail(Long challengeRecordId, Long commentId) {
         return new NotificationPayload(NotificationTargetType.FEED_DETAIL, challengeRecordId, NotificationSourceType.COMMENT, commentId);
+    }
+
+    public static NotificationPayload myPage() {
+        return new NotificationPayload(NotificationTargetType.MY_PAGE, null, NotificationSourceType.NONE, null);
+    }
+
+    private static boolean requiresTargetId(NotificationTargetType targetType) {
+        return targetType != NotificationTargetType.NONE
+                && targetType != NotificationTargetType.MY_PAGE;
     }
 
 

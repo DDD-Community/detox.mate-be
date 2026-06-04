@@ -79,7 +79,7 @@ public class NotificationEventListener {
                     event.actorUserId(),
                     NotificationTypeCode.CERTIFICATION_CREATED,
                     NotificationContext.of("nickname", actorName),
-                    NotificationPayload.feed(info.groupChallengeId())
+                    NotificationPayload.feedDetail(event.challengeRecordId())
             ));
         }
     }

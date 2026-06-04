@@ -5,5 +5,6 @@ public enum NotificationTargetType {
     GROUP,
     FEED,
     FEED_DETAIL,
+    MY_PAGE,
     GROUP_CHALLENGE
 }

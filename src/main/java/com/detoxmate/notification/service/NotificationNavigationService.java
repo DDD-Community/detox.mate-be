@@ -28,7 +28,15 @@ public class NotificationNavigationService {
         NotificationHistory history = historyRepository.findByIdAndUserId(notificationHistoryId, userId)
                 .orElseThrow(() -> new CustomException(NotificationErrorCode.NOTIFICATION_HISTORY_NOT_FOUND));
 
-        if (history.getTargetType() == NotificationTargetType.NONE || history.getTargetId() == null) {
+        if (history.getTargetType() == NotificationTargetType.NONE) {
+            return NotificationNavigationResponse.noNavigatable("NO_TARGET");
+        }
+
+        if (history.getTargetType() == NotificationTargetType.MY_PAGE) {
+            return NotificationNavigationResponse.navigable(NotificationTargetType.MY_PAGE.name(), null);
+        }
+
+        if (history.getTargetId() == null) {
             return NotificationNavigationResponse.noNavigatable("NO_TARGET");
         }
 
