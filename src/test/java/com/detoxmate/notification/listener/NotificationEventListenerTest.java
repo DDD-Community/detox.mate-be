@@ -87,7 +87,7 @@ class NotificationEventListenerTest {
     }
 
     @Test
-    @DisplayName("인증 생성 이벤트는 인증자를 제외한 챌린지 참여자에게 피드 알림 커맨드를 만든다")
+    @DisplayName("인증 생성 이벤트는 인증자를 제외한 챌린지 참여자에게 피드 상세 알림 커맨드를 만든다")
     void certificationCreatedEvent_createsCommandsForChallengeParticipants() {
         // given
         Long challengeRecordId = 100L;
@@ -110,8 +110,8 @@ class NotificationEventListenerTest {
             assertThat(command.senderUserId()).isEqualTo(actorUserId);
             assertThat(command.typeCode()).isEqualTo(NotificationTypeCode.CERTIFICATION_CREATED);
             assertThat(command.context().get("nickname")).isEqualTo("슬빈");
-            assertThat(command.payload().targetType()).isEqualTo(NotificationTargetType.FEED);
-            assertThat(command.payload().targetId()).isEqualTo(groupChallengeId);
+            assertThat(command.payload().targetType()).isEqualTo(NotificationTargetType.FEED_DETAIL);
+            assertThat(command.payload().targetId()).isEqualTo(challengeRecordId);
             assertThat(command.saveHistory()).isTrue();
         });
     }

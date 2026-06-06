@@ -156,4 +156,17 @@ class NotificationTest {
         assertThat(resolved).isEqualTo("오늘 인증까지 1시간 남았습니다.");
     }
 
+    @Test
+    @DisplayName("마이페이지 이동 payload는 targetId 없이 생성할 수 있다.")
+    void createMyPagePayloadWithoutTargetId() {
+        // when
+        NotificationPayload payload = NotificationPayload.myPage();
+
+        // then
+        assertThat(payload.targetType()).isEqualTo(NotificationTargetType.MY_PAGE);
+        assertThat(payload.targetId()).isNull();
+        assertThat(payload.sourceType()).isEqualTo(NotificationSourceType.NONE);
+        assertThat(payload.sourceId()).isNull();
+    }
+
 }
