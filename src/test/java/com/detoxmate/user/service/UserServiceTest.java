@@ -119,16 +119,66 @@ class UserServiceTest {
         ReflectionTestUtils.setField(user, "id", 1L);
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
+        UpdateMyProfileRequest request = new UpdateMyProfileRequest();
+        request.setDisplayName("의진");
+        request.setProfileImageObjectKey("profile-images/1/updated.png");
+
         // when
-        MyProfileResponse response = userService.updateMe(
-                1L,
-                new UpdateMyProfileRequest("의진", "profile-images/1/updated.png")
-        );
+        MyProfileResponse response = userService.updateMe(1L, request);
 
         // then
         assertThat(user.getDisplayName()).isEqualTo("의진");
         assertThat(user.getProfileImageObjectKey()).isEqualTo("profile-images/1/updated.png");
         assertThat(response.profileImageUrl()).isEqualTo(TEST_IMAGE_BASE_URL + "/profile-images/1/updated.png");
+    }
+
+    @Test
+    @DisplayName("profileImageObjectKey를 null로 전달하면 프로필 이미지를 제거한다")
+    void updateMe_removesProfileImageObjectKeyWhenExplicitNullIsRequested() {
+        // given
+        UserRepository userRepository = mock(UserRepository.class);
+        SocialLoginUserRepository socialLoginUserRepository = mock(SocialLoginUserRepository.class);
+        RefreshTokenSessionService refreshTokenSessionService = mock(RefreshTokenSessionService.class);
+        JwtTokenProvider jwtTokenProvider = new JwtTokenProvider(JWT_SECRET, ACCESS_TOKEN_EXPIRES_IN);
+        UserService userService = userService(userRepository, socialLoginUserRepository, refreshTokenSessionService, jwtTokenProvider);
+        User user = User.createNew("카카오닉네임", "profile-images/1/profile.png");
+        ReflectionTestUtils.setField(user, "id", 1L);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        UpdateMyProfileRequest request = new UpdateMyProfileRequest();
+        request.setProfileImageObjectKey(null);
+
+        // when
+        MyProfileResponse response = userService.updateMe(1L, request);
+
+        // then
+        assertThat(user.getProfileImageObjectKey()).isNull();
+        assertThat(response.profileImageUrl()).isNull();
+    }
+
+    @Test
+    @DisplayName("profileImageObjectKey를 전달하지 않으면 기존 프로필 이미지를 유지한다")
+    void updateMe_keepsProfileImageObjectKeyWhenFieldIsOmitted() {
+        // given
+        UserRepository userRepository = mock(UserRepository.class);
+        SocialLoginUserRepository socialLoginUserRepository = mock(SocialLoginUserRepository.class);
+        RefreshTokenSessionService refreshTokenSessionService = mock(RefreshTokenSessionService.class);
+        JwtTokenProvider jwtTokenProvider = new JwtTokenProvider(JWT_SECRET, ACCESS_TOKEN_EXPIRES_IN);
+        UserService userService = userService(userRepository, socialLoginUserRepository, refreshTokenSessionService, jwtTokenProvider);
+        User user = User.createNew("카카오닉네임", "profile-images/1/profile.png");
+        ReflectionTestUtils.setField(user, "id", 1L);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        UpdateMyProfileRequest request = new UpdateMyProfileRequest();
+        request.setDisplayName("의진");
+
+        // when
+        MyProfileResponse response = userService.updateMe(1L, request);
+
+        // then
+        assertThat(user.getDisplayName()).isEqualTo("의진");
+        assertThat(user.getProfileImageObjectKey()).isEqualTo("profile-images/1/profile.png");
+        assertThat(response.profileImageUrl()).isEqualTo(TEST_IMAGE_BASE_URL + "/profile-images/1/profile.png");
     }
 
     @Test
@@ -144,11 +194,11 @@ class UserServiceTest {
         ReflectionTestUtils.setField(user, "id", 1L);
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
+        UpdateMyProfileRequest request = new UpdateMyProfileRequest();
+        request.setProfileImageObjectKey("profile-images/2/updated.png");
+
         // when & then
-        assertThatThrownBy(() -> userService.updateMe(
-                1L,
-                new UpdateMyProfileRequest(null, "profile-images/2/updated.png")
-        ))
+        assertThatThrownBy(() -> userService.updateMe(1L, request))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("400 BAD_REQUEST");
     }
