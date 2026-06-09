@@ -145,7 +145,12 @@ public class HomeFeedMockData {
                                 "JOINED",
                                 "GOAL_ACTIVATION_PENDING",
                                 false,
-                                List.of(),
+                                List.of(new MemberDailyGoalResponse(
+                                        901L,
+                                        UsageGoalTypeCode.TOTAL_USAGE,
+                                        120,
+                                        LocalDate.of(2026, 5, 4)
+                                )),
                                 10001L,
                                 null,
                                 0,
