@@ -246,7 +246,9 @@ class GroupActivityCalendarApiTest {
                 .andExpect(jsonPath("$.members[?(@.displayName == '나')].dailyStatus").value("NOT_CERTIFIED"))
                 .andExpect(jsonPath("$.members[?(@.displayName == '민준')].includedInGroupResult").value(false))
                 .andExpect(jsonPath("$.members[?(@.displayName == '민준')].dailyStatus").value("GOAL_ACTIVATION_PENDING"))
-                .andExpect(jsonPath("$.members[?(@.displayName == '민준')].goals.length()").value(0))
+                .andExpect(jsonPath("$.members[?(@.displayName == '민준')].goals.length()").value(1))
+                .andExpect(jsonPath("$.members[?(@.displayName == '민준')].goals[0].goalMinutes").value(120))
+                .andExpect(jsonPath("$.members[?(@.displayName == '민준')].goals[0].effectiveDate").value("2026-04-17"))
                 .andExpect(jsonPath("$.members[?(@.displayName == '민준')].challengeRecordId").isNotEmpty());
     }
 
@@ -275,7 +277,8 @@ class GroupActivityCalendarApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.dailySummary.dayStatus").value("CONFIRMED"))
                 .andExpect(jsonPath("$.members[?(@.displayName == '민준')].includedInGroupResult").value(false))
-                .andExpect(jsonPath("$.members[?(@.displayName == '민준')].dailyStatus").value("NOT_ACTIVE"));
+                .andExpect(jsonPath("$.members[?(@.displayName == '민준')].dailyStatus").value("NOT_ACTIVE"))
+                .andExpect(jsonPath("$.members[?(@.displayName == '민준')].goals.length()").value(0));
     }
 
     @Test
