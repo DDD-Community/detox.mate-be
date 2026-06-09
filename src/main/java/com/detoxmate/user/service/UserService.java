@@ -61,8 +61,10 @@ public class UserService {
         if (request.displayName() != null) {
             user.changeDisplayName(request.displayName());
         }
-        if (request.profileImageObjectKey() != null) {
-            validateProfileImageObjectKey(userId, request.profileImageObjectKey());
+        if (request.hasProfileImageObjectKey()) {
+            if (request.profileImageObjectKey() != null) {
+                validateProfileImageObjectKey(userId, request.profileImageObjectKey());
+            }
             user.changeProfileImageObjectKey(request.profileImageObjectKey());
         }
 

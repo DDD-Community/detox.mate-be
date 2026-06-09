@@ -12,12 +12,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.server.ResponseStatusException;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -88,6 +90,21 @@ class GlobalExceptionHandlerLoggingTest {
         );
     }
 
+    @Test
+    @DisplayName("존재하지 않는 경로 예외는 404 handled error로 남긴다")
+    void logs_handled_error_at_info_when_resource_is_not_found(CapturedOutput output) throws Exception {
+        // when & then
+        mockMvc.perform(get("/missing-resource")
+                        .header("X-Request-Id", "req-not-found"))
+                .andExpect(status().isNotFound());
+
+        assertThat(output).contains(
+                "INFO",
+                "event=api_handled_error requestId=req-not-found userId=anonymous method=GET path=/missing-resource status=404 errorCode=NOT_FOUND"
+        );
+        assertThat(output).doesNotContain("event=api_error");
+    }
+
     @RestController
     static class ExceptionTestController {
 
@@ -104,6 +121,11 @@ class GlobalExceptionHandlerLoggingTest {
         @GetMapping(value = "/server-error", produces = MediaType.APPLICATION_JSON_VALUE)
         void serverError() {
             throw new IllegalStateException("boom");
+        }
+
+        @GetMapping("/missing-resource")
+        void missingResource() throws NoResourceFoundException {
+            throw new NoResourceFoundException(HttpMethod.GET, "/", "No static resource.");
         }
     }
 
