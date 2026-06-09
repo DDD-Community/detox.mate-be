@@ -89,7 +89,7 @@ public class HomeFeedMockData {
                         LocalDate.of(2026, 5, 3),
                         "IN_PROGRESS",
                         null,
-                        2,
+                        1,
                         1,
                         1
                 ),
@@ -143,9 +143,14 @@ public class HomeFeedMockData {
                                 false,
                                 "ACTIVE",
                                 "JOINED",
-                                "NOT_CERTIFIED",
-                                true,
-                                List.of(),
+                                "GOAL_ACTIVATION_PENDING",
+                                false,
+                                List.of(new MemberDailyGoalResponse(
+                                        901L,
+                                        UsageGoalTypeCode.TOTAL_USAGE,
+                                        120,
+                                        LocalDate.of(2026, 5, 4)
+                                )),
                                 10001L,
                                 null,
                                 0,
