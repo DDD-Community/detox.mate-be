@@ -1,6 +1,7 @@
 package com.detoxmate.config;
 
 import com.detoxmate.common.error.GlobalExceptionHandler;
+import com.detoxmate.common.error.GlobalExceptionHandlerTestFixture;
 import com.detoxmate.user.controller.AuthController;
 import com.detoxmate.user.service.AuthService;
 import org.junit.jupiter.api.Test;
@@ -71,7 +72,7 @@ class DevCorsConfigTest {
 
         @Bean
         GlobalExceptionHandler globalExceptionHandler() {
-            return new GlobalExceptionHandler();
+            return GlobalExceptionHandlerTestFixture.globalExceptionHandler();
         }
     }
 }

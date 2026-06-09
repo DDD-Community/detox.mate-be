@@ -52,7 +52,7 @@ class UserControllerTest {
         userService = mock(UserService.class);
         mockMvc = MockMvcBuilders.standaloneSetup(new UserController(userService))
                 .setCustomArgumentResolvers(new CurrentUserResolver(userService))
-                .setControllerAdvice(new com.detoxmate.common.error.GlobalExceptionHandler())
+                .setControllerAdvice(com.detoxmate.common.error.GlobalExceptionHandlerTestFixture.globalExceptionHandler())
                 .apply(documentationConfiguration(restDocumentation))
                 .build();
     }
