@@ -48,7 +48,7 @@ class AuthControllerTest {
     void setUp(RestDocumentationContextProvider restDocumentation) {
         authService = mock(AuthService.class);
         mockMvc = MockMvcBuilders.standaloneSetup(new AuthController(authService))
-                .setControllerAdvice(new com.detoxmate.common.error.GlobalExceptionHandler())
+                .setControllerAdvice(com.detoxmate.common.error.GlobalExceptionHandlerTestFixture.globalExceptionHandler())
                 .apply(documentationConfiguration(restDocumentation))
                 .build();
     }

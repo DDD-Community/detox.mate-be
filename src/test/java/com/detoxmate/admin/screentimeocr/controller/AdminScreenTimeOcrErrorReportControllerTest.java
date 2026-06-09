@@ -1,7 +1,7 @@
 package com.detoxmate.admin.screentimeocr.controller;
 
 import com.detoxmate.admin.service.AdminAuthorizationService;
-import com.detoxmate.common.error.GlobalExceptionHandler;
+import com.detoxmate.common.error.GlobalExceptionHandlerTestFixture;
 import com.detoxmate.screentimeocr.domain.ScreenTimeOcrErrorReportStatus;
 import com.detoxmate.screentimeocr.dto.AdminScreenTimeOcrErrorReportItemResponse;
 import com.detoxmate.screentimeocr.dto.AdminScreenTimeOcrErrorReportListResponse;
@@ -72,7 +72,7 @@ class AdminScreenTimeOcrErrorReportControllerTest {
                         adminReportService,
                         adminAuthorizationService
                 ))
-                .setControllerAdvice(new GlobalExceptionHandler())
+                .setControllerAdvice(GlobalExceptionHandlerTestFixture.globalExceptionHandler())
                 .apply(documentationConfiguration(restDocumentation))
                 .build();
     }

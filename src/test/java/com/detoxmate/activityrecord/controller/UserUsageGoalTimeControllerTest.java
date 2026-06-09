@@ -9,7 +9,7 @@ import com.detoxmate.activityrecord.dto.UserUsageGoalTimesSetRequest;
 import com.detoxmate.activityrecord.dto.UserUsageGoalTimesSetResponse;
 import com.detoxmate.activityrecord.service.UserUsageGoalTimeService;
 import com.detoxmate.auth.CurrentUserResolver;
-import com.detoxmate.common.error.GlobalExceptionHandler;
+import com.detoxmate.common.error.GlobalExceptionHandlerTestFixture;
 import com.detoxmate.user.dto.MyProfileResponse;
 import com.detoxmate.user.service.UserService;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
@@ -65,7 +65,7 @@ class UserUsageGoalTimeControllerTest {
 
         mockMvc = MockMvcBuilders.standaloneSetup(new UserUsageGoalTimeController(userUsageGoalTimeService))
                 .setCustomArgumentResolvers(new CurrentUserResolver(userService))
-                .setControllerAdvice(new GlobalExceptionHandler())
+                .setControllerAdvice(GlobalExceptionHandlerTestFixture.globalExceptionHandler())
                 .apply(documentationConfiguration(restDocumentation))
                 .build();
     }

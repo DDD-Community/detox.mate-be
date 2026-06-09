@@ -44,7 +44,7 @@ class DevAuthControllerTest {
     void setUp(RestDocumentationContextProvider restDocumentation) {
         devAuthService = mock(DevAuthService.class);
         mockMvc = MockMvcBuilders.standaloneSetup(new DevAuthController(devAuthService))
-                .setControllerAdvice(new com.detoxmate.common.error.GlobalExceptionHandler())
+                .setControllerAdvice(com.detoxmate.common.error.GlobalExceptionHandlerTestFixture.globalExceptionHandler())
                 .apply(documentationConfiguration(restDocumentation))
                 .build();
     }
