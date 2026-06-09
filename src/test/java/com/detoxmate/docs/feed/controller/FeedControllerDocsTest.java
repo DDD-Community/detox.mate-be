@@ -359,7 +359,7 @@ public class FeedControllerDocsTest {
                 fieldWithPath("members[].memberStatus").type(STRING).description("그룹 멤버 상태"),
                 fieldWithPath("members[].participantStatus").type(STRING).description("챌린지 참가 상태"),
                 fieldWithPath("members[].dailyStatus").type(STRING)
-                        .description("멤버 일별 상태 (GOAL_ACHIEVED | GOAL_FAILED | NOT_CERTIFIED | NOT_ACTIVE)"),
+                        .description("멤버 일별 상태 (GOAL_ACHIEVED | GOAL_FAILED | NOT_CERTIFIED | GOAL_ACTIVATION_PENDING | NOT_ACTIVE)"),
                 fieldWithPath("members[].includedInGroupResult").type(BOOLEAN)
                         .description("해당 날짜 그룹 인증 계산 대상인지 여부"),
                 fieldWithPath("members[].goals").type(ARRAY).description("선택 날짜에 유효한 목표 목록"),
@@ -428,7 +428,7 @@ public class FeedControllerDocsTest {
                 fieldWithPath("memberStatus").type(STRING).description("그룹 멤버 상태"),
                 fieldWithPath("participantStatus").type(STRING).description("챌린지 참가 상태"),
                 fieldWithPath("dailyStatus").type(STRING)
-                        .description("멤버 일별 상태 (GOAL_ACHIEVED | GOAL_FAILED | NOT_CERTIFIED | NOT_ACTIVE)"),
+                        .description("멤버 일별 상태 (GOAL_ACHIEVED | GOAL_FAILED | NOT_CERTIFIED | GOAL_ACTIVATION_PENDING | NOT_ACTIVE)"),
                 fieldWithPath("includedInGroupResult").type(BOOLEAN)
                         .description("해당 날짜 그룹 인증 계산 대상인지 여부"),
                 fieldWithPath("goals").type(ARRAY).description("선택 날짜에 유효한 목표 목록"),
