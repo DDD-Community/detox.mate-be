@@ -220,6 +220,65 @@ class GroupActivityCalendarApiTest {
     }
 
     @Test
+    @DisplayName("GET /group-challenges/{groupChallengeId}/challenge-records/today — 오늘 목표를 설정한 멤버는 GOAL_ACTIVATION_PENDING으로 내려준다")
+    void getChallengeRecordsToday_memberWithTomorrowEffectiveGoalReturnsGoalActivationPending() throws Exception {
+        UsageGoalType totalUsage = usageGoalTypeRepository.save(UsageGoalType.create(1L, UsageGoalTypeCode.TOTAL_USAGE));
+        Group group = groupRepository.save(Group.createNew("수능방", "ABCDE"));
+        GroupChallenge challenge = GroupChallenge.createFirst(group.getId());
+        challenge.activate(TODAY.minusDays(1).atStartOfDay());
+        groupChallengeRepository.save(challenge);
+
+        User currentUser = userRepository.save(User.createNew("나", "profiles/me.png"));
+        User waitingUser = userRepository.save(User.createNew("민준", "profiles/minjun.png"));
+
+        LocalDateTime joinedAt = TODAY.minusDays(2).atTime(10, 0);
+        saveParticipant(group, challenge, currentUser, joinedAt);
+        saveParticipant(group, challenge, waitingUser, joinedAt.plusMinutes(1));
+
+        saveGoal(currentUser, totalUsage, 80, TODAY.minusDays(1).atTime(9, 0));
+        saveGoal(waitingUser, totalUsage, 120, TODAY.atTime(9, 0));
+
+        mockMvc.perform(get("/group-challenges/{groupChallengeId}/challenge-records/today", challenge.getId())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(currentUser.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.dailySummary.dayStatus").value("IN_PROGRESS"))
+                .andExpect(jsonPath("$.dailySummary.activeMemberCount").value(1))
+                .andExpect(jsonPath("$.members[?(@.displayName == '나')].dailyStatus").value("NOT_CERTIFIED"))
+                .andExpect(jsonPath("$.members[?(@.displayName == '민준')].includedInGroupResult").value(false))
+                .andExpect(jsonPath("$.members[?(@.displayName == '민준')].dailyStatus").value("GOAL_ACTIVATION_PENDING"))
+                .andExpect(jsonPath("$.members[?(@.displayName == '민준')].goals.length()").value(0))
+                .andExpect(jsonPath("$.members[?(@.displayName == '민준')].challengeRecordId").isNotEmpty());
+    }
+
+    @Test
+    @DisplayName("GET /group-challenges/{groupChallengeId}/challenge-records?date={date} — 조회일 이후 설정한 목표는 GOAL_ACTIVATION_PENDING으로 보지 않는다")
+    void getChallengeRecordsHistory_goalSetAfterDateReturnsNotActive() throws Exception {
+        UsageGoalType totalUsage = usageGoalTypeRepository.save(UsageGoalType.create(1L, UsageGoalTypeCode.TOTAL_USAGE));
+        Group group = groupRepository.save(Group.createNew("수능방", "ABCDE"));
+        GroupChallenge challenge = GroupChallenge.createFirst(group.getId());
+        challenge.activate(LocalDate.of(2026, 4, 13).atStartOfDay());
+        groupChallengeRepository.save(challenge);
+
+        User currentUser = userRepository.save(User.createNew("나", "profiles/me.png"));
+        User targetUser = userRepository.save(User.createNew("민준", "profiles/minjun.png"));
+
+        LocalDateTime joinedAt = LocalDateTime.of(2026, 4, 12, 10, 0);
+        saveParticipant(group, challenge, currentUser, joinedAt);
+        saveParticipant(group, challenge, targetUser, joinedAt.plusMinutes(1));
+
+        saveGoal(currentUser, totalUsage, 80, LocalDateTime.of(2026, 4, 13, 9, 0));
+        saveGoal(targetUser, totalUsage, 120, LocalDateTime.of(2026, 4, 15, 9, 0));
+
+        mockMvc.perform(get("/group-challenges/{groupChallengeId}/challenge-records", challenge.getId())
+                        .queryParam("date", "2026-04-14")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(currentUser.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.dailySummary.dayStatus").value("CONFIRMED"))
+                .andExpect(jsonPath("$.members[?(@.displayName == '민준')].includedInGroupResult").value(false))
+                .andExpect(jsonPath("$.members[?(@.displayName == '민준')].dailyStatus").value("NOT_ACTIVE"));
+    }
+
+    @Test
     @DisplayName("GET /group-challenges/{groupChallengeId}/challenge-records?date={today} — 히스토리 피드는 오늘 날짜를 거부한다")
     void getChallengeRecordsHistory_todayReturnsBadRequest() throws Exception {
         CalendarFixture fixture = saveCalendarFixture();

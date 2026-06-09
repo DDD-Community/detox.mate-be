@@ -340,7 +340,14 @@ public class GroupChallengeRecordFeedService {
                 challengeRecord,
                 activityDay.activityRecordById()
         );
-        MemberDailyStatus dailyStatus = dailyStatus(includedInGroupResult, challengeRecord);
+        MemberDailyStatus dailyStatus = dailyStatus(
+                includedInGroupResult,
+                participant,
+                row.userId(),
+                activityDay.activity().goals(),
+                activityDay.date(),
+                challengeRecord
+        );
         ChallengeRecordStatusCount statusCount = challengeRecord == null
                 ? null
                 : activityDay.statusCountByRecordId().get(challengeRecord.getId());
@@ -566,8 +573,18 @@ public class GroupChallengeRecordFeedService {
                 .toList();
     }
 
-    private MemberDailyStatus dailyStatus(boolean includedInGroupResult, ChallengeRecord challengeRecord) {
+    private MemberDailyStatus dailyStatus(
+            boolean includedInGroupResult,
+            GroupActivityParticipant participant,
+            Long userId,
+            List<MemberDailyGoal> goals,
+            LocalDate date,
+            ChallengeRecord challengeRecord
+    ) {
         if (!includedInGroupResult) {
+            if (isActiveParticipant(participant) && hasFutureEffectiveGoal(userId, goals, date)) {
+                return MemberDailyStatus.GOAL_ACTIVATION_PENDING;
+            }
             return MemberDailyStatus.NOT_ACTIVE;
         }
         if (challengeRecord == null || !challengeRecord.isCertified()) {
@@ -577,6 +594,14 @@ public class GroupChallengeRecordFeedService {
             return MemberDailyStatus.GOAL_ACHIEVED;
         }
         return MemberDailyStatus.GOAL_FAILED;
+    }
+
+    private boolean hasFutureEffectiveGoal(Long userId, List<MemberDailyGoal> goals, LocalDate date) {
+        return userId != null
+                && goals.stream()
+                .anyMatch(goal -> Objects.equals(goal.userId(), userId)
+                        && !goal.setAt().toLocalDate().isAfter(date)
+                        && goal.effectiveDate().isAfter(date));
     }
 
     private boolean isActiveParticipant(GroupActivityParticipant participant) {
