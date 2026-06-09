@@ -13,6 +13,7 @@ import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.NoSuchElementException;
@@ -50,6 +51,15 @@ public class GlobalExceptionHandler {
         logHandledError(request, HttpStatus.UNAUTHORIZED, errorResponse.code());
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(errorResponse);
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResourceFoundException(NoResourceFoundException exception, HttpServletRequest request) {
+        ErrorResponse errorResponse = toErrorResponse(HttpStatus.NOT_FOUND);
+        logHandledError(request, HttpStatus.NOT_FOUND, errorResponse.code());
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(errorResponse);
     }
 
