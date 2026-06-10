@@ -76,6 +76,7 @@ class NotificationEventListenerTest {
                 .extracting(NotificationCommand::recipientUserId)
                 .containsExactly(2L);
         assertThat(commands).allSatisfy(command -> {
+            assertThat(command.senderUserId()).isEqualTo(joinedUserId);
             assertThat(command.typeCode()).isEqualTo(NotificationTypeCode.GROUP_JOINED);
             assertThat(command.context().get("nickname")).isEqualTo("슬빈");
             assertThat(command.context().get("groupName")).isEqualTo("디톡스방");
@@ -86,7 +87,7 @@ class NotificationEventListenerTest {
     }
 
     @Test
-    @DisplayName("인증 생성 이벤트는 인증자를 제외한 챌린지 참여자에게 피드 알림 커맨드를 만든다")
+    @DisplayName("인증 생성 이벤트는 인증자를 제외한 챌린지 참여자에게 피드 상세 알림 커맨드를 만든다")
     void certificationCreatedEvent_createsCommandsForChallengeParticipants() {
         // given
         Long challengeRecordId = 100L;
@@ -106,10 +107,11 @@ class NotificationEventListenerTest {
                 .extracting(NotificationCommand::recipientUserId)
                 .containsExactly(2L, 3L);
         assertThat(commands).allSatisfy(command -> {
+            assertThat(command.senderUserId()).isEqualTo(actorUserId);
             assertThat(command.typeCode()).isEqualTo(NotificationTypeCode.CERTIFICATION_CREATED);
             assertThat(command.context().get("nickname")).isEqualTo("슬빈");
-            assertThat(command.payload().targetType()).isEqualTo(NotificationTargetType.FEED);
-            assertThat(command.payload().targetId()).isEqualTo(groupChallengeId);
+            assertThat(command.payload().targetType()).isEqualTo(NotificationTargetType.FEED_DETAIL);
+            assertThat(command.payload().targetId()).isEqualTo(challengeRecordId);
             assertThat(command.saveHistory()).isTrue();
         });
     }
@@ -133,6 +135,7 @@ class NotificationEventListenerTest {
         // then
         NotificationCommand command = captureCommand();
         assertThat(command.recipientUserId()).isEqualTo(receiverUserId);
+        assertThat(command.senderUserId()).isEqualTo(senderUserId);
         assertThat(command.typeCode()).isEqualTo(NotificationTypeCode.POKE_RECEIVED);
         assertThat(command.context().get("nickname")).isEqualTo("슬빈");
         assertThat(command.context().get("me")).isEqualTo("지민");
@@ -159,6 +162,7 @@ class NotificationEventListenerTest {
         // then
         NotificationCommand command = captureCommand();
         assertThat(command.recipientUserId()).isEqualTo(authorUserId);
+        assertThat(command.senderUserId()).isEqualTo(reactorUserId);
         assertThat(command.typeCode()).isEqualTo(NotificationTypeCode.REACTION_CREATED);
         assertThat(command.context().get("nickname")).isEqualTo("슬빈");
         assertThat(command.context().get("me")).isEqualTo("작성자");
@@ -205,6 +209,7 @@ class NotificationEventListenerTest {
         // then
         NotificationCommand command = captureCommand();
         assertThat(command.recipientUserId()).isEqualTo(authorUserId);
+        assertThat(command.senderUserId()).isEqualTo(commenterUserId);
         assertThat(command.typeCode()).isEqualTo(NotificationTypeCode.COMMENT_CREATED);
         assertThat(command.context().get("nickname")).isEqualTo("슬빈");
         assertThat(command.context().get("commentBody")).isEqualTo(commentBody.substring(0, 60) + "...");
@@ -249,6 +254,7 @@ class NotificationEventListenerTest {
                 .extracting(NotificationCommand::recipientUserId)
                 .containsExactly(1L, 2L);
         assertThat(commands).allSatisfy(command -> {
+            assertThat(command.senderUserId()).isNull();
             assertThat(command.typeCode()).isEqualTo(NotificationTypeCode.CERTIFICATION_START_TOMORROW);
             assertThat(command.context().get("groupName")).isEqualTo("디톡스방");
             assertThat(command.payload().targetType()).isEqualTo(NotificationTargetType.FEED);
@@ -272,6 +278,7 @@ class NotificationEventListenerTest {
         // then
         NotificationCommand command = captureCommand();
         assertThat(command.recipientUserId()).isEqualTo(targetUserId);
+        assertThat(command.senderUserId()).isNull();
         assertThat(command.typeCode()).isEqualTo(NotificationTypeCode.GOAL_SETTING_REMINDER);
         assertThat(command.context().get("nickname")).isEqualTo("지민");
         assertThat(command.payload().targetType()).isEqualTo(NotificationTargetType.FEED);
@@ -298,6 +305,7 @@ class NotificationEventListenerTest {
         // then
         NotificationCommand command = captureCommand();
         assertThat(command.recipientUserId()).isEqualTo(receiverUserId);
+        assertThat(command.senderUserId()).isEqualTo(senderUserId);
         assertThat(command.typeCode()).isEqualTo(NotificationTypeCode.POKE_GOAL_SETTING_REMINDER);
         assertThat(command.context().get("nickname")).isEqualTo("슬빈");
         assertThat(command.context().get("me")).isEqualTo("지민");

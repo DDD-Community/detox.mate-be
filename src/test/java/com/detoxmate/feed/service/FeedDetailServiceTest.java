@@ -27,20 +27,29 @@ import com.detoxmate.user.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.ZoneId;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
+@Import(FeedDetailServiceTest.FixedClockConfig.class)
 class FeedDetailServiceTest {
+
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+    private static final LocalDate TODAY = LocalDate.of(2026, 5, 22);
 
     @Autowired
     FeedDetailService feedDetailService;
@@ -91,7 +100,7 @@ class FeedDetailServiceTest {
         GroupChallengeParticipant authorParticipant = saveParticipant(group.getId(), challenge.getId(), author);
 
         ChallengeRecord challengeRecord = challengeRecordRepository.save(
-                ChallengeRecord.create(challenge.getId(), authorParticipant.getId(), LocalDate.now())
+                ChallengeRecord.create(challenge.getId(), authorParticipant.getId(), TODAY)
         );
 
         statusCountRepository.saveAndFlush(ChallengeRecordStatusCount.create(challengeRecord.getId()));
@@ -99,8 +108,8 @@ class FeedDetailServiceTest {
         statusCountRepository.increasePokeCount(challengeRecord.getId());
         statusCountRepository.increasePokeCount(challengeRecord.getId());
 
-        pokeRepository.save(Poke.create(challengeRecord.getId(), poker1.getId(), author.getId(), LocalDate.now()));
-        pokeRepository.save(Poke.create(challengeRecord.getId(), poker2.getId(), author.getId(), LocalDate.now()));
+        pokeRepository.save(Poke.create(challengeRecord.getId(), poker1.getId(), author.getId(), TODAY));
+        pokeRepository.save(Poke.create(challengeRecord.getId(), poker2.getId(), author.getId(), TODAY));
 
         // when
         FeedDetailResponse response = feedDetailService.getFeedDetail(
@@ -113,7 +122,7 @@ class FeedDetailServiceTest {
         assertThat(response.groupChallengeId()).isEqualTo(challenge.getId());
         assertThat(response.activityRecordId()).isNull();
         assertThat(response.challengeStatus()).isEqualTo("BEFORE_RECORD");
-        assertThat(response.recordDate()).isEqualTo(LocalDate.now());
+        assertThat(response.recordDate()).isEqualTo(TODAY);
 
         assertThat(response.author().userId()).isEqualTo(author.getId());
         assertThat(response.author().displayName()).isEqualTo("민준");
@@ -152,11 +161,11 @@ class FeedDetailServiceTest {
         GroupChallengeParticipant authorParticipant = saveParticipant(group.getId(), challenge.getId(), author);
 
         ChallengeRecord challengeRecord = challengeRecordRepository.save(
-                ChallengeRecord.create(challenge.getId(), authorParticipant.getId(), LocalDate.now())
+                ChallengeRecord.create(challenge.getId(), authorParticipant.getId(), TODAY)
         );
 
         pokeRepository.save(
-                Poke.create(challengeRecord.getId(), currentUser.getId(), author.getId(), LocalDate.now())
+                Poke.create(challengeRecord.getId(), currentUser.getId(), author.getId(), TODAY)
         );
 
         // when
@@ -184,7 +193,7 @@ class FeedDetailServiceTest {
         GroupChallengeParticipant authorParticipant = saveParticipant(group.getId(), challenge.getId(), author);
 
         ChallengeRecord challengeRecord = challengeRecordRepository.save(
-                ChallengeRecord.create(challenge.getId(), authorParticipant.getId(), LocalDate.now().minusDays(1))
+                ChallengeRecord.create(challenge.getId(), authorParticipant.getId(), TODAY.minusDays(1))
         );
 
         // when
@@ -226,7 +235,7 @@ class FeedDetailServiceTest {
         ChallengeRecord challengeRecord = ChallengeRecord.create(
                 challenge.getId(),
                 authorParticipant.getId(),
-                LocalDate.now()
+                TODAY
         );
         challengeRecord.certify(
                 activityRecord.getId(),
@@ -294,7 +303,7 @@ class FeedDetailServiceTest {
         ChallengeRecord challengeRecord = ChallengeRecord.create(
                 challenge.getId(),
                 authorParticipant.getId(),
-                LocalDate.now()
+                TODAY
         );
         challengeRecord.certify(
                 activityRecord.getId(),
@@ -332,5 +341,15 @@ class FeedDetailServiceTest {
         return participantRepository.save(
                 GroupChallengeParticipant.join(groupMember.getId(), groupChallengeId)
         );
+    }
+
+    @TestConfiguration
+    static class FixedClockConfig {
+
+        @Bean
+        @Primary
+        Clock fixedClock() {
+            return Clock.fixed(TODAY.atTime(9, 0).atZone(KST).toInstant(), KST);
+        }
     }
 }

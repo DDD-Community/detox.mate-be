@@ -1,7 +1,7 @@
 package com.detoxmate.upload.controller;
 
 import com.detoxmate.auth.CurrentUserResolver;
-import com.detoxmate.common.error.GlobalExceptionHandler;
+import com.detoxmate.common.error.GlobalExceptionHandlerTestFixture;
 import com.detoxmate.upload.dto.PresignedUrlRequest;
 import com.detoxmate.upload.dto.PresignedUrlResponse;
 import com.detoxmate.upload.dto.UploadPurpose;
@@ -59,7 +59,7 @@ class UploadControllerTest {
 
         mockMvc = MockMvcBuilders.standaloneSetup(new UploadController(uploadService))
                 .setCustomArgumentResolvers(new CurrentUserResolver(userService))
-                .setControllerAdvice(new GlobalExceptionHandler())
+                .setControllerAdvice(GlobalExceptionHandlerTestFixture.globalExceptionHandler())
                 .apply(documentationConfiguration(restDocumentation))
                 .build();
     }

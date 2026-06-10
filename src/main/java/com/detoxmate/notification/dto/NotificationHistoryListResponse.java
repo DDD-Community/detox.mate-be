@@ -4,6 +4,6 @@ import java.util.List;
 
 public record NotificationHistoryListResponse(
         long unreadCount,
-        List<NotificationHistoryGroupResponse> groups
+        List<NotificationHistoryItemResponse> notifications
 ) {
 }

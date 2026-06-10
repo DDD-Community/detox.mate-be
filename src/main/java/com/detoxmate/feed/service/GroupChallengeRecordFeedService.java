@@ -3,6 +3,7 @@ package com.detoxmate.feed.service;
 import com.detoxmate.activityrecord.domain.ActivityRecord;
 import com.detoxmate.activityrecord.domain.ActivityRecordDetail;
 import com.detoxmate.activityrecord.domain.UserUsageGoalTime;
+import com.detoxmate.activityrecord.dto.UsageGoalTypeCode;
 import com.detoxmate.activityrecord.repository.ActivityRecordRepository;
 import com.detoxmate.activityrecord.repository.UserUsageGoalTimeRepository;
 import com.detoxmate.challengerecord.domain.ChallengeRecord;
@@ -45,6 +46,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collection;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -340,7 +342,14 @@ public class GroupChallengeRecordFeedService {
                 challengeRecord,
                 activityDay.activityRecordById()
         );
-        MemberDailyStatus dailyStatus = dailyStatus(includedInGroupResult, challengeRecord);
+        MemberDailyStatus dailyStatus = dailyStatus(
+                includedInGroupResult,
+                participant,
+                row.userId(),
+                activityDay.activity().goals(),
+                activityDay.date(),
+                challengeRecord
+        );
         ChallengeRecordStatusCount statusCount = challengeRecord == null
                 ? null
                 : activityDay.statusCountByRecordId().get(challengeRecord.getId());
@@ -357,11 +366,7 @@ public class GroupChallengeRecordFeedService {
                 row.participantStatus(),
                 dailyStatus.name(),
                 includedInGroupResult,
-                toGoalResponses(verificationPolicy.effectiveGoals(
-                        row.userId(),
-                        activityDay.activity().goals(),
-                        activityDay.date()
-                )),
+                toGoalResponses(configuredGoals(row.userId(), activityDay.activity().goals(), activityDay.date())),
                 challengeRecord == null ? null : challengeRecord.getId(),
                 activityRecord,
                 reactionCount(statusCount),
@@ -566,8 +571,39 @@ public class GroupChallengeRecordFeedService {
                 .toList();
     }
 
-    private MemberDailyStatus dailyStatus(boolean includedInGroupResult, ChallengeRecord challengeRecord) {
+    private List<MemberDailyGoal> configuredGoals(Long userId, List<MemberDailyGoal> goals, LocalDate date) {
+        if (userId == null) {
+            return List.of();
+        }
+
+        Map<UsageGoalTypeCode, MemberDailyGoal> latestByType = new EnumMap<>(UsageGoalTypeCode.class);
+
+        goals.stream()
+                .filter(goal -> Objects.equals(goal.userId(), userId))
+                .filter(goal -> !goal.setAt().toLocalDate().isAfter(date))
+                .forEach(goal -> latestByType.merge(goal.usageGoalType(), goal, this::laterConfiguredGoal));
+
+        return latestByType.values().stream()
+                .sorted(java.util.Comparator.comparing(MemberDailyGoal::usageGoalType))
+                .toList();
+    }
+
+    private MemberDailyGoal laterConfiguredGoal(MemberDailyGoal first, MemberDailyGoal second) {
+        return second.setAt().isAfter(first.setAt()) ? second : first;
+    }
+
+    private MemberDailyStatus dailyStatus(
+            boolean includedInGroupResult,
+            GroupActivityParticipant participant,
+            Long userId,
+            List<MemberDailyGoal> goals,
+            LocalDate date,
+            ChallengeRecord challengeRecord
+    ) {
         if (!includedInGroupResult) {
+            if (isActiveParticipant(participant) && hasFutureEffectiveGoal(userId, goals, date)) {
+                return MemberDailyStatus.GOAL_ACTIVATION_PENDING;
+            }
             return MemberDailyStatus.NOT_ACTIVE;
         }
         if (challengeRecord == null || !challengeRecord.isCertified()) {
@@ -577,6 +613,14 @@ public class GroupChallengeRecordFeedService {
             return MemberDailyStatus.GOAL_ACHIEVED;
         }
         return MemberDailyStatus.GOAL_FAILED;
+    }
+
+    private boolean hasFutureEffectiveGoal(Long userId, List<MemberDailyGoal> goals, LocalDate date) {
+        return userId != null
+                && goals.stream()
+                .anyMatch(goal -> Objects.equals(goal.userId(), userId)
+                        && !goal.setAt().toLocalDate().isAfter(date)
+                        && goal.effectiveDate().isAfter(date));
     }
 
     private boolean isActiveParticipant(GroupActivityParticipant participant) {

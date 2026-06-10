@@ -61,7 +61,7 @@ class GroupControllerTest {
                 .thenReturn(new MyProfileResponse(1L, "지민", "https://...", true));
         mockMvc = MockMvcBuilders.standaloneSetup(new GroupController(groupService))
                 .setCustomArgumentResolvers(new CurrentUserResolver(userService))
-                .setControllerAdvice(new com.detoxmate.common.error.GlobalExceptionHandler())
+                .setControllerAdvice(com.detoxmate.common.error.GlobalExceptionHandlerTestFixture.globalExceptionHandler())
                 .apply(documentationConfiguration(restDocumentation))
                 .build();
     }

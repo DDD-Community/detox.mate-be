@@ -17,14 +17,20 @@ import com.detoxmate.user.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.ZoneId;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
@@ -35,7 +41,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @Transactional
 @AutoConfigureMockMvc
+@Import(FeedControllerTest.FixedClockConfig.class)
 class FeedControllerTest {
+
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+    private static final LocalDate TODAY = LocalDate.of(2026, 5, 22);
 
     private static final String OVERVIEW_URL = "/group-challenges/{groupChallengeId}/overview";
     private static final String HOME_FEED_URL = "/group-challenges/{groupChallengeId}/home";
@@ -89,6 +99,7 @@ class FeedControllerTest {
                 .andExpect(jsonPath("$.groupChallengeId").value(challenge.getId()))
                 .andExpect(jsonPath("$.groupId").value(group.getId()))
                 .andExpect(jsonPath("$.groupName").value("수능방"))
+                .andExpect(jsonPath("$.inviteCode").value("ABCDE"))
                 .andExpect(jsonPath("$.challengeNo").value(1))
                 .andExpect(jsonPath("$.status").value("RECRUITING"))
                 .andExpect(jsonPath("$.streakCount").value(0));
@@ -183,7 +194,7 @@ class FeedControllerTest {
                 ChallengeRecord.create(
                         challenge.getId(),
                         authorParticipant.getId(),
-                        LocalDate.now()
+                        TODAY
                 )
         );
 
@@ -237,7 +248,7 @@ class FeedControllerTest {
                 ChallengeRecord.create(
                         challenge.getId(),
                         authorParticipant.getId(),
-                        LocalDate.now()
+                        TODAY
                 )
         );
 
@@ -267,7 +278,7 @@ class FeedControllerTest {
                 ChallengeRecord.create(
                         challenge.getId(),
                         authorParticipant.getId(),
-                        LocalDate.now()
+                        TODAY
                 )
         );
 
@@ -312,7 +323,7 @@ class FeedControllerTest {
                 ChallengeRecord.create(
                         challenge.getId(),
                         participant.getId(),
-                        LocalDate.now()
+                        TODAY
                 )
         );
 
@@ -337,6 +348,16 @@ class FeedControllerTest {
 
     private String bearer(Long userId) {
         return "Bearer " + jwtTokenProvider.createAccessToken(userId);
+    }
+
+    @TestConfiguration
+    static class FixedClockConfig {
+
+        @Bean
+        @Primary
+        Clock fixedClock() {
+            return Clock.fixed(TODAY.atTime(9, 0).atZone(KST).toInstant(), KST);
+        }
     }
 
 }

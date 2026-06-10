@@ -22,6 +22,15 @@ app:
   apple:
     auth:
       client-id: ${APPLE_CLIENT_ID:}
+      team-id: ${APPLE_TEAM_ID:}
+      key-id: ${APPLE_KEY_ID:}
+      private-key: ${APPLE_PRIVATE_KEY:}
+  kakao:
+    auth:
+      admin-key: ${KAKAO_ADMIN_KEY:}
+  provider-token:
+    encryption:
+      key: ${PROVIDER_TOKEN_ENCRYPTION_KEY:}
   discord:
     ocr-report:
       webhook-url: ${DISCORD_OCR_REPORT_WEBHOOK_URL:}

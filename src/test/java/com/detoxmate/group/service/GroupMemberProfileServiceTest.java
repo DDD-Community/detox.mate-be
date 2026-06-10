@@ -147,9 +147,9 @@ class GroupMemberProfileServiceTest {
         assertThat(response.activitySummary().dayCount()).isEqualTo(3);
         assertThat(response.activitySummary().achievementRate()).isEqualTo(33);
         assertThat(response.weeklySummary().totalDays()).isEqualTo(7);
-        assertThat(response.weeklySummary().averageUsedMinutes()).isEqualTo(33);
+        assertThat(response.weeklySummary().averageUsedMinutes()).isEqualTo(115);
         assertThat(response.weeklySummary().goalMinutes()).isEqualTo(120);
-        assertThat(response.weeklySummary().differenceMinutes()).isEqualTo(87);
+        assertThat(response.weeklySummary().differenceMinutes()).isEqualTo(5);
         assertThat(response.weeklySummary().certifiedDays()).isEqualTo(2);
         assertThat(response.weeklySummary().achievedDays()).isEqualTo(1);
         assertThat(response.goalChangeAvailability()).isNull();

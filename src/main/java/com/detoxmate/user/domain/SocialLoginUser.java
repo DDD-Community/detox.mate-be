@@ -48,6 +48,12 @@ public class SocialLoginUser {
     @Column(name = "provider_user_id", nullable = false, length = 100)
     private String providerUserId;
 
+    @Column(name = "provider_refresh_token", length = 1000)
+    private String providerRefreshToken;
+
+    @Column(name = "provider_refresh_token_updated_at")
+    private LocalDateTime providerRefreshTokenUpdatedAt;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -64,5 +70,10 @@ public class SocialLoginUser {
 
     public static SocialLoginUser link(User user, SocialProvider provider, String providerUserId) {
         return new SocialLoginUser(user, provider, providerUserId);
+    }
+
+    public void updateProviderRefreshToken(String providerRefreshToken) {
+        this.providerRefreshToken = providerRefreshToken;
+        this.providerRefreshTokenUpdatedAt = LocalDateTime.now();
     }
 }

@@ -3,7 +3,6 @@ package com.detoxmate.user.controller;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.detoxmate.auth.CurrentUserResolver;
 import com.detoxmate.user.dto.MyProfileResponse;
-import com.detoxmate.user.dto.UpdateMyProfileRequest;
 import com.detoxmate.user.service.UserService;
 import io.jsonwebtoken.JwtException;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,9 +19,11 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.NoSuchElementException;
 
+import static org.hamcrest.Matchers.nullValue;
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
 import static com.epages.restdocs.apispec.Schema.schema;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -52,7 +53,7 @@ class UserControllerTest {
         userService = mock(UserService.class);
         mockMvc = MockMvcBuilders.standaloneSetup(new UserController(userService))
                 .setCustomArgumentResolvers(new CurrentUserResolver(userService))
-                .setControllerAdvice(new com.detoxmate.common.error.GlobalExceptionHandler())
+                .setControllerAdvice(com.detoxmate.common.error.GlobalExceptionHandlerTestFixture.globalExceptionHandler())
                 .apply(documentationConfiguration(restDocumentation))
                 .build();
     }
@@ -102,11 +103,12 @@ class UserControllerTest {
     void 내_프로필을_수정하면_수정된_유저_정보를_반환한다() throws Exception {
         when(userService.getMe("access-token"))
                 .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png", true));
-        UpdateMyProfileRequest request = new UpdateMyProfileRequest(
-                "의진",
-                "profile-images/1/550e8400-e29b-41d4-a716-446655440000-profile.png"
-        );
-        when(userService.updateMe(eq(1L), eq(request)))
+        when(userService.updateMe(eq(1L), argThat(request ->
+                "의진".equals(request.displayName())
+                        && "profile-images/1/550e8400-e29b-41d4-a716-446655440000-profile.png"
+                        .equals(request.profileImageObjectKey())
+                        && request.hasProfileImageObjectKey()
+        )))
                 .thenReturn(new MyProfileResponse(
                         1L,
                         "의진",
@@ -148,6 +150,31 @@ class UserControllerTest {
                                 .responseFields(responseFieldDescriptors)
                                 .build()
                         )));
+    }
+
+    @Test
+    void 내_프로필_수정_요청에서_프로필_이미지_object_key를_null로_보내면_이미지를_제거한다() throws Exception {
+        when(userService.getMe("access-token"))
+                .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png", true));
+        when(userService.updateMe(eq(1L), argThat(request ->
+                request.displayName() == null
+                        && request.profileImageObjectKey() == null
+                        && request.hasProfileImageObjectKey()
+        )))
+                .thenReturn(new MyProfileResponse(1L, "카카오닉네임", null, true));
+
+        mockMvc.perform(patch("/users/me")
+                        .header("Authorization", "Bearer access-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "profileImageObjectKey": null
+                        }
+                        """))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.profileImageUrl").value(nullValue()));
     }
 
     @Test
@@ -207,7 +234,7 @@ class UserControllerTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("User")
                                 .summary("Withdraw my account")
-                                .description("로그인 사용자의 회원 탈퇴를 수행한다.")
+                                .description("로그인 사용자의 소셜 provider 연결을 해제한 뒤 회원 탈퇴를 수행한다.")
                                 .requestHeaders(requestHeaderDescriptors)
                                 .build()
                         )));
@@ -234,7 +261,7 @@ class UserControllerTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("User")
                                 .summary("Withdraw my account")
-                                .description("로그인 사용자의 회원 탈퇴를 수행한다.")
+                                .description("로그인 사용자의 소셜 provider 연결을 해제한 뒤 회원 탈퇴를 수행한다.")
                                 .requestHeaders(requestHeaderDescriptors)
                                 .responseSchema(schema("ErrorResponse"))
                                 .responseFields(errorResponseFieldDescriptors)
@@ -328,7 +355,7 @@ class UserControllerTest {
                         .optional(),
                 fieldWithPath("profileImageObjectKey")
                         .type(JsonFieldType.STRING)
-                        .description("PROFILE_IMAGE presigned URL 발급 응답의 S3 object key. 전달하지 않으면 기존 이미지를 유지한다.")
+                        .description("PROFILE_IMAGE presigned URL 발급 응답의 S3 object key. 전달하지 않으면 기존 이미지를 유지하고, null로 전달하면 프로필 이미지를 제거한다.")
                         .optional()
         };
     }

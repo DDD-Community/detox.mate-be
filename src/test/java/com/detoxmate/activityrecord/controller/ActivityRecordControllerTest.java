@@ -9,7 +9,7 @@ import com.detoxmate.activityrecord.dto.ActivityRecordDetailResult;
 import com.detoxmate.activityrecord.dto.UsageGoalTypeCode;
 import com.detoxmate.activityrecord.service.ActivityRecordService;
 import com.detoxmate.auth.CurrentUserResolver;
-import com.detoxmate.common.error.GlobalExceptionHandler;
+import com.detoxmate.common.error.GlobalExceptionHandlerTestFixture;
 import com.detoxmate.user.dto.MyProfileResponse;
 import com.detoxmate.user.service.UserService;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
@@ -68,7 +68,7 @@ class ActivityRecordControllerTest {
 
         mockMvc = MockMvcBuilders.standaloneSetup(new ActivityRecordController(activityRecordService))
                 .setCustomArgumentResolvers(new CurrentUserResolver(userService))
-                .setControllerAdvice(new GlobalExceptionHandler())
+                .setControllerAdvice(GlobalExceptionHandlerTestFixture.globalExceptionHandler())
                 .apply(documentationConfiguration(restDocumentation))
                 .build();
     }

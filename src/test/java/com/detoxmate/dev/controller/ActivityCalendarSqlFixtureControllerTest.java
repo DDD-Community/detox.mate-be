@@ -47,7 +47,7 @@ class ActivityCalendarSqlFixtureControllerTest {
     void setUp(RestDocumentationContextProvider restDocumentation) {
         fixtureService = mock(ActivityCalendarSqlFixtureService.class);
         mockMvc = MockMvcBuilders.standaloneSetup(new ActivityCalendarSqlFixtureController(fixtureService))
-                .setControllerAdvice(new com.detoxmate.common.error.GlobalExceptionHandler())
+                .setControllerAdvice(com.detoxmate.common.error.GlobalExceptionHandlerTestFixture.globalExceptionHandler())
                 .apply(documentationConfiguration(restDocumentation))
                 .build();
     }

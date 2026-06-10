@@ -27,11 +27,13 @@ public class NotificationScheduleReader {
     }
 
     public List<DailyCertificationReminderTarget> findDailyCertificationReminderTargets(LocalDate recordDate) {
-        return participantRepository.findDailyCertificationReminderTargets(recordDate);
+        LocalDateTime goalEffectiveBefore = recordDate.atStartOfDay();
+        return participantRepository.findDailyCertificationReminderTargets(recordDate, goalEffectiveBefore);
     }
 
     public List<StreakWarningTarget> findStreakWarningTargets(LocalDate recordDate) {
-        return challengeRecordRepository.findStreakWarningTargets(recordDate);
+        LocalDateTime goalEffectiveBefore = recordDate.atStartOfDay();
+        return challengeRecordRepository.findStreakWarningTargets(recordDate, goalEffectiveBefore);
     }
 
     public List<WeeklyGoalSummaryTarget> findWeeklyGoalSummaryTargets(LocalDate startDate, LocalDate endDate) {

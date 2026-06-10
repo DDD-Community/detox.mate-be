@@ -4,6 +4,10 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@EnableConfigurationProperties(AppleAuthProperties.class)
+@EnableConfigurationProperties({
+        AppleAuthProperties.class,
+        KakaoAuthProperties.class,
+        ProviderTokenEncryptionProperties.class
+})
 public class AppleAuthConfig {
 }

@@ -1,5 +1,6 @@
 package com.detoxmate.user.service;
 
+import com.detoxmate.user.config.KakaoAuthProperties;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -11,6 +12,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.hamcrest.Matchers.containsString;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
@@ -24,7 +27,10 @@ class KakaoRestApiClientTest {
         // given
         RestClient.Builder restClientBuilder = RestClient.builder().baseUrl("https://kapi.kakao.com");
         MockRestServiceServer server = MockRestServiceServer.bindTo(restClientBuilder).build();
-        KakaoRestApiClient kakaoRestApiClient = new KakaoRestApiClient(restClientBuilder.build());
+        KakaoRestApiClient kakaoRestApiClient = new KakaoRestApiClient(
+                restClientBuilder.build(),
+                new KakaoAuthProperties("admin-key")
+        );
 
         server.expect(requestTo("https://kapi.kakao.com/v2/user/me"))
                 .andExpect(method(HttpMethod.GET))
@@ -54,7 +60,10 @@ class KakaoRestApiClientTest {
         // given
         RestClient.Builder restClientBuilder = RestClient.builder().baseUrl("https://kapi.kakao.com");
         MockRestServiceServer server = MockRestServiceServer.bindTo(restClientBuilder).build();
-        KakaoRestApiClient kakaoRestApiClient = new KakaoRestApiClient(restClientBuilder.build());
+        KakaoRestApiClient kakaoRestApiClient = new KakaoRestApiClient(
+                restClientBuilder.build(),
+                new KakaoAuthProperties("admin-key")
+        );
 
         server.expect(requestTo("https://kapi.kakao.com/v2/user/me"))
                 .andRespond(withStatus(HttpStatus.UNAUTHORIZED));
@@ -71,7 +80,10 @@ class KakaoRestApiClientTest {
         // given
         RestClient.Builder restClientBuilder = RestClient.builder().baseUrl("https://kapi.kakao.com");
         MockRestServiceServer server = MockRestServiceServer.bindTo(restClientBuilder).build();
-        KakaoRestApiClient kakaoRestApiClient = new KakaoRestApiClient(restClientBuilder.build());
+        KakaoRestApiClient kakaoRestApiClient = new KakaoRestApiClient(
+                restClientBuilder.build(),
+                new KakaoAuthProperties("admin-key")
+        );
 
         server.expect(requestTo("https://kapi.kakao.com/v2/user/me"))
                 .andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR));
@@ -81,5 +93,34 @@ class KakaoRestApiClientTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .extracting(exception -> ((ResponseStatusException) exception).getStatusCode().value())
                 .isEqualTo(HttpStatus.BAD_GATEWAY.value());
+    }
+
+    @Test
+    void 카카오_Admin_key로_연결을_해제한다() {
+        // given
+        RestClient.Builder restClientBuilder = RestClient.builder().baseUrl("https://kapi.kakao.com");
+        MockRestServiceServer server = MockRestServiceServer.bindTo(restClientBuilder).build();
+        KakaoRestApiClient kakaoRestApiClient = new KakaoRestApiClient(
+                restClientBuilder.build(),
+                new KakaoAuthProperties("admin-key")
+        );
+
+        server.expect(requestTo("https://kapi.kakao.com/v1/user/unlink"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, "KakaoAK admin-key"))
+                .andExpect(header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE))
+                .andExpect(content().string(containsString("target_id_type=user_id")))
+                .andExpect(content().string(containsString("target_id=123456789")))
+                .andRespond(withSuccess("""
+                        {
+                          "id": 123456789
+                        }
+                        """, MediaType.APPLICATION_JSON));
+
+        // when
+        kakaoRestApiClient.unlinkByAdminKey("123456789");
+
+        // then
+        server.verify();
     }
 }

@@ -157,6 +157,30 @@ class NotificationHistoryTest {
     }
 
     @Test
+    @DisplayName("알림 이력 생성 시 발신자 ID를 저장할 수 있다.")
+    void historyStoresSenderUserId(){
+        //given
+        Notification notification = Notification.create(
+                NotificationType.create(NotificationTypeCode.COMMENT_CREATED),
+                "댓글 알림",
+                "{nickname}님이 댓글을 남겼습니다."
+        );
+
+        //when
+        NotificationHistory history = NotificationHistory.fromResolvedMessage(
+                notification,
+                1L,
+                2L,
+                "xeulbn님이 댓글을 남겼습니다.",
+                NotificationPayload.none(),
+                null
+        );
+
+        //then
+        assertThat(history.getSenderUserId()).isEqualTo(2L);
+    }
+
+    @Test
     @DisplayName("알림 이력 생성 시 createdAt은 현재 시점으로 설정된다.")
     void historyCreatedAtOnCreation(){
         //given

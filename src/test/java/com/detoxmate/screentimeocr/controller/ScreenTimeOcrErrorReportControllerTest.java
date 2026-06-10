@@ -1,7 +1,7 @@
 package com.detoxmate.screentimeocr.controller;
 
 import com.detoxmate.auth.CurrentUserResolver;
-import com.detoxmate.common.error.GlobalExceptionHandler;
+import com.detoxmate.common.error.GlobalExceptionHandlerTestFixture;
 import com.detoxmate.screentimeocr.dto.ScreenTimeOcrErrorReportCreateRequest;
 import com.detoxmate.screentimeocr.dto.ScreenTimeOcrErrorReportCreateResponse;
 import com.detoxmate.screentimeocr.domain.ScreenTimeOcrErrorReportStatus;
@@ -61,7 +61,7 @@ class ScreenTimeOcrErrorReportControllerTest {
 
         mockMvc = MockMvcBuilders.standaloneSetup(new ScreenTimeOcrErrorReportController(reportService))
                 .setCustomArgumentResolvers(new CurrentUserResolver(userService))
-                .setControllerAdvice(new GlobalExceptionHandler())
+                .setControllerAdvice(GlobalExceptionHandlerTestFixture.globalExceptionHandler())
                 .apply(documentationConfiguration(restDocumentation))
                 .build();
     }

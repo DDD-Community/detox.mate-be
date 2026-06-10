@@ -219,6 +219,12 @@ public interface GroupChallengeParticipantRepository extends JpaRepository<Group
     WHERE gcp.status = 'JOINED'
       AND gm.status = 'ACTIVE'
       AND gc.status = com.detoxmate.group.domain.GroupChallengeStatus.ACTIVE
+      AND EXISTS (
+          SELECT 1
+          FROM UserUsageGoalTime goal
+          WHERE goal.user.id = gm.userId
+            AND goal.createdAt < :goalEffectiveBefore
+      )
       AND NOT EXISTS (
           SELECT 1
           FROM ChallengeRecord cr
@@ -231,7 +237,8 @@ public interface GroupChallengeParticipantRepository extends JpaRepository<Group
       )
 """)
     List<DailyCertificationReminderTarget> findDailyCertificationReminderTargets(
-            @Param("recordDate") LocalDate recordDate
+            @Param("recordDate") LocalDate recordDate,
+            @Param("goalEffectiveBefore") LocalDateTime goalEffectiveBefore
     );
 
 

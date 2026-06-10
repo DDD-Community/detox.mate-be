@@ -66,7 +66,7 @@ class GroupMemberControllerTest {
 
         mockMvc = MockMvcBuilders.standaloneSetup(new GroupMemberController(groupMemberProfileService))
                 .setCustomArgumentResolvers(new CurrentUserResolver(userService))
-                .setControllerAdvice(new com.detoxmate.common.error.GlobalExceptionHandler())
+                .setControllerAdvice(com.detoxmate.common.error.GlobalExceptionHandlerTestFixture.globalExceptionHandler())
                 .apply(documentationConfiguration(restDocumentation))
                 .build();
     }
@@ -218,8 +218,8 @@ class GroupMemberControllerTest {
                 fieldWithPath("weeklySummary").type(JsonFieldType.OBJECT).description("오늘 포함 최근 7일 집계"),
                 fieldWithPath("weeklySummary.startDate").type(JsonFieldType.STRING).description("최근 7일 시작일"),
                 fieldWithPath("weeklySummary.endDate").type(JsonFieldType.STRING).description("최근 7일 종료일"),
-                fieldWithPath("weeklySummary.totalDays").type(JsonFieldType.NUMBER).description("최근 7일 분모. 항상 7"),
-                fieldWithPath("weeklySummary.averageUsedMinutes").type(JsonFieldType.NUMBER).description("미인증일을 0분으로 포함한 평균 사용 시간"),
+                fieldWithPath("weeklySummary.totalDays").type(JsonFieldType.NUMBER).description("최근 7일 범위 일수. 항상 7"),
+                fieldWithPath("weeklySummary.averageUsedMinutes").type(JsonFieldType.NUMBER).description("최근 7일 중 인증한 날짜 기준 평균 사용 시간"),
                 fieldWithPath("weeklySummary.goalMinutes").type(JsonFieldType.NUMBER).description("최신 TOTAL_USAGE 목표 시간. 없으면 null").optional(),
                 fieldWithPath("weeklySummary.differenceMinutes").type(JsonFieldType.NUMBER).description("목표 시간 - 평균 사용 시간. 목표가 없으면 null").optional(),
                 fieldWithPath("weeklySummary.certifiedDays").type(JsonFieldType.NUMBER).description("최근 7일 중 인증한 날짜 수"),

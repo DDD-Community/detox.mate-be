@@ -4,6 +4,7 @@ import com.detoxmate.auth.dto.AuthLoginResponse;
 import com.detoxmate.user.service.DevAuthService;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.http.MediaType;
@@ -43,17 +44,18 @@ class DevAuthControllerTest {
     void setUp(RestDocumentationContextProvider restDocumentation) {
         devAuthService = mock(DevAuthService.class);
         mockMvc = MockMvcBuilders.standaloneSetup(new DevAuthController(devAuthService))
-                .setControllerAdvice(new com.detoxmate.common.error.GlobalExceptionHandler())
+                .setControllerAdvice(com.detoxmate.common.error.GlobalExceptionHandlerTestFixture.globalExceptionHandler())
                 .apply(documentationConfiguration(restDocumentation))
                 .build();
     }
 
     @Test
-    void 테스트_로그인에_성공하면_토큰을_반환한다() throws Exception {
-        when(devAuthService.testLogin("front-a"))
+    @DisplayName("테스트 로그인에 성공하면 토큰을 반환한다")
+    void testLogin_returnsTokens() throws Exception {
+        when(devAuthService.testLogin("test17"))
                 .thenReturn(new AuthLoginResponse(
                         1L,
-                        "프론트 테스트 A",
+                        "테스트 유저 17",
                         null,
                         "access-token",
                         "refresh-token",
@@ -66,13 +68,13 @@ class DevAuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "testUserKey": "front-a"
+                                  "testUserKey": "test17"
                                 }
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.id").value(1L))
-                .andExpect(jsonPath("$.displayName").value("프론트 테스트 A"))
+                .andExpect(jsonPath("$.displayName").value("테스트 유저 17"))
                 .andExpect(jsonPath("$.accessToken").value("access-token"))
                 .andExpect(jsonPath("$.refreshToken").value("refresh-token"))
                 .andExpect(jsonPath("$.isNewUser").value(false))
@@ -94,7 +96,8 @@ class DevAuthControllerTest {
     }
 
     @Test
-    void 테스트_유저_키가_비어있으면_400_에러를_반환한다() throws Exception {
+    @DisplayName("테스트 유저 키가 비어 있으면 400 에러를 반환한다")
+    void testLogin_blankTestUserKey_returnsBadRequest() throws Exception {
         FieldDescriptor[] requestFieldDescriptors = testLoginRequestFields();
         FieldDescriptor[] errorResponseFieldDescriptors = errorResponseFields();
 
@@ -127,7 +130,8 @@ class DevAuthControllerTest {
     }
 
     @Test
-    void 허용되지_않은_테스트_유저_키이면_400_에러를_반환한다() throws Exception {
+    @DisplayName("허용되지 않은 테스트 유저 키이면 400 에러를 반환한다")
+    void testLogin_unsupportedTestUserKey_returnsBadRequest() throws Exception {
         when(devAuthService.testLogin("unknown"))
                 .thenThrow(new ResponseStatusException(BAD_REQUEST, "Unsupported test user key"));
         FieldDescriptor[] requestFieldDescriptors = testLoginRequestFields();
@@ -165,7 +169,7 @@ class DevAuthControllerTest {
         return new FieldDescriptor[] {
                 fieldWithPath("testUserKey")
                         .type(JsonFieldType.STRING)
-                        .description("테스트 유저 키. 허용값: front-a, front-b, front-c, server-a, server-b, server-c")
+                        .description("테스트 유저 키. legacy 허용값: front-a, front-b, front-c, server-a, server-b, server-c. dynamic 허용값: test1 ~ test100")
         };
     }
 

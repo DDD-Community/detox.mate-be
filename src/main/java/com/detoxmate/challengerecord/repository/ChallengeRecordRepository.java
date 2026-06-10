@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -111,9 +112,16 @@ public interface ChallengeRecordRepository extends JpaRepository<ChallengeRecord
     WHERE gc.status = com.detoxmate.group.domain.GroupChallengeStatus.ACTIVE
       AND gcp.status = 'JOINED'
       AND gm.status = 'ACTIVE'
+      AND EXISTS (
+          SELECT 1
+          FROM UserUsageGoalTime goal
+          WHERE goal.user.id = gm.userId
+            AND goal.createdAt < :goalEffectiveBefore
+      )
     GROUP BY gc.groupId, gc.id
 """)
-    List<StreakWarningTarget> findStreakWarningTargets(@Param("recordDate") LocalDate recordDate);
+    List<StreakWarningTarget> findStreakWarningTargets(@Param("recordDate") LocalDate recordDate,
+                                                       @Param("goalEffectiveBefore") LocalDateTime goalEffectiveBefore);
 
     @Query("""
     SELECT new com.detoxmate.notification.dto.WeeklyGoalSummaryTarget(

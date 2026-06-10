@@ -326,6 +326,7 @@ public class FeedControllerDocsTest {
                 fieldWithPath("groupChallengeId").type(NUMBER).description("그룹 챌린지 ID"),
                 fieldWithPath("groupId").type(NUMBER).description("그룹 ID"),
                 fieldWithPath("groupName").type(STRING).description("그룹 이름"),
+                fieldWithPath("inviteCode").type(STRING).description("그룹 초대 코드"),
                 fieldWithPath("challengeNo").type(NUMBER).description("그룹 내 챌린지 회차"),
                 fieldWithPath("status").type(STRING).description("그룹 챌린지 상태"),
                 fieldWithPath("startAt").type(STRING).optional().description("챌린지 시작 시각"),
@@ -358,10 +359,10 @@ public class FeedControllerDocsTest {
                 fieldWithPath("members[].memberStatus").type(STRING).description("그룹 멤버 상태"),
                 fieldWithPath("members[].participantStatus").type(STRING).description("챌린지 참가 상태"),
                 fieldWithPath("members[].dailyStatus").type(STRING)
-                        .description("멤버 일별 상태 (GOAL_ACHIEVED | GOAL_FAILED | NOT_CERTIFIED | NOT_ACTIVE)"),
+                        .description("멤버 일별 상태 (GOAL_ACHIEVED | GOAL_FAILED | NOT_CERTIFIED | GOAL_ACTIVATION_PENDING | NOT_ACTIVE)"),
                 fieldWithPath("members[].includedInGroupResult").type(BOOLEAN)
                         .description("해당 날짜 그룹 인증 계산 대상인지 여부"),
-                fieldWithPath("members[].goals").type(ARRAY).description("선택 날짜에 유효한 목표 목록"),
+                fieldWithPath("members[].goals").type(ARRAY).description("조회일 기준 설정된 목표 목록"),
                 fieldWithPath("members[].goals[].userUsageGoalTimeId").type(NUMBER)
                         .description("user_usage_goal_times ID").optional(),
                 fieldWithPath("members[].goals[].usageGoalType").type(STRING).description("목표 타입").optional(),
@@ -427,10 +428,10 @@ public class FeedControllerDocsTest {
                 fieldWithPath("memberStatus").type(STRING).description("그룹 멤버 상태"),
                 fieldWithPath("participantStatus").type(STRING).description("챌린지 참가 상태"),
                 fieldWithPath("dailyStatus").type(STRING)
-                        .description("멤버 일별 상태 (GOAL_ACHIEVED | GOAL_FAILED | NOT_CERTIFIED | NOT_ACTIVE)"),
+                        .description("멤버 일별 상태 (GOAL_ACHIEVED | GOAL_FAILED | NOT_CERTIFIED | GOAL_ACTIVATION_PENDING | NOT_ACTIVE)"),
                 fieldWithPath("includedInGroupResult").type(BOOLEAN)
                         .description("해당 날짜 그룹 인증 계산 대상인지 여부"),
-                fieldWithPath("goals").type(ARRAY).description("선택 날짜에 유효한 목표 목록"),
+                fieldWithPath("goals").type(ARRAY).description("조회일 기준 설정된 목표 목록"),
                 fieldWithPath("goals[].userUsageGoalTimeId").type(NUMBER).description("user_usage_goal_times ID").optional(),
                 fieldWithPath("goals[].usageGoalType").type(STRING).description("목표 타입").optional(),
                 fieldWithPath("goals[].goalMinutes").type(NUMBER).description("목표 시간(분)").optional(),

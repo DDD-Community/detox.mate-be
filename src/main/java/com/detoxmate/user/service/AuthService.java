@@ -27,6 +27,8 @@ public class AuthService {
 
     private final KakaoRestApiClient kakaoRestApiClient;
     private final AppleIdentityTokenVerifier appleIdentityTokenVerifier;
+    private final AppleRestApiClient appleRestApiClient;
+    private final ProviderTokenCipher providerTokenCipher;
     private final UserRepository userRepository;
     private final SocialLoginUserRepository socialLoginUserRepository;
     private final JwtTokenProvider jwtTokenProvider;
@@ -47,12 +49,15 @@ public class AuthService {
     @Transactional
     public AuthLoginResponse loginWithApple(AppleSocialLoginRequest request) {
         String providerUserId = appleIdentityTokenVerifier.verify(request.identityToken(), request.rawNonce());
+        String providerRefreshToken = appleRestApiClient.exchangeAuthorizationCode(request.authorizationCode());
+        String encryptedProviderRefreshToken = providerTokenCipher.encrypt(providerRefreshToken);
 
         return loginWithSocialUser(
                 SocialProvider.APPLE,
                 providerUserId,
                 resolveInitialAppleDisplayName(request.displayName()),
-                null
+                null,
+                encryptedProviderRefreshToken
         );
     }
 
@@ -62,14 +67,33 @@ public class AuthService {
             String displayName,
             String profileImageObjectKey
     ) {
+        return loginWithSocialUser(provider, providerUserId, displayName, profileImageObjectKey, null);
+    }
+
+    AuthLoginResponse loginWithSocialUser(
+            SocialProvider provider,
+            String providerUserId,
+            String displayName,
+            String profileImageObjectKey,
+            String encryptedProviderRefreshToken
+    ) {
         Optional<SocialLoginUser> existingSocialLoginUser = socialLoginUserRepository.findByProviderAndProviderUserId(
                 provider,
                 providerUserId
         );
         boolean isNewUser = existingSocialLoginUser.isEmpty();
         SocialLoginUser socialLoginUser = existingSocialLoginUser.orElseGet(
-                () -> createNewSocialLoginUser(provider, providerUserId, displayName, profileImageObjectKey)
+                () -> createNewSocialLoginUser(
+                        provider,
+                        providerUserId,
+                        displayName,
+                        profileImageObjectKey,
+                        encryptedProviderRefreshToken
+                )
         );
+        if (existingSocialLoginUser.isPresent() && encryptedProviderRefreshToken != null) {
+            socialLoginUser.updateProviderRefreshToken(encryptedProviderRefreshToken);
+        }
         User user = socialLoginUser.getUser();
         String accessToken = jwtTokenProvider.createAccessToken(user.getId());
         String refreshToken = refreshTokenSessionService.issueRefreshToken(user);
@@ -88,10 +112,14 @@ public class AuthService {
             SocialProvider provider,
             String providerUserId,
             String displayName,
-            String profileImageObjectKey
+            String profileImageObjectKey,
+            String encryptedProviderRefreshToken
     ) {
         User newUser = userRepository.save(User.createNew(truncateDisplayName(displayName), profileImageObjectKey));
         SocialLoginUser socialLoginUser = SocialLoginUser.link(newUser, provider, providerUserId);
+        if (encryptedProviderRefreshToken != null) {
+            socialLoginUser.updateProviderRefreshToken(encryptedProviderRefreshToken);
+        }
         return socialLoginUserRepository.save(socialLoginUser);
     }
 
