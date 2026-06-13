@@ -137,6 +137,21 @@ operation::uploads/presigned-urls-invalid-request[snippets='http-request,request
 
 operation::screen-time-ocr-error-reports/create[snippets='http-request,request-headers,request-fields,http-response,response-fields']
 
+== First Screen Time API
+
+=== Create First Screen Time
+
+operation::first-screen-times/create[snippets='http-request,request-headers,request-fields,http-response,response-fields']
+operation::first-screen-times/create-invalid-request[snippets='http-request,request-headers,request-fields,http-response,response-fields']
+operation::first-screen-times/create-forbidden[snippets='http-request,request-headers,request-fields,http-response,response-fields']
+operation::first-screen-times/create-conflict[snippets='http-request,request-headers,request-fields,http-response,response-fields']
+
+=== Get First Screen Time
+
+operation::group-challenge-participants/first-screen-time-get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+operation::group-challenge-participants/first-screen-time-get-forbidden[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+operation::group-challenge-participants/first-screen-time-get-not-found[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+
 == Admin Screen Time OCR Error Report API
 
 === List Screen Time OCR Error Reports
