@@ -6,8 +6,10 @@ import com.detoxmate.user.domain.User;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class ProviderAccountDisconnectServiceTest {
@@ -60,5 +62,29 @@ class ProviderAccountDisconnectServiceTest {
 
         // then
         verify(appleRestApiClient).revokeRefreshToken("apple-refresh-token");
+    }
+
+    @Test
+    @DisplayName("TEST 계정은 외부 provider 연결 해제 없이 통과한다")
+    void disconnect_skipsExternalProviderForTestAccount() {
+        // given
+        KakaoRestApiClient kakaoRestApiClient = mock(KakaoRestApiClient.class);
+        AppleRestApiClient appleRestApiClient = mock(AppleRestApiClient.class);
+        ProviderTokenCipher providerTokenCipher = mock(ProviderTokenCipher.class);
+        ProviderAccountDisconnectService service = new ProviderAccountDisconnectService(
+                kakaoRestApiClient,
+                appleRestApiClient,
+                providerTokenCipher
+        );
+        SocialLoginUser socialLoginUser = SocialLoginUser.link(
+                User.createNew("테스트유저"),
+                SocialProvider.TEST,
+                "test33"
+        );
+
+        // when & then
+        assertThatCode(() -> service.disconnect(socialLoginUser))
+                .doesNotThrowAnyException();
+        verifyNoInteractions(kakaoRestApiClient, appleRestApiClient, providerTokenCipher);
     }
 }
