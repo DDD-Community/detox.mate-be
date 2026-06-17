@@ -79,6 +79,25 @@ public interface GroupChallengeParticipantRepository extends JpaRepository<Group
                                       @Param("userId") Long userId);
 
     @Query("""
+            SELECT COUNT(gcp) > 0
+            FROM GroupChallengeParticipant gcp
+            JOIN GroupMember gm ON gm.id = gcp.groupMemberId
+            JOIN GroupChallenge gc ON gc.id = gcp.groupChallengeId
+            WHERE gcp.id = :participantId
+              AND gm.userId = :userId
+              AND gcp.status = 'JOINED'
+              AND gm.status = 'ACTIVE'
+              AND gc.status IN ('RECRUITING', 'ACTIVE')
+              AND gc.challengeNo = (
+                  SELECT MAX(latest.challengeNo)
+                  FROM GroupChallenge latest
+                  WHERE latest.groupId = gc.groupId
+              )
+            """)
+    boolean existsFirstScreenTimeRegistrableByIdAndUserId(@Param("participantId") Long participantId,
+                                                          @Param("userId") Long userId);
+
+    @Query("""
             SELECT new com.detoxmate.group.dto.GroupChallengeParticipantRow(
                 gcp.groupChallengeId,
                 gcp.id,

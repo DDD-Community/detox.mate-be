@@ -37,7 +37,7 @@ class FirstScreenTimeServiceTest {
                 LocalDate.of(2026, 6, 11)
         );
 
-        when(participantRepository.existsActiveByIdAndUserId(participantId, userId)).thenReturn(true);
+        when(participantRepository.existsFirstScreenTimeRegistrableByIdAndUserId(participantId, userId)).thenReturn(true);
         when(firstScreenTimeRepository.existsByGroupChallengeParticipantId(participantId)).thenReturn(false);
         when(firstScreenTimeRepository.save(any(FirstScreenTime.class))).thenAnswer(invocation -> {
             FirstScreenTime firstScreenTime = invocation.getArgument(0);
@@ -64,7 +64,7 @@ class FirstScreenTimeServiceTest {
                 LocalDate.of(2026, 6, 11)
         );
 
-        when(participantRepository.existsActiveByIdAndUserId(participantId, userId)).thenReturn(true);
+        when(participantRepository.existsFirstScreenTimeRegistrableByIdAndUserId(participantId, userId)).thenReturn(true);
         when(firstScreenTimeRepository.existsByGroupChallengeParticipantId(participantId)).thenReturn(true);
 
         assertThatThrownBy(() -> firstScreenTimeService.create(userId, request))
