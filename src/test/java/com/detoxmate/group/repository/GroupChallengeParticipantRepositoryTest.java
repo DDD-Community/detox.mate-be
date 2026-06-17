@@ -58,6 +58,25 @@ class GroupChallengeParticipantRepositoryTest {
     }
 
     @Test
+    @DisplayName("첫 스크린타임 등록은 모집중인 최신 챌린지 참여자도 허용한다")
+    void existsFirstScreenTimeRegistrableByIdAndUserId_returnsTrueForRecruitingParticipant() {
+        User user = userRepository.save(User.createNew("지민"));
+        Group group = saveGroup();
+        GroupMember groupMember = groupMemberRepository.save(GroupMember.createMember(user.getId(), group.getId()));
+        GroupChallenge groupChallenge = saveRecruitingChallenge(group.getId(), 1);
+        GroupChallengeParticipant participant = participantRepository.save(
+                GroupChallengeParticipant.join(groupMember.getId(), groupChallenge.getId())
+        );
+
+        boolean exists = participantRepository.existsFirstScreenTimeRegistrableByIdAndUserId(
+                participant.getId(),
+                user.getId()
+        );
+
+        assertThat(exists).isTrue();
+    }
+
+    @Test
     @DisplayName("참여자가 다른 사용자를 가리키면 false를 반환한다")
     void existsActiveByIdAndUserId_returnsFalseForOtherUsersParticipant() {
         User owner = userRepository.save(User.createNew("지민"));
@@ -144,6 +163,12 @@ class GroupChallengeParticipantRepositoryTest {
         GroupChallenge challenge = GroupChallenge.createFirst(groupId);
         ReflectionTestUtils.setField(challenge, "challengeNo", challengeNo);
         challenge.activate(LocalDateTime.of(2026, 5, 1, 0, 0));
+        return groupChallengeRepository.save(challenge);
+    }
+
+    private GroupChallenge saveRecruitingChallenge(Long groupId, int challengeNo) {
+        GroupChallenge challenge = GroupChallenge.createFirst(groupId);
+        ReflectionTestUtils.setField(challenge, "challengeNo", challengeNo);
         return groupChallengeRepository.save(challenge);
     }
 

@@ -20,7 +20,7 @@ public class FirstScreenTimeService {
 
     @Transactional
     public FirstScreenTimeResponse create(Long userId, FirstScreenTimeCreateRequest request) {
-        if (!participantRepository.existsActiveByIdAndUserId(request.groupChallengeParticipantId(), userId)) {
+        if (!participantRepository.existsFirstScreenTimeRegistrableByIdAndUserId(request.groupChallengeParticipantId(), userId)) {
             throw new CustomException(FirstScreenTimeErrorCode.CAN_REGISTER_PARTICIPATE_CHALLENGE);
         }
 
@@ -41,7 +41,7 @@ public class FirstScreenTimeService {
 
     @Transactional(readOnly = true)
     public FirstScreenTimeResponse get(Long userId, Long groupChallengeParticipantId) {
-        if (!participantRepository.existsActiveByIdAndUserId(groupChallengeParticipantId, userId)) {
+        if (!participantRepository.existsFirstScreenTimeRegistrableByIdAndUserId(groupChallengeParticipantId, userId)) {
             throw new CustomException(FirstScreenTimeErrorCode.CAN_REGISTER_PARTICIPATE_CHALLENGE);
         }
 
