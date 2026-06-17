@@ -27,6 +27,10 @@ public class ProviderAccountDisconnectService {
             return;
         }
 
+        if (socialLoginUser.getProvider() == SocialProvider.TEST) {
+            return;
+        }
+
         throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Unsupported social provider");
     }
 }
