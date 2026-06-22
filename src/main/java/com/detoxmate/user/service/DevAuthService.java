@@ -12,7 +12,8 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.Map;
 
 @Service
-@Profile({"local", "dev"})
+// 임시로 prod를 포함한다. 테스트 로그인 종료 후 prod를 제거한다.
+@Profile({"local", "dev", "prod"})
 @RequiredArgsConstructor
 public class DevAuthService {
 
