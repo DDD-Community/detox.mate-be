@@ -46,7 +46,7 @@ public class NotificationScheduler {
     }
 
 
-    @Scheduled(cron = "0 0 23 * * *", zone = "Asia/Seoul")
+    @Scheduled(cron = "0 0 22 * * *", zone = "Asia/Seoul")
     public void sendDailyCertificationReminders(){
         LocalDate today = LocalDate.now(clock.withZone(KST));
 
@@ -60,7 +60,7 @@ public class NotificationScheduler {
 
     }
 
-    @Scheduled(cron = "0 30 23 * * *",zone = "Asia/Seoul")
+    @Scheduled(cron = "0 00 23 * * *",zone = "Asia/Seoul")
     public void sendStreakWarnings(){
         LocalDate today = LocalDate.now(clock.withZone(KST));
 
