@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
 @Component
@@ -22,17 +23,26 @@ public class NotificationScheduleReader {
     private final GroupChallengeParticipantRepository participantRepository;
     private final ChallengeRecordRepository challengeRecordRepository;
 
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+    private static final ZoneId UTC = ZoneId.of("UTC");
+
     public List<GoalSettingReminderTarget> findGoalSettingReminderTargets(LocalDateTime joinedFrom, LocalDateTime joinedTo) {
         return participantRepository.findGoalSettingReminderTargets(joinedFrom,joinedTo);
     }
 
     public List<DailyCertificationReminderTarget> findDailyCertificationReminderTargets(LocalDate recordDate) {
-        LocalDateTime goalEffectiveBefore = recordDate.atStartOfDay();
+        LocalDateTime goalEffectiveBefore = recordDate.atStartOfDay(KST)
+                .withZoneSameInstant(UTC)
+                .toLocalDateTime();
+
         return participantRepository.findDailyCertificationReminderTargets(recordDate, goalEffectiveBefore);
     }
 
     public List<StreakWarningTarget> findStreakWarningTargets(LocalDate recordDate) {
-        LocalDateTime goalEffectiveBefore = recordDate.atStartOfDay();
+        LocalDateTime goalEffectiveBefore = recordDate.atStartOfDay(KST)
+                .withZoneSameInstant(UTC)
+                .toLocalDateTime();
+
         return challengeRecordRepository.findStreakWarningTargets(recordDate, goalEffectiveBefore);
     }
 
