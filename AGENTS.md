@@ -1,5 +1,12 @@
 @Codex.local.md
 
+# Detoxmate Development Harness
+
+- For feature work and bug fixes, use `.agents/skills/detoxmate-tdd-orchestrator/SKILL.md` or `.agents/skills/detoxmate-tdd-development/SKILL.md`.
+- New production code should be placed by Detoxmate bounded context first, then by DDD layer. Use `docs/harness/detoxmate/ddd-package-structure.md` for package decisions.
+- Keep business rules in domain models where natural; application services coordinate use cases, transactions, repositories, and external systems.
+- Verify with `./gradlew test`, `./gradlew clean build`, `git diff --check`, `git status`, and `git diff` before reporting completion.
+
 <!-- OMC:START -->
 
 <!-- OMC:VERSION:4.9.0 -->

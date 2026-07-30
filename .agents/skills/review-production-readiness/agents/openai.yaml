@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review Production Readiness"
+  short_description: "운영 배포 전 동시성 확장성 부하 리스크 리뷰"
+  default_prompt: "Use $review-production-readiness to review this backend for production, concurrency, scale-out, and load-test risks."

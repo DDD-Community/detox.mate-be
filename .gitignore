@@ -50,7 +50,10 @@ out/
 
 /logs
 
-/docs
+/docs/*
+!/docs/harness/
+!/docs/harness/**
+
 
 .claude/worktrees
 
