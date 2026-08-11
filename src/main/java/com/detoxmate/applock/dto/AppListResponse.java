@@ -1,4 +1,6 @@
 package com.detoxmate.applock.dto;
 
-public class AppListResponse {
+import java.util.List;
+
+public record AppListResponse(List<AppResponse> apps) {
 }
