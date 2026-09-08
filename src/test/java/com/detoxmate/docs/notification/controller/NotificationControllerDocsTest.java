@@ -1,11 +1,13 @@
 package com.detoxmate.docs.notification.controller;
 
 import com.detoxmate.auth.CurrentUserResolver;
+import com.detoxmate.notification.controller.AppUnlockNotificationController;
 import com.detoxmate.notification.controller.FcmTokenController;
 import com.detoxmate.notification.controller.NotificationHistoryController;
 import com.detoxmate.notification.dto.NotificationHistoryItemResponse;
 import com.detoxmate.notification.dto.NotificationHistoryListResponse;
 import com.detoxmate.notification.dto.NotificationNavigationResponse;
+import com.detoxmate.notification.service.AppUnlockNotificationService;
 import com.detoxmate.notification.service.FcmTokenService;
 import com.detoxmate.notification.service.NotificationHistoryService;
 import com.detoxmate.notification.service.NotificationNavigationService;
@@ -63,6 +65,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class NotificationControllerDocsTest {
 
     private MockMvc mockMvc;
+    private AppUnlockNotificationService appUnlockNotificationService;
     private FcmTokenService fcmTokenService;
     private NotificationHistoryService notificationHistoryService;
     private NotificationNavigationService notificationNavigationService;
@@ -70,6 +73,7 @@ class NotificationControllerDocsTest {
 
     @BeforeEach
     void setUp(RestDocumentationContextProvider restDocumentation) {
+        appUnlockNotificationService = mock(AppUnlockNotificationService.class);
         fcmTokenService = mock(FcmTokenService.class);
         notificationHistoryService = mock(NotificationHistoryService.class);
         notificationNavigationService = mock(NotificationNavigationService.class);
@@ -79,6 +83,7 @@ class NotificationControllerDocsTest {
                 .willReturn(new MyProfileResponse(1L, "테스트유저", "https://example.com/profile.png", true));
 
         mockMvc = MockMvcBuilders.standaloneSetup(
+                        new AppUnlockNotificationController(appUnlockNotificationService),
                         new FcmTokenController(fcmTokenService),
                         new NotificationHistoryController(notificationHistoryService, notificationNavigationService),
                         new UserController(userService)
@@ -86,6 +91,27 @@ class NotificationControllerDocsTest {
                 .setCustomArgumentResolvers(new CurrentUserResolver(userService))
                 .apply(documentationConfiguration(restDocumentation))
                 .build();
+    }
+
+    @Test
+    void 앱_잠금_해제_알림을_요청한다() throws Exception {
+        HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
+
+        mockMvc.perform(post("/notifications/app-unlock-requests")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+                .andExpect(status().isNoContent())
+                .andDo(result -> verify(appUnlockNotificationService).request(eq(1L)))
+                .andDo(document("notifications/app-unlock-requests-create",
+                        preprocessRequest(prettyPrint()),
+                        preprocessResponse(prettyPrint()),
+                        requestHeaders(requestHeaderDescriptors),
+                        resource(builder()
+                                .tag("Notification")
+                                .summary("앱 잠금 해제 알림 요청")
+                                .description("로그인 사용자에게 앱 잠금 해제 시간 설정 화면으로 이동하는 푸시 알림을 전송한다.")
+                                .requestHeaders(requestHeaderDescriptors)
+                                .build()
+                        )));
     }
 
     @Test

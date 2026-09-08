@@ -6,5 +6,6 @@ public enum NotificationTargetType {
     FEED,
     FEED_DETAIL,
     MY_PAGE,
-    GROUP_CHALLENGE
+    GROUP_CHALLENGE,
+    APP_UNLOCK_DURATION_SETTING
 }

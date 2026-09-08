@@ -5,6 +5,8 @@ import com.detoxmate.common.exception.notification.NotificationErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.Map;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -167,6 +169,39 @@ class NotificationTest {
         assertThat(payload.targetId()).isNull();
         assertThat(payload.sourceType()).isEqualTo(NotificationSourceType.NONE);
         assertThat(payload.sourceId()).isNull();
+    }
+
+    @Test
+    @DisplayName("앱 잠금 해제 시간 설정 payload는 ID 없이 이동 데이터를 만든다")
+    void createAppUnlockDurationSettingPayloadWithoutIds() {
+        // when
+        NotificationPayload payload = NotificationPayload.appUnlockDurationSetting();
+
+        // then
+        assertThat(payload.targetType()).isEqualTo(NotificationTargetType.APP_UNLOCK_DURATION_SETTING);
+        assertThat(payload.targetId()).isNull();
+        assertThat(payload.sourceType()).isEqualTo(NotificationSourceType.NONE);
+        assertThat(payload.sourceId()).isNull();
+        assertThat(payload.toFcmData(NotificationTypeCode.APP_UNLOCK_REQUESTED))
+                .isEqualTo(Map.of(
+                        "type", "APP_UNLOCK_REQUESTED",
+                        "targetType", "APP_UNLOCK_DURATION_SETTING"
+                ));
+    }
+
+    @Test
+    @DisplayName("서버 리소스로 이동하는 payload는 targetId가 필요하다")
+    void createResourceBackedPayloadWithoutTargetId() {
+        // when & then
+        assertThatThrownBy(() -> new NotificationPayload(
+                NotificationTargetType.FEED,
+                null,
+                NotificationSourceType.NONE,
+                null
+        ))
+                .isInstanceOf(CustomException.class)
+                .extracting(e -> ((CustomException) e).getErrorCode())
+                .isEqualTo(NotificationErrorCode.NOTIFICATION_TARGET_ID_REQUIRED);
     }
 
 }

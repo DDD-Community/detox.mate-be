@@ -87,6 +87,12 @@ public class NotificationTemplateInitializer implements ApplicationRunner {
                 "주간 목표 알림",
                 "이번 주는 {achievementCount}번 목표 달성을 했네요! 다음 주도 파이팅!"
         );
+
+        seed(
+                NotificationTypeCode.APP_UNLOCK_REQUESTED,
+                "앱 잠금 해제",
+                "앱을 사용하려면, 이 알림을 클릭해주세요!"
+        );
     }
 
     private void seed(NotificationTypeCode typeCode, String title, String messageTemplate) {

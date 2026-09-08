@@ -166,6 +166,10 @@ operation::admin/screen-time-ocr-error-reports/update-forbidden[snippets='http-r
 
 == Notification API
 
+=== Request App Unlock Notification
+
+operation::notifications/app-unlock-requests-create[snippets='http-request,request-headers,http-response']
+
 === Register FCM Token
 
 operation::notifications/tokens-register[snippets='http-request,request-headers,request-fields,http-response']

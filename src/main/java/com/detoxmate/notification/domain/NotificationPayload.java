@@ -52,9 +52,19 @@ public record NotificationPayload(
         return new NotificationPayload(NotificationTargetType.MY_PAGE, null, NotificationSourceType.NONE, null);
     }
 
+    public static NotificationPayload appUnlockDurationSetting() {
+        return new NotificationPayload(
+                NotificationTargetType.APP_UNLOCK_DURATION_SETTING,
+                null,
+                NotificationSourceType.NONE,
+                null
+        );
+    }
+
     private static boolean requiresTargetId(NotificationTargetType targetType) {
         return targetType != NotificationTargetType.NONE
-                && targetType != NotificationTargetType.MY_PAGE;
+                && targetType != NotificationTargetType.MY_PAGE
+                && targetType != NotificationTargetType.APP_UNLOCK_DURATION_SETTING;
     }
 
 
