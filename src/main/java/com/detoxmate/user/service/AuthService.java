@@ -13,8 +13,11 @@ import com.detoxmate.user.domain.User;
 import com.detoxmate.user.repository.SocialLoginUserRepository;
 import com.detoxmate.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
 
@@ -42,6 +45,8 @@ public class AuthService {
                 SocialProvider.KAKAO,
                 kakaoUserInfo.providerUserId(),
                 kakaoUserInfo.nickname(),
+                null,
+                kakaoUserInfo.email(),
                 null
         );
     }
@@ -49,6 +54,7 @@ public class AuthService {
     @Transactional
     public AuthLoginResponse loginWithApple(AppleSocialLoginRequest request) {
         String providerUserId = appleIdentityTokenVerifier.verify(request.identityToken(), request.rawNonce());
+        String email = appleIdentityTokenVerifier.extractEmail(request.identityToken(), request.rawNonce());
         String providerRefreshToken = appleRestApiClient.exchangeAuthorizationCode(request.authorizationCode());
         String encryptedProviderRefreshToken = providerTokenCipher.encrypt(providerRefreshToken);
 
@@ -57,6 +63,7 @@ public class AuthService {
                 providerUserId,
                 resolveInitialAppleDisplayName(request.displayName()),
                 null,
+                email,
                 encryptedProviderRefreshToken
         );
     }
@@ -67,7 +74,7 @@ public class AuthService {
             String displayName,
             String profileImageObjectKey
     ) {
-        return loginWithSocialUser(provider, providerUserId, displayName, profileImageObjectKey, null);
+        return loginWithSocialUser(provider, providerUserId, displayName, profileImageObjectKey, null, null);
     }
 
     AuthLoginResponse loginWithSocialUser(
@@ -75,37 +82,49 @@ public class AuthService {
             String providerUserId,
             String displayName,
             String profileImageObjectKey,
+            String email,
             String encryptedProviderRefreshToken
     ) {
         Optional<SocialLoginUser> existingSocialLoginUser = socialLoginUserRepository.findByProviderAndProviderUserId(
                 provider,
                 providerUserId
         );
-        boolean isNewUser = existingSocialLoginUser.isEmpty();
-        SocialLoginUser socialLoginUser = existingSocialLoginUser.orElseGet(
-                () -> createNewSocialLoginUser(
-                        provider,
-                        providerUserId,
-                        displayName,
-                        profileImageObjectKey,
-                        encryptedProviderRefreshToken
-                )
-        );
-        if (existingSocialLoginUser.isPresent() && encryptedProviderRefreshToken != null) {
-            socialLoginUser.updateProviderRefreshToken(encryptedProviderRefreshToken);
-        }
-        User user = socialLoginUser.getUser();
-        String accessToken = jwtTokenProvider.createAccessToken(user.getId());
-        String refreshToken = refreshTokenSessionService.issueRefreshToken(user);
+        User existingUser = existingSocialLoginUser.map(SocialLoginUser::getUser).orElse(null);
+        validateEmailAvailability(existingUser, email);
 
-        return new AuthLoginResponse(
-                user.getId(),
-                user.getDisplayName(),
-                imageReadUrlBuilder.build(user.getProfileImageObjectKey()),
-                accessToken,
-                refreshToken,
-                isNewUser
-        );
+        try {
+            boolean isNewUser = existingSocialLoginUser.isEmpty();
+            SocialLoginUser socialLoginUser = existingSocialLoginUser.orElseGet(
+                    () -> createNewSocialLoginUser(
+                            provider,
+                            providerUserId,
+                            displayName,
+                            profileImageObjectKey,
+                            email,
+                            encryptedProviderRefreshToken
+                    )
+            );
+            if (existingSocialLoginUser.isPresent() && encryptedProviderRefreshToken != null) {
+                socialLoginUser.updateProviderRefreshToken(encryptedProviderRefreshToken);
+            }
+            User user = socialLoginUser.getUser();
+            if (user.registerEmailIfAbsent(email)) {
+                userRepository.saveAndFlush(user);
+            }
+            String accessToken = jwtTokenProvider.createAccessToken(user.getId());
+            String refreshToken = refreshTokenSessionService.issueRefreshToken(user);
+
+            return new AuthLoginResponse(
+                    user.getId(),
+                    user.getDisplayName(),
+                    imageReadUrlBuilder.build(user.getProfileImageObjectKey()),
+                    accessToken,
+                    refreshToken,
+                    isNewUser
+            );
+        } catch (DataIntegrityViolationException exception) {
+            throw accountConflict(exception);
+        }
     }
 
     private SocialLoginUser createNewSocialLoginUser(
@@ -113,14 +132,48 @@ public class AuthService {
             String providerUserId,
             String displayName,
             String profileImageObjectKey,
+            String email,
             String encryptedProviderRefreshToken
     ) {
-        User newUser = userRepository.save(User.createNew(truncateDisplayName(displayName), profileImageObjectKey));
+        User newUser = userRepository.saveAndFlush(User.createNew(
+                truncateDisplayName(displayName),
+                profileImageObjectKey,
+                email
+        ));
         SocialLoginUser socialLoginUser = SocialLoginUser.link(newUser, provider, providerUserId);
         if (encryptedProviderRefreshToken != null) {
             socialLoginUser.updateProviderRefreshToken(encryptedProviderRefreshToken);
         }
-        return socialLoginUserRepository.save(socialLoginUser);
+        return socialLoginUserRepository.saveAndFlush(socialLoginUser);
+    }
+
+    private void validateEmailAvailability(User currentUser, String email) {
+        String normalizedEmail = User.normalizeEmail(email);
+        if (normalizedEmail == null) {
+            return;
+        }
+
+        userRepository.findByEmail(normalizedEmail)
+                .filter(user -> currentUser == null || !user.getId().equals(currentUser.getId()))
+                .ifPresent(user -> {
+                    throw emailConflict(null);
+                });
+    }
+
+    private ResponseStatusException emailConflict(Throwable cause) {
+        return new ResponseStatusException(
+                HttpStatus.CONFLICT,
+                "이미 다른 계정에서 사용하는 이메일입니다.",
+                cause
+        );
+    }
+
+    private ResponseStatusException accountConflict(Throwable cause) {
+        return new ResponseStatusException(
+                HttpStatus.CONFLICT,
+                "이미 등록된 계정 정보입니다.",
+                cause
+        );
     }
 
     private String truncateDisplayName(String displayName) {

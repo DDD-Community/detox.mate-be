@@ -42,7 +42,7 @@ class UserTest {
 
     @Test
     void 회원_탈퇴하면_상태를_WITHDRAWN으로_바꾸고_프로필을_익명화한다() {
-        User user = User.createNew("kakao-nickname", "profile-images/1/profile.png");
+        User user = User.createNew("kakao-nickname", "profile-images/1/profile.png", "USER@EXAMPLE.COM");
 
         user.withdraw();
 
@@ -51,7 +51,15 @@ class UserTest {
         assertThat(user.getWithdrawnAt()).isNotNull();
         assertThat(user.getDisplayName()).isEqualTo(User.WITHDRAWN_DISPLAY_NAME);
         assertThat(user.getProfileImageObjectKey()).isNull();
+        assertThat(user.getEmail()).isNull();
         assertThat(user.getPublicDisplayName()).isEqualTo(User.WITHDRAWN_DISPLAY_NAME);
         assertThat(user.getPublicProfileImageObjectKey()).isNull();
+    }
+
+    @Test
+    void 새_유저의_이메일은_검색을_위해_정규화된다() {
+        User user = User.createNew("user", null, " User@Example.com ");
+
+        assertThat(user.getEmail()).isEqualTo("user@example.com");
     }
 }

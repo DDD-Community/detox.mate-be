@@ -39,6 +39,7 @@ class KakaoRestApiClientTest {
                         {
                           "id": 123456789,
                           "kakao_account": {
+                            "email": "friend@example.com",
                             "profile": {
                               "nickname": "카카오닉네임"
                             }
@@ -52,6 +53,7 @@ class KakaoRestApiClientTest {
         // then
         assertThat(userInfo.providerUserId()).isEqualTo("123456789");
         assertThat(userInfo.nickname()).isEqualTo("카카오닉네임");
+        assertThat(userInfo.email()).isEqualTo("friend@example.com");
         server.verify();
     }
 

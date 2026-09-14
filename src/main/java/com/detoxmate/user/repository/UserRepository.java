@@ -1,6 +1,7 @@
 package com.detoxmate.user.repository;
 
 import com.detoxmate.user.domain.User;
+import com.detoxmate.user.domain.UserStatus;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -13,4 +14,17 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT u FROM User u WHERE u.id = :userId")
     Optional<User> findByIdForUpdate(@Param("userId") Long userId);
+
+    @Query("""
+            SELECT u
+            FROM User u
+            WHERE u.email = :email
+              AND (u.status IS NULL OR u.status = :activeStatus)
+            """)
+    Optional<User> findActiveByEmail(
+            @Param("email") String email,
+            @Param("activeStatus") UserStatus activeStatus
+    );
+
+    Optional<User> findByEmail(String email);
 }

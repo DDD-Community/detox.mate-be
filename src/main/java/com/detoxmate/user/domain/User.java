@@ -15,6 +15,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.Locale;
 
 @Getter
 @Entity
@@ -31,6 +32,9 @@ public class User {
 
     @Column(name = "display_name", nullable = false, length = 30)
     private String displayName;
+
+    @Column(name = "email", unique = true, length = 320)
+    private String email;
 
     @Column(name = "push_notification_enabled", nullable = false)
     private boolean pushNotificationEnabled = true;
@@ -53,9 +57,10 @@ public class User {
     @Column(name = "withdrawn_at")
     private LocalDateTime withdrawnAt;
 
-    private User(String displayName, String profileImageObjectKey) {
+    private User(String displayName, String profileImageObjectKey, String email) {
         this.displayName = displayName;
         this.profileImageObjectKey = profileImageObjectKey;
+        this.email = normalizeEmail(email);
         this.status = UserStatus.ACTIVE;
         this.pushNotificationEnabled = true;
     }
@@ -65,7 +70,11 @@ public class User {
     }
 
     public static User createNew(String displayName, String profileImageObjectKey) {
-        return new User(displayName, profileImageObjectKey);
+        return createNew(displayName, profileImageObjectKey, null);
+    }
+
+    public static User createNew(String displayName, String profileImageObjectKey, String email) {
+        return new User(displayName, profileImageObjectKey, email);
     }
 
     public void changeDisplayName(String displayName) {
@@ -74,6 +83,18 @@ public class User {
 
     public void changeProfileImageObjectKey(String profileImageObjectKey) {
         this.profileImageObjectKey = profileImageObjectKey;
+    }
+
+    public boolean registerEmailIfAbsent(String email) {
+        if (this.email == null || this.email.isBlank()) {
+            String normalizedEmail = normalizeEmail(email);
+            if (normalizedEmail == null) {
+                return false;
+            }
+            this.email = normalizedEmail;
+            return true;
+        }
+        return false;
     }
 
     public boolean isActive() {
@@ -109,6 +130,7 @@ public class User {
         withdrawnAt = LocalDateTime.now();
         displayName = WITHDRAWN_DISPLAY_NAME;
         profileImageObjectKey = null;
+        email = null;
     }
 
     public boolean isPushNotificationEnabled() {
@@ -117,5 +139,13 @@ public class User {
 
     public void updatePushNotificationEnabled(boolean enabled) {
         this.pushNotificationEnabled = enabled;
+    }
+
+    public static String normalizeEmail(String email) {
+        if (email == null || email.isBlank()) {
+            return null;
+        }
+
+        return email.trim().toLowerCase(Locale.ROOT);
     }
 }

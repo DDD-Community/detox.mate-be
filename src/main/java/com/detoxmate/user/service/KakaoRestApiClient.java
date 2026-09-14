@@ -56,7 +56,8 @@ public class KakaoRestApiClient {
 
         return new KakaoUserInfo(
                 String.valueOf(response.id()),
-                extractNickname(response)
+                extractNickname(response),
+                extractEmail(response)
         );
     }
 
@@ -120,6 +121,14 @@ public class KakaoRestApiClient {
         return null;
     }
 
+    private String extractEmail(KakaoUserMeResponse response) {
+        if (response.kakaoAccount() == null) {
+            return null;
+        }
+
+        return response.kakaoAccount().email();
+    }
+
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record KakaoUserMeResponse(
             Long id,
@@ -133,7 +142,8 @@ public class KakaoRestApiClient {
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record KakaoAccount(
             String name,
-            KakaoProfile profile
+            KakaoProfile profile,
+            String email
     ) {
     }
 
