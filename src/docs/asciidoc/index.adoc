@@ -54,6 +54,50 @@ operation::users/me-patch[snippets='http-request,request-headers,request-fields,
 operation::users/me-delete[snippets='http-request,request-headers,http-response']
 operation::users/me-delete-unauthorized[snippets='http-request,request-headers,http-response,response-fields']
 
+== Friend API
+
+=== Get My Friend Invite Code
+
+operation::friends/invite-get[snippets='http-request,request-headers,http-response,response-fields']
+
+=== Get User by Friend Invite Code
+
+operation::friends/invitee-get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+
+=== Search Friend by Exact Email
+
+operation::friends/search-email-get[snippets='http-request,request-headers,query-parameters,http-response,response-fields']
+
+=== Send Friend Request
+
+operation::friends/requests-create[snippets='http-request,request-headers,request-fields,http-response,response-fields']
+operation::friends/requests-create-invalid-request[snippets='http-request,request-headers,http-response,response-fields']
+
+=== List Sent Friend Requests
+
+operation::friends/requests-sent-get[snippets='http-request,request-headers,http-response,response-fields']
+
+=== List Received Friend Requests
+
+operation::friends/requests-received-get[snippets='http-request,request-headers,http-response,response-fields']
+
+=== Accept Friend Request
+
+operation::friends/requests-accept[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+
+=== Cancel or Reject Friend Request
+
+operation::friends/requests-delete[snippets='http-request,request-headers,path-parameters,http-response']
+
+=== List Friends
+
+operation::friends/list-get[snippets='http-request,request-headers,http-response,response-fields']
+operation::friends/list-get-unauthorized[snippets='http-request,http-response,response-fields']
+
+=== Unfriend
+
+operation::friends/delete[snippets='http-request,request-headers,path-parameters,http-response']
+
 == Group API
 
 === Create Group

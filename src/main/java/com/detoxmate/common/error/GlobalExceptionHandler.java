@@ -4,6 +4,7 @@ import com.detoxmate.common.logging.ApiLogContext;
 import com.detoxmate.common.logging.ApiLogWriter;
 import com.detoxmate.common.exception.CustomException;
 import io.jsonwebtoken.JwtException;
+import jakarta.validation.ConstraintViolationException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.MDC;
@@ -27,7 +28,7 @@ public class GlobalExceptionHandler {
         this.apiLogWriter = apiLogWriter;
     }
 
-    @ExceptionHandler({MethodArgumentNotValidException.class, BindException.class})
+    @ExceptionHandler({MethodArgumentNotValidException.class, BindException.class, ConstraintViolationException.class})
     public ResponseEntity<ErrorResponse> handleValidationException(Exception exception, HttpServletRequest request) {
         ErrorResponse errorResponse = toErrorResponse(HttpStatus.BAD_REQUEST);
         logHandledError(request, HttpStatus.BAD_REQUEST, errorResponse.code());
