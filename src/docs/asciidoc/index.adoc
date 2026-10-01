@@ -171,6 +171,20 @@ operation::usage-goal-times/set[snippets='http-request,request-headers,request-f
 
 operation::usage-goal-times/current[snippets='http-request,request-headers,http-response,response-fields']
 
+== Time Limit API
+
+=== Set My Total Lock Time
+
+operation::time-limits/set[snippets='http-request,request-headers,request-fields,http-response,response-fields']
+
+=== Get My Total Lock Time
+
+operation::time-limits/get[snippets='http-request,request-headers,http-response,response-fields']
+
+=== Delete My Total Lock Time
+
+operation::time-limits/delete[snippets='http-request,request-headers,http-response']
+
 == Upload API
 
 === Issue Presigned URL

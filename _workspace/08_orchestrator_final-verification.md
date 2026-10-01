@@ -1,33 +1,25 @@
-# Final Verification
+# User time limits final verification
 
-## Outcome
+- ./gradlew test: PASS, BUILD SUCCESSFUL in42s, {'tests': 664, 'failures': 0, 'errors': 0, 'skipped': 0}.
+- Related tests: 49 PASS (see GREEN record).
+- ./gradlew clean build: PASS, BUILD SUCCESSFUL in51s; test, OpenAPI generation, bootJar and jar tasks completed.
+- Independent refactor review: no actionable P0/P1 finding; no required refactor.
+- Independent test audit: PASS, no blocking missing tests.
+- ./gradlew asciidoctor: PASS, BUILD SUCCESSFUL in48s; generated HTML includes the new Time Limit section. Its test prerequisite reran successfully (664 tests).
 
-PASS
+## Final checks
+- OpenAPI contains /me/time-limit and TimeLimitRequest/TimeLimitResponse; no /me/apps path. Generated REST Docs HTML includes the new API section.
+- Final test counts: 664, failures/errors/skipped:0.
+- git diff read in full and saved as ignored final-tracked.diff; git status and tracked/untracked inventory reviewed.
+- Newly added Java/SQL/Markdown files checked for whitespace.
 
-## Commands
+## Changed files
+- Removed all 9 App/AppTimeLimit production files and 3 old App tests.
+- Added 6 TimeLimit production files and 4 behavior/domain/JPA/service tests.
+- Added new table creation SQL, separate destructive cleanup SQL, and DB/API transition instructions.
+- Updated REST Docs index and 00..08 harness records. Original user in-progress source changes were incorporated into the replacement; preserved initial patch locally.
 
-- `./gradlew test --tests "com.detoxmate.applock.controller.AppControllerTest"` - PASS
-- `./gradlew test --tests "com.detoxmate.applock.*"` - PASS
-- `./gradlew test` - PASS
-- `./gradlew clean build` - PASS
-- `git diff --check` - PASS
-
-## App-Lock Test Inventory
-
-- `AppControllerTest`: 53 tests, 0 failures
-- `AppTest`: 21 tests, 0 failures
-- `AppRepositoryTest`: 4 tests, 0 failures
-- Total: 78 tests, 0 failures
-
-## Delivered Scope
-
-- Existing `User` reused as `User 1:N App`.
-- `App` owns exactly one `AppTimeLimit` with cascade and orphan removal.
-- Authenticated CRUD endpoints implemented under `/me/apps`.
-- Body `userId` must match the authenticated user; app reads and mutations are owner-scoped.
-- Request and domain validation enforce a 1..100-character nonblank app name and 0..1440 daily limit minutes.
-- Manual MySQL DDL added for `apps` and `app_time_limits`.
-
-## Residual Risk
-
-- The DDL is aligned with the JPA mappings and H2 integration tests, but was not executed against MySQL/Testcontainers because this repository has no disposable MySQL test harness.
+## Limitations and deployment
+- Tests use H2 MySQL mode. Actual MySQL migration/locking/isolation execution is not verified.
+- Manual SQL is prepared, not applied to any live database. Create time_limits before deployment; drop app_time_limits/apps only after old backend/client transition ends. No guessed migration of per-app values.
+- No commits or PRs created.

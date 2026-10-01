@@ -1,10 +1,7 @@
-# Baseline Green
+# Baseline
 
-- date: 2026-08-11
-- command: `./gradlew test`
-- status: PASS
-- result: `BUILD SUCCESSFUL in 34s`
-- scope: full repository test suite before adding any app-lock test or modifying app-lock production code
-- note: the first sandboxed attempt could not access the Gradle wrapper cache lock under `~/.gradle`; the same command passed after approved Gradle cache access.
+Initial current working tree: ./gradlew test --tests 'com.detoxmate.applock.*' failed compileJava (3 errors), due to partial user edits: AppResponse.getAppDisplayName and old App.create/update arities. Not valid RED. Initial sandbox attempt also required Gradle cache access; execution rerun with approved escalation.
 
-No pre-existing test failure blocks the feature work.
+The user's requested rewrite directly includes these broken components. Continue within that authorization; isolate the last committed behavior for baseline and RED without overwriting user edits. Snapshot path is in baseline-directory.txt. Snapshot verification pending.
+
+Committed HEAD snapshot related baseline: PASS, {'tests': 78, 'failures': 0, 'errors': 0, 'skipped': 0}. Command: ./gradlew test --tests com.detoxmate.applock.*; BUILD SUCCESSFUL in 18s. Only snapshot baseline is GREEN; current partial transition remains untouched until valid RED.
