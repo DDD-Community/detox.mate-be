@@ -1,91 +1,16 @@
-# App Lock CRUD Request Summary
+# User time limits replacement
 
-## Requirement Scope
+## Scope
+Replace App/AppTimeLimit and /me/apps with one TimeLimit per authenticated user. Use table time_limits; no app names, IDs, or app relationship. Preserve the existing 0..1440 minute policy; field totalLockMinutes. PUT /me/time-limit upserts current value and returns 200; GET returns 200 or 404 when unset; DELETE returns idempotent 204. CurrentUser determines ownership. Existing app values cannot be safely converted and are not backfilled.
 
-- Reuse the existing `User` entity and `users` table.
-- Model `User 1:N App 1:1 AppTimeLimit`.
-- Accept `userId`, `appDisplayName`, and `dailyLimitMinutes` from the frontend when creating and updating an app lock.
-- Verify the requested `userId` matches the authenticated `CurrentUser` before accessing private app-lock data.
-- Implement create, list, get, update, and delete through one `AppController` resource API.
-- Persist `App` and `AppTimeLimit` together and delete the time limit with its owning app.
+## Domain and packages
+Existing applock bounded context, TimeLimit aggregate owns value validation and changeTotalLockMinutes. Keep domain, service, controller, dto, repository package names to avoid an unrelated package migration. Domain must not import HTTP or request DTOs. Unique user FK enforces one row; serialize writes with existing UserRepository.findByIdForUpdate to cover concurrent first save.
 
-## API Scope
+## Exclusions
+Do not alter activityrecord types/usage goals, feed/calendar history, notification behavior, or soft-withdrawal retention. Do not execute production DB migration or create commits/PRs.
 
-- `POST /me/apps`
-- `GET /me/apps`
-- `GET /me/apps/{appId}`
-- `PUT /me/apps/{appId}`
-- `DELETE /me/apps/{appId}`
+## Ownership
+Orchestrator: _workspace synthesis, baseline/RED execution and final verification. Test designer: assigned new src/test/applock tests only after baseline. Implementer: src/main/java/com/detoxmate/applock/**, related src/test/java/com/detoxmate/applock/** after RED, db/manual new migration and usage documentation. Refactor reviewer and test auditor: read-only reports. No overlapping writes.
 
-Create and update requests contain the frontend `userId`. List, get, and delete derive ownership from `CurrentUser` and never accept another user's identifier.
-
-## DDD Decision
-
-- bounded context: `applock`
-- aggregate root: `App`
-- owned child entity: `AppTimeLimit`
-- external aggregate reference: existing `User`
-- command paths: create, update, delete
-- query paths: list, get
-- presentation boundary: `applock/controller` and `applock/dto`
-- transaction orchestration: `applock/service`
-- persistence boundary: `applock/repository`
-
-The committed `applock/controller|service|domain|repository|dto` skeleton follows the repository's legacy-compatible domain-first structure. No broad package migration will be performed.
-
-## Aggregate Rules
-
-- `App.create(...)` creates a valid app and its time limit as one object graph.
-- `App.update(...)` changes app display information and delegates limit changes to `AppTimeLimit`.
-- `dailyLimitMinutes` must be between 0 and 1440 inclusive.
-- `appDisplayName` must be non-blank and at most 100 characters.
-- `AppTimeLimit` cannot be created or changed through a public controller/service of its own.
-- `AppRepository` is the only aggregate repository; persistence uses cascade and orphan removal.
-
-## Security And Error Rules
-
-- A request `userId` different from `CurrentUser.id()` returns `403 Forbidden`.
-- A missing user returns `404 Not Found`.
-- A missing app or another user's app returns `404 Not Found`.
-- Invalid request fields return `400 Bad Request`.
-
-## Candidate Production Files
-
-- `src/main/java/com/detoxmate/applock/domain/App.java`
-- `src/main/java/com/detoxmate/applock/domain/AppTimeLimit.java`
-- `src/main/java/com/detoxmate/applock/repository/AppRepository.java`
-- `src/main/java/com/detoxmate/applock/service/AppService.java`
-- `src/main/java/com/detoxmate/applock/controller/AppController.java`
-- `src/main/java/com/detoxmate/applock/dto/AppCreateRequest.java`
-- `src/main/java/com/detoxmate/applock/dto/AppUpdateRequest.java`
-- `src/main/java/com/detoxmate/applock/dto/AppResponse.java`
-- `src/main/java/com/detoxmate/applock/dto/AppListResponse.java`
-- `db/manual/2026-08-11-app-lock.sql`
-
-## Candidate Test Files
-
-- `src/test/java/com/detoxmate/applock/domain/AppTest.java`
-- `src/test/java/com/detoxmate/applock/repository/AppRepositoryTest.java`
-- `src/test/java/com/detoxmate/applock/service/AppServiceTest.java`
-- `src/test/java/com/detoxmate/applock/controller/AppControllerTest.java`
-
-## Write Ownership
-
-- test-designer: only new `src/test/java/com/detoxmate/applock/**` files during RED
-- implementer: listed `src/main/java/com/detoxmate/applock/**`, related app-lock tests, and the app-lock manual DDL after valid RED
-- refactor-reviewer: read-only review of the current diff
-- test-auditor: read-only coverage audit
-- orchestrator: `_workspace/00_*`, `_workspace/02_*`, `_workspace/06_*`, `_workspace/08_*`
-
-Parallel writes are forbidden because the aggregate, service, controller, and tests share one vertical feature boundary.
-
-## Verification Commands
-
-```bash
-./gradlew test --tests "com.detoxmate.applock.*"
-./gradlew test
-./gradlew clean build
-git diff --check
-git status
-git diff
-```
+## Initial working tree
+User has partial App/AppTimeLimit migration and AppController @Deprecated edits. Preserved in initial-user-changes.patch; intent is incorporated by replacing these components. Initial current-tree test failed compileJava because AppResponse still calls removed getAppDisplayName and AppService calls old create/update signatures. This is an in-scope interrupted transition, not requirements RED. Establish old-behavior baseline and valid HTTP RED in an isolated HEAD snapshot, then implement the authorized replacement in the current tree. Never revert user edits into the main checkout.
