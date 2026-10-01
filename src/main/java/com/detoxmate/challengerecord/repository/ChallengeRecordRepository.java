@@ -18,6 +18,16 @@ import java.util.Optional;
 public interface ChallengeRecordRepository extends JpaRepository<ChallengeRecord, Long> {
 
     @Query("""
+            SELECT COUNT(cr.id)
+            FROM ChallengeRecord cr
+            JOIN GroupChallengeParticipant gcp ON gcp.id = cr.groupChallengeParticipantId
+            JOIN GroupMember gm ON gm.id = gcp.groupMemberId
+            WHERE gm.userId = :userId
+              AND cr.status = com.detoxmate.challengerecord.domain.ChallengeRecordStatus.AFTER_RECORD_SUCCESS
+            """)
+    long countSuccessfulRecordsByUserId(@Param("userId") Long userId);
+
+    @Query("""
             select cr
             from ChallengeRecord cr
             where cr.groupChallengeId = :groupChallengeId

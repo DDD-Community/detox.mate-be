@@ -2,9 +2,9 @@ package com.detoxmate.friend.dto;
 
 import java.time.LocalDateTime;
 
-public record FriendResponse(
-        Long friendshipId,
+public record FriendReceivedRequestResponse(
+        Long requestId,
         FriendListUserResponse user,
-        LocalDateTime acceptedAt
+        LocalDateTime createdAt
 ) {
 }

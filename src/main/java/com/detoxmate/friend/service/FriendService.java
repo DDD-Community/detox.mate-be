@@ -7,6 +7,10 @@ import com.detoxmate.friend.dto.FriendRequestResponse;
 import com.detoxmate.friend.dto.FriendRelationshipStatus;
 import com.detoxmate.friend.dto.FriendResponse;
 import com.detoxmate.friend.dto.FriendUserResponse;
+import com.detoxmate.friend.dto.FriendInviteeResponse;
+import com.detoxmate.friend.dto.FriendReceivedRequestResponse;
+import com.detoxmate.friend.dto.FriendSearchResponse;
+import com.detoxmate.friend.repository.MutualFriendSummary;
 import com.detoxmate.friend.mapper.FriendResponseMapper;
 import com.detoxmate.friend.repository.FriendInviteRepository;
 import com.detoxmate.friend.repository.FriendRepository;
@@ -39,17 +43,18 @@ public class FriendService {
     private final UserRepository userRepository;
     private final FriendInviteCodeGenerator friendInviteCodeGenerator;
     private final FriendResponseMapper friendResponseMapper;
+    private final FriendInviteStatisticsService friendInviteStatisticsService;
     private final Clock clock;
 
     @Transactional
     public FriendInviteResponse getMyInvite(Long userId) {
-        userRepository.findByIdForUpdate(userId)
+        User currentUser = userRepository.findByIdForUpdate(userId)
                 .filter(User::isActive)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "탈퇴한 사용자입니다."));
 
         Optional<FriendInvite> existingInvite = friendInviteRepository.findByUserId(userId);
         if (existingInvite.isPresent()) {
-            return new FriendInviteResponse(existingInvite.get().getCode());
+            return new FriendInviteResponse(existingInvite.get().getCode(), currentUser.getEmail());
         }
 
         for (int attempt = 0; attempt < MAX_INVITE_CODE_GENERATION_ATTEMPTS; attempt++) {
@@ -57,12 +62,12 @@ public class FriendService {
                 FriendInvite invite = friendInviteRepository.saveAndFlush(
                         FriendInvite.create(userId, friendInviteCodeGenerator.generate())
                 );
-                return new FriendInviteResponse(invite.getCode());
+                return new FriendInviteResponse(invite.getCode(), currentUser.getEmail());
             } catch (DataIntegrityViolationException exception) {
                 FriendInvite inviteCreatedByConcurrentRequest = friendInviteRepository.findByUserId(userId)
                         .orElse(null);
                 if (inviteCreatedByConcurrentRequest != null) {
-                    return new FriendInviteResponse(inviteCreatedByConcurrentRequest.getCode());
+                    return new FriendInviteResponse(inviteCreatedByConcurrentRequest.getCode(), currentUser.getEmail());
                 }
             }
         }
@@ -71,16 +76,18 @@ public class FriendService {
     }
 
     @Transactional(readOnly = true)
-    public FriendUserResponse getInvitee(String code, Long currentUserId) {
+    public FriendInviteeResponse getInvitee(String code, Long currentUserId) {
         FriendInvite invite = friendInviteRepository.findByCode(code)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "초대코드를 찾을 수 없습니다."));
         User invitee = getActiveUser(invite.getUserId());
 
-        return friendResponseMapper.toUserResponse(invitee, relationshipBetween(currentUserId, invitee.getId()));
+        return friendInviteStatisticsService.enrich(
+                invitee, friendResponseMapper.toUserResponse(invitee, relationshipBetween(currentUserId, invitee.getId()))
+        );
     }
 
     @Transactional(readOnly = true)
-    public FriendUserResponse searchByEmail(String email, Long currentUserId) {
+    public FriendSearchResponse searchByEmail(String email, Long currentUserId) {
         String normalizedEmail = User.normalizeEmail(email);
         if (normalizedEmail == null || !normalizedEmail.contains("@")) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "올바른 이메일을 입력해 주세요.");
@@ -89,7 +96,15 @@ public class FriendService {
         User target = userRepository.findActiveByEmail(normalizedEmail, UserStatus.ACTIVE)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "이메일에 해당하는 사용자를 찾을 수 없습니다."));
 
-        return friendResponseMapper.toUserResponse(target, relationshipBetween(currentUserId, target.getId()));
+        FriendUserResponse base = friendResponseMapper.toUserResponse(target, relationshipBetween(currentUserId, target.getId()));
+        if (base.relationshipStatus() == FriendRelationshipStatus.SELF) {
+            return toSearchResponse(base, 0, null);
+        }
+        MutualFriendSummary summary = friendRepository.summarizeMutualFriends(currentUserId, target.getId());
+        String previewName = summary.getPreviewUserId() == null ? null
+                : userRepository.findById(summary.getPreviewUserId())
+                        .filter(User::isActive).map(User::getPublicDisplayName).orElse(null);
+        return toSearchResponse(base, summary.getMutualFriendCount(), previewName);
     }
 
     @Transactional
@@ -129,12 +144,15 @@ public class FriendService {
     }
 
     @Transactional(readOnly = true)
-    public List<FriendRequestResponse> getReceivedRequests(Long userId) {
-        return toRequestResponses(
-                friendRepository.findReceivedPendingRequests(userId),
-                userId,
-                FriendRelationshipStatus.PENDING_RECEIVED
-        );
+    public List<FriendReceivedRequestResponse> getReceivedRequests(Long userId) {
+        List<Friend> requests = friendRepository.findReceivedPendingRequests(userId);
+        Set<Long> senderIds = requests.stream().map(Friend::getFromUserId).collect(Collectors.toSet());
+        Map<Long, User> senders = userRepository.findAllById(senderIds).stream()
+                .filter(User::isActive).collect(Collectors.toMap(User::getId, user -> user));
+        return requests.stream()
+                .filter(request -> senders.containsKey(request.getFromUserId()))
+                .map(request -> friendResponseMapper.toReceivedRequestResponse(request, senders.get(request.getFromUserId())))
+                .toList();
     }
 
     @Transactional
@@ -163,8 +181,8 @@ public class FriendService {
     public void deletePendingRequest(Long requestId, Long userId) {
         Friend request = getFriend(requestId);
         validatePending(request);
-        if (!request.involves(userId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "친구 요청을 관리할 권한이 없습니다.");
+        if (!request.isTo(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "받은 친구 요청만 거절할 수 있습니다.");
         }
 
         int deleted = friendRepository.deletePendingRequest(requestId, userId);
@@ -232,6 +250,13 @@ public class FriendService {
                 })
                 .filter(response -> response != null)
                 .toList();
+    }
+
+    private FriendSearchResponse toSearchResponse(FriendUserResponse base, long mutualFriendCount, String previewName) {
+        return new FriendSearchResponse(
+                base.userId(), base.displayName(), base.profileImageUrl(), base.relationshipStatus(), base.requestId(),
+                mutualFriendCount, previewName
+        );
     }
 
     private FriendRelationshipStatus relationshipBetween(Long currentUserId, Long targetUserId) {

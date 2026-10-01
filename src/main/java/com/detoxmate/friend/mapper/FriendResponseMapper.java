@@ -5,6 +5,8 @@ import com.detoxmate.friend.dto.FriendRelationshipStatus;
 import com.detoxmate.friend.dto.FriendRequestResponse;
 import com.detoxmate.friend.dto.FriendResponse;
 import com.detoxmate.friend.dto.FriendUserResponse;
+import com.detoxmate.friend.dto.FriendListUserResponse;
+import com.detoxmate.friend.dto.FriendReceivedRequestResponse;
 import com.detoxmate.upload.service.ImageReadUrlBuilder;
 import com.detoxmate.user.domain.User;
 import lombok.RequiredArgsConstructor;
@@ -52,8 +54,24 @@ public class FriendResponseMapper {
     public FriendResponse toFriendResponse(Friend friendship, User friendUser) {
         return new FriendResponse(
                 friendship.getId(),
-                toUserResponse(friendUser, FriendRelationshipStatus.FRIEND, null),
+                toListUserResponse(friendUser, FriendRelationshipStatus.FRIEND, null),
                 friendship.getAcceptedAt()
+        );
+    }
+
+    public FriendReceivedRequestResponse toReceivedRequestResponse(Friend request, User sender) {
+        return new FriendReceivedRequestResponse(
+                request.getId(),
+                toListUserResponse(sender, FriendRelationshipStatus.PENDING_RECEIVED, request.getId()),
+                request.getCreatedAt()
+        );
+    }
+
+    private FriendListUserResponse toListUserResponse(User user, FriendRelationshipStatus status, Long requestId) {
+        FriendUserResponse base = toUserResponse(user, status, requestId);
+        return new FriendListUserResponse(
+                base.userId(), base.displayName(), base.profileImageUrl(), base.relationshipStatus(), base.requestId(),
+                user.isActive() ? user.getEmail() : null
         );
     }
 }
