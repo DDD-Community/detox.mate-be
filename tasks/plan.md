@@ -1,7 +1,7 @@
 # 친구 기능 백엔드 구현·검증 계획
 
 - 작성일: 2026-10-01
-- 상태: 구현 및 최종 테스트·빌드·계약 감사 통과. PR 생성·캡처 첨부 진행 중.
+- 상태: 구현·검증·PR 전달 완료. [구현 PR #67](https://github.com/DDD-Community/detox.mate-be/pull/67)은 2026-10-01 dev에 임시 머지됨. Swagger 캡처 10개는 생성·확인 완료했으며 GitHub 첨부는 사용자 지시로 생략함.
 - 기준: [친구 정책 v3](https://app.notion.com/p/3d7ad7a38ce580ffb98bee06bd6a6ade), 최종 수정 2026-10-01 20:43 KST
 - 구현 대상: 최신 `origin/dev` 기반 `feat/friends-v3-api`. 운영·개발 서버 배포는 이번 작업에 포함하지 않음.
 - 실행 체크리스트: [todo.md](todo.md)
