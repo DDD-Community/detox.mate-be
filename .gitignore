@@ -57,6 +57,7 @@ out/
 
 .claude/worktrees
 /_workspace/
+/tasks/
 
 ##Firebase ##
 src/main/resources/firebase/detoxmate-dev-firebase-account.json
