@@ -56,4 +56,30 @@ class FriendRepositoryTest {
         assertThat(accepted.getStatus()).isEqualTo(FriendStatus.ACCEPTED);
         assertThat(accepted.getAcceptedAt()).isEqualTo(acceptedAt);
     }
+    @Test
+    void deletePendingRequest_requiresReceiverEvenWhenServiceIsBypassed() {
+        User from = userRepository.save(User.createNew("보낸 사람"));
+        User to = userRepository.save(User.createNew("받은 사람"));
+        User thirdParty = userRepository.save(User.createNew("제삼자"));
+        Friend request = friendRepository.saveAndFlush(Friend.request(from.getId(), to.getId()));
+        Long requestId = request.getId();
+
+        assertThat(friendRepository.deletePendingRequest(requestId, from.getId())).isZero();
+        assertThat(friendRepository.deletePendingRequest(requestId, thirdParty.getId())).isZero();
+        assertThat(friendRepository.findById(requestId)).isPresent();
+        assertThat(friendRepository.deletePendingRequest(requestId, to.getId())).isEqualTo(1);
+    }
+
+    @Test
+    void deletePendingRequest_doesNotDeleteAcceptedRelationship() {
+        User from = userRepository.save(User.createNew("보낸 사람"));
+        User to = userRepository.save(User.createNew("받은 사람"));
+        Friend request = friendRepository.saveAndFlush(Friend.request(from.getId(), to.getId()));
+        Long requestId = request.getId();
+        friendRepository.acceptPendingRequest(requestId, to.getId(), LocalDateTime.now());
+
+        assertThat(friendRepository.deletePendingRequest(requestId, to.getId())).isZero();
+        assertThat(friendRepository.findById(requestId)).isPresent();
+    }
+
 }

@@ -5,7 +5,9 @@ import com.detoxmate.friend.dto.CreateFriendRequest;
 import com.detoxmate.friend.dto.FriendInviteResponse;
 import com.detoxmate.friend.dto.FriendRequestResponse;
 import com.detoxmate.friend.dto.FriendResponse;
-import com.detoxmate.friend.dto.FriendUserResponse;
+import com.detoxmate.friend.dto.FriendInviteeResponse;
+import com.detoxmate.friend.dto.FriendReceivedRequestResponse;
+import com.detoxmate.friend.dto.FriendSearchResponse;
 import com.detoxmate.friend.service.FriendService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
@@ -39,7 +41,7 @@ public class FriendController {
     }
 
     @GetMapping("/invite/{code}")
-    public FriendUserResponse getInvitee(
+    public FriendInviteeResponse getInvitee(
             CurrentUser currentUser,
             @PathVariable String code
     ) {
@@ -47,7 +49,7 @@ public class FriendController {
     }
 
     @GetMapping("/search")
-    public FriendUserResponse searchByEmail(
+    public FriendSearchResponse searchByEmail(
             CurrentUser currentUser,
             @RequestParam("email") @NotBlank @Email String email
     ) {
@@ -69,7 +71,7 @@ public class FriendController {
     }
 
     @GetMapping("/requests/received")
-    public List<FriendRequestResponse> getReceivedRequests(CurrentUser currentUser) {
+    public List<FriendReceivedRequestResponse> getReceivedRequests(CurrentUser currentUser) {
         return friendService.getReceivedRequests(currentUser.id());
     }
 

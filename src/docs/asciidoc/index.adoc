@@ -85,9 +85,12 @@ operation::friends/requests-received-get[snippets='http-request,request-headers,
 
 operation::friends/requests-accept[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
 
-=== Cancel or Reject Friend Request
+=== Reject Received Friend Request
 
 operation::friends/requests-delete[snippets='http-request,request-headers,path-parameters,http-response']
+operation::friends/requests-delete-error-403[snippets='http-request,http-response,response-fields']
+operation::friends/requests-delete-error-404[snippets='http-request,http-response,response-fields']
+operation::friends/requests-delete-error-409[snippets='http-request,http-response,response-fields']
 
 === List Friends
 

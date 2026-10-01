@@ -50,6 +50,25 @@ public interface FriendRepository extends JpaRepository<Friend, Long> {
             """)
     List<Friend> findAcceptedFriendshipsByUserId(@Param("userId") Long userId);
 
+    @Query("""
+            SELECT COUNT(DISTINCT u.id) AS mutualFriendCount, MIN(u.id) AS previewUserId
+            FROM Friend firstFriendship
+            JOIN User u ON ((firstFriendship.fromUserId = :firstUserId AND u.id = firstFriendship.toUserId)
+                         OR (firstFriendship.toUserId = :firstUserId AND u.id = firstFriendship.fromUserId))
+            WHERE firstFriendship.status = com.detoxmate.friend.domain.FriendStatus.ACCEPTED
+              AND (u.status = com.detoxmate.user.domain.UserStatus.ACTIVE OR u.status IS NULL)
+              AND EXISTS (
+                  SELECT f.id FROM Friend f
+                  WHERE f.status = com.detoxmate.friend.domain.FriendStatus.ACCEPTED
+                    AND ((f.fromUserId = :secondUserId AND f.toUserId = u.id)
+                      OR (f.toUserId = :secondUserId AND f.fromUserId = u.id))
+              )
+            """)
+    MutualFriendSummary summarizeMutualFriends(
+            @Param("firstUserId") Long firstUserId,
+            @Param("secondUserId") Long secondUserId
+    );
+
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
             UPDATE Friend f
@@ -71,7 +90,7 @@ public interface FriendRepository extends JpaRepository<Friend, Long> {
             DELETE FROM Friend f
             WHERE f.id = :requestId
               AND f.status = com.detoxmate.friend.domain.FriendStatus.PENDING
-              AND (f.fromUserId = :userId OR f.toUserId = :userId)
+              AND f.toUserId = :userId
             """)
     int deletePendingRequest(
             @Param("requestId") Long requestId,
