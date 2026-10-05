@@ -1,9 +1,7 @@
-# Refactor decisions
+# Refactor decision
 
-- ACCEPTED: none; independent reviewer found no required refactor.
+- Independent reviewer returned no P0/P1, mandatory, or suggested refactor.
+- ACCEPTED: none. No behavior or production changes required after GREEN.
 - REJECTED: none.
-- DEFERRED: none within implementation scope.
-- No post-review production change.
-- Actual MySQL integration remains an explicit verification limitation, not a claim of coverage. Manual database changes are prepared but not executed.
-
-Proceed to independent test audit on the unchanged GREEN code.
+- DEFERRED verification: actual MySQL DDL/query execution is not part of the local H2 run; operator must apply/check manual schema before deploying. No live database operation is authorized by this feature implementation.
+- Phase7 test audit may proceed on the same 58-test GREEN state.
