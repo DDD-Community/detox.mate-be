@@ -185,6 +185,28 @@ operation::time-limits/get[snippets='http-request,request-headers,http-response,
 
 operation::time-limits/delete[snippets='http-request,request-headers,http-response']
 
+== Transfer Phrase API
+
+=== Get a Random Transfer Phrase
+
+`GET /transfer-phrases/random`은 로그인한 사용자가 제한 시간 변경 화면에서 필사할 문장 하나를 조회한다.
+요청 본문은 없으며, DB에 저장된 문장 전체를 `phrase` 필드로 반환한다.
+매 요청마다 독립적으로 선택하므로 같은 문장이 연속으로 나올 수 있다.
+성공 응답에는 `Cache-Control: no-store`를 설정한다.
+등록된 문장이 없으면 `404 NOT_FOUND`, 인증이 유효하지 않으면 `401 UNAUTHORIZED`를 반환한다.
+필사 일치 여부와 버튼 활성화는 프론트에서 처리하며, 이 조회는 잠금 시간 설정을 변경하지 않는다.
+
+operation::transfer-phrases/random[snippets='http-request,request-headers,http-response,response-fields']
+
+=== Manual Catalog Setup
+
+dev/prod는 `ddl-auto: validate`이므로 배포 전에 `db/manual/2026-10-05-transfer-phrase.sql`로 테이블을 생성한다.
+이미 `transfer_phrase` 테이블이 있다면 스키마와 데이터를 먼저 확인하고 기존 테이블을 보존한다.
+문장 모음은 운영자가 `transfer_phrase.transfer_phrase`에 수동으로 입력한다. `id`는 자동 생성된다.
+문장은 최대 255자이며 NULL은 허용하지 않는다. 공백만 있는 값은 등록하지 않는다.
+저자 표기가 필요하면 같은 문자열에 포함한다. API는 공백, 줄바꿈, 문장 부호를 포함한 저장값을 그대로 반환한다.
+자동 데이터 삽입이나 문장 등록·수정·삭제 API는 제공하지 않는다.
+
 == Upload API
 
 === Issue Presigned URL

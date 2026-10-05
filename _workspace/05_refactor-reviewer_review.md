@@ -1,18 +1,22 @@
-# Independent refactor review
+# Independent refactor review: random transfer phrase
 
-Reviewer: time_limit_refactor_review (read-only independent agent).
-Result: No P0/P1 findings; no required refactoring; no unresolved product-policy conflict.
+- Reviewer: phrase_refactor_review, read-only separate agent.
+- Policy: full .github/codex/prompts/review.md plus referenced DDD/JPA/Classicist/production checklists.
+- Result: no P0/P1 finding, no mandatory or suggested refactor. Needs Product Decision: none.
 
-## Evidence reviewed
-Current tracked diff plus all untracked TimeLimit production/test classes, both migration scripts, transition documentation, REST Docs changes, intake/AC/RED/GREEN records. Reviewer verified 49 related tests with zero failures/errors in JUnit XML and diff --check. No files modified and no Gradle run by reviewer.
+## Evidence and scope
+- Reviewed git diff HEAD, new untracked test and SQL, API docs, phase 00 through 04.
+- GET uses CurrentUserResolver -> UserService.getMe; actual HTTP/DB tests cover four unauthorized cases.
+- Service is read-only, maps to String, empty Optional becomes existing 404; no phrase/time-limit mutation.
+- Repository executes ORDER BY RAND() LIMIT 1 for every call, no fixed ordering, application cache, or guessed numeric ID. Sparse IDs and consecutive duplicates are supported.
+- Controller alone creates the response DTO and no-store header; domain has no HTTP/DTO dependency.
+- Approximately 15 immutable catalog rows justify one native query without speculative interfaces or sampling optimization. No relationships/N+1.
+- IDENTITY Long / NOT NULL default255 JPA mapping matches BIGINT AUTO_INCREMENT / VARCHAR(255) NOT NULL manual DDL.
+- Tests use real service/repository/JWT/H2 and observable HTTP/persisted-state assertions. No probabilistic variety assertions.
+- Saved RED XML: expected200/actual404 after compilation. GREEN logs and XML: 58 tests (9 new,49 existing),0 failures/errors/skipped.
+- git diff --check and git diff --cached --check pass.
 
-## Conclusions
-- Domain owns time validation and changes; application service coordinates transactions and persistence without Controller DTO dependence.
-- CurrentUser authentication isolates ownership; locked mutation path rechecks active user status.
-- User row lock before first setting read serializes initial creation; UNIQUE(user_id) is final database protection.
-- Updates use dirty checking, setting deletion does not delete user, @OnDelete matches manual physical-user cascade.
-- Creation and destructive cleanup SQL are separated, per-app data is not inferred or summed.
-- Old App production code/API removed; narrowed activityrecord/notification scope respected.
-
-## Verification limitation
-H2 MySQL mode only. Actual MySQL locking/isolation and manual migration execution remain deployment checks.
+## Verification limits
+- Reviewer did not rerun Gradle or change files; parent saves this report from returned review.
+- H2 MySQL mode does not prove actual MySQL DDL/native query execution; deployment verification remains separate.
+- Full test/build awaited Phase8 at review time.

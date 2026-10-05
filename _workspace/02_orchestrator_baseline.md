@@ -1,7 +1,8 @@
-# Baseline
+# Baseline GREEN
 
-Initial current working tree: ./gradlew test --tests 'com.detoxmate.applock.*' failed compileJava (3 errors), due to partial user edits: AppResponse.getAppDisplayName and old App.create/update arities. Not valid RED. Initial sandbox attempt also required Gradle cache access; execution rerun with approved escalation.
-
-The user's requested rewrite directly includes these broken components. Continue within that authorization; isolate the last committed behavior for baseline and RED without overwriting user edits. Snapshot path is in baseline-directory.txt. Snapshot verification pending.
-
-Committed HEAD snapshot related baseline: PASS, {'tests': 78, 'failures': 0, 'errors': 0, 'skipped': 0}. Command: ./gradlew test --tests com.detoxmate.applock.*; BUILD SUCCESSFUL in 18s. Only snapshot baseline is GREEN; current partial transition remains untouched until valid RED.
+- Command: `./gradlew test --tests 'com.detoxmate.applock.*'`
+- Result: BUILD SUCCESSFUL; {'tests': 49, 'failures': 0, 'errors': 0, 'skipped': 0}
+- Existing staged transferminute skeleton compiled unchanged.
+- Initial sandbox Gradle wrapper lock permission failure was environment-only; reran with approved cache access.
+- Output: `_workspace/transfer-phrases-baseline.log`.
+- Phase 3 RED is now allowed; no production file modified.

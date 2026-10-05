@@ -1,17 +1,32 @@
-# Independent test audit
+# Test Audit: random transfer phrase
 
-Auditor: time_limit_test_audit (read-only independent agent). Decision: PASS. No blocking or recommended missing tests; no return to RED required. No file edits or Gradle runs by auditor.
+## Coverage Map
+| Acceptance criterion | Test / evidence | Status |
+| --- | --- | --- |
+| Authenticated exact stored phrase, Unicode/whitespace/newline/punctuation/attribution/no-store | get_returnsStoredPhraseWithoutChangingCatalogOrTimeLimit | pass |
+| Single phrase repeated GET and duplicate allowance | get_returnsSamePhraseOnRepeatedRequestsWhenOnlyOneExists | pass |
+| Sparse IDs / actual stored phrase selection | get_returnsOneStoredPhraseWhenIdsAreSparse | pass |
+| Empty catalog standard404 | get_returnsNotFoundWhenCatalogIsEmpty | pass |
+| Query current DB on every request | get_readsCurrentCatalogOnEachRequest | pass |
+| Missing/malformed/unknown/withdrawn credentials401 | get_requiresExistingActiveAuthenticatedUser (4 cases) | pass |
+| Catalog and time-limit persisted state unchanged | flush/clear and DB snapshot assertions | pass |
+| No automatic seeding / write API / time change | production and manual SQL direct inspection | pass |
 
-## Coverage
-- User-specific single row, repeated PUT replacement, identical retransmission: HTTP and JPA identity tests.
-- Owner isolation, GET unset404, DELETE owner-only and idempotent204: HTTP tests.
-- 0/1440 boundaries; null/missing/negative/overflow of configured range; failed change preserves previous value: HTTP, domain and transaction tests.
-- Missing, malformed, nonexistent and withdrawn authentication: HTTP and service tests.
-- Concurrent first saves both succeed with one row: real separate-transaction service test.
-- Database unique user, FK, NOT NULL/range checks, physical-user cascade: real JPA/JDBC tests.
-- Old app endpoints removed and new response has no app identity: HTTP exact JSON/404 tests and source review.
-- Existing behavior: auditor directly checked full JUnit XML, 664 tests with zero failures/errors/skips; related subset49.
-- Create/cleanup migration separation and no inferred backfill: static SQL and documentation review.
+## Missing Tests
+| Priority | Case | Reason / action |
+| --- | --- | --- |
+| blocking | None | Core behavior protected through HTTP and real DB assertions |
+| recommended | None | Additional layer-duplicated tests unnecessary for this small read use case |
+| deferred | Actual MySQL DDL/native query | Before deployment, validate manual DDL, schema validation and empty/single/sparse catalog reads in separate MySQL environment |
 
-## Deferred environment verification
-H2 MySQL mode cannot fully establish MySQL locking/isolation and manual SQL behavior. Verify on an isolated deployment-version MySQL database before migration. Live database changes have not been executed.
+## Evidence and limits
+- Independent agent phrase_test_audit read phase00..06, git diff HEAD, untracked tests/SQL, GREEN logs and JUnit XML.
+- New9 + existing49 =58 tests,0 failures/errors/skipped.
+- Real services/repositories/JWT/H2; no mock-count or probabilistic assertions.
+- Every call executes RAND() LIMIT1, with no fixed ordering/cache, confirmed by source inspection. Statistical uniformity is not claimed.
+- Read-only flow without writes/relationships/external clients needs no separate write-concurrency/rollback/outbound-failure tests.
+- Agent ran no Gradle and changed no code; parent saved this returned report.
+- Full tests and build are Phase8 work, not yet complete at audit time.
+
+## Decision
+- **pass**. No blocking gap, no return to RED required.

@@ -1,18 +1,32 @@
-# GREEN: user time limits
+# GREEN implementation handoff
 
-## Implemented
-- Replaced App/AppTimeLimit and 9 old production classes with TimeLimit, repository, service, controller, request, response. Removed three obsolete App tests.
-- table time_limits directly references user with UNIQUE and FK. Time values validated in domain, HTTP DTO, and DB (0..1440). Physical user deletion cascades via SQL and matching JPA mapping.
-- PUT/GET/DELETE /me/time-limit accept/return totalLockMinutes only. PUT replaces current value; GET unset404; DELETE idempotent204. Ownership from authenticated CurrentUser.
-- First-set concurrency and writes serialize on existing UserRepository.findByIdForUpdate, with active-state check before mutation.
-- Manual schema creation and later destructive cleanup are separate scripts. No data inference/backfill, no live DB execution.
-- New real HTTP/REST Docs, domain, real JPA constraint and transaction/concurrency tests.
+## Entry evidence
+- Read phase 00/01/02/03 records and the Detoxmate TDD development skill.
+- Baseline: 49 related tests passed (orchestrator evidence).
+- Valid RED: compilation/context startup succeeded; HTTP expected 200 versus actual 404 (orchestrator evidence).
+- Read `docs/harness/detoxmate/ddd-package-structure.md`; retain existing `transferminute` packages for this small read use case.
 
-## Verification
-- Implementer ran first HTTP requirements RED test: PASS, BUILD SUCCESSFUL in12s.
-- Orchestrator confirmed additional physical FK deletion RED, then added @OnDelete(CASCADE).
-- Orchestrator ran ./gradlew test --tests 'com.detoxmate.applock.*': PASS, BUILD SUCCESSFUL in13s, {'tests': 49, 'failures': 0, 'errors': 0, 'skipped': 0}.
-- Test DB: H2 MySQL mode. MySQL-specific lock/isolation behavior and manual migrations are not verified against a running production DB.
+## Minimal changes
+- Map authenticated `GET /transfer-phrases/random` through existing `CurrentUser` resolution.
+- Return exactly `TransferPhraseResponse(phrase)` and `Cache-Control: no-store`.
+- Use a read-only service transaction and a single native random selection: `ORDER BY RAND() LIMIT 1`.
+- Preserve stored text verbatim, allow repeated selection, and return the existing 404 envelope when the catalog is empty.
+- Keep the response DTO mapping in the controller; service returns the selected string.
+- Match `TransferPhrase` IDENTITY/NOT NULL mapping with the prepared manual MySQL AUTO_INCREMENT/VARCHAR(255) DDL.
+- No write API, automatic seed, time-limit mutation, package move, new production class, or live DB execution.
 
-## Ownership handoff
-Implementer finished file edits and returned execution ownership. Orchestrator owns any subsequent edits; reviewers must inspect untracked new files as well as tracked diff.
+## Ownership and changed files
+- `src/main/java/com/detoxmate/transferminute/controller/TransferPhraseController.java`
+- `src/main/java/com/detoxmate/transferminute/service/TransferPhraseService.java`
+- `src/main/java/com/detoxmate/transferminute/repository/TransferPhraseRepository.java`
+- `src/main/java/com/detoxmate/transferminute/domain/TransferPhrase.java`
+- `db/manual/2026-10-05-transfer-phrase.sql`
+- Existing response DTO is retained unchanged. User-provided staged skeleton and other agents' files were not staged, reverted, or overwritten.
+
+## Commands/results
+- `git diff --check -- src/main/java/com/detoxmate/transferminute db/manual/2026-10-05-transfer-phrase.sql`: exit 0.
+- Gradle was deliberately not run by this implementer because the orchestrator owns all Gradle execution.
+- **GREEN confirmed by orchestrator after handoff.**
+- First RED test rerun: BUILD SUCCESSFUL in 15s, exit 0, 1 test. `_workspace/transfer-phrases-first-green.log`.
+- Related run: `./gradlew test --tests 'com.detoxmate.transferminute.*' --tests 'com.detoxmate.applock.*'`: BUILD SUCCESSFUL in 15s, exit 0. New 9 + existing 49 = 58 tests; XML confirms 0 failures/errors/skipped. `_workspace/transfer-phrases-related-green.log`.
+- Actual MySQL DDL/query behavior remains untested; the SQL file has only been prepared.
