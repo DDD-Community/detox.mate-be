@@ -1,11 +1,11 @@
 package com.detoxmate.notification.util;
 
 import com.detoxmate.support.UserFixtures;
-
 import com.detoxmate.challengerecord.domain.ChallengeRecord;
 import com.detoxmate.challengerecord.repository.ChallengeRecordRepository;
 import com.detoxmate.common.exception.CustomException;
 import com.detoxmate.common.exception.feed.FeedErrorCode;
+import com.detoxmate.friend.repository.FriendRepository;
 import com.detoxmate.group.domain.Group;
 import com.detoxmate.group.domain.GroupChallengeParticipant;
 import com.detoxmate.group.domain.GroupMember;
@@ -47,6 +47,9 @@ class NotificationRecipientReaderTest {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private FriendRepository friendRepository;
+
     private NotificationRecipientReader reader;
 
     @BeforeEach
@@ -54,7 +57,9 @@ class NotificationRecipientReaderTest {
         reader = new NotificationRecipientReader(
                 challengeRecordRepository,
                 groupMemberRepository,
-                participantRepository
+                participantRepository,
+                friendRepository,
+                userRepository
         );
     }
 

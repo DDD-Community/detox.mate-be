@@ -13,7 +13,7 @@ class FriendRelationshipStatusSchemaTest {
 
     @ParameterizedTest
     @ValueSource(classes = {FriendSearchResponse.class, FriendUserResponse.class,
-            FriendListUserResponse.class, FriendInviteeResponse.class})
+            FriendListUserResponse.class, FriendInviteeResponse.class, FriendProfileResponse.class})
     void relationshipStatusUsesTheSharedEnumSchema(Class<?> responseType) {
         var schemas = ModelConverters.getInstance().readAll(responseType);
         Schema<?> responseSchema = schemas.get(responseType.getSimpleName());

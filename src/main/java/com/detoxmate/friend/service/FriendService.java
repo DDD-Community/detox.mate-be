@@ -14,12 +14,15 @@ import com.detoxmate.friend.repository.MutualFriendSummary;
 import com.detoxmate.friend.mapper.FriendResponseMapper;
 import com.detoxmate.friend.repository.FriendInviteRepository;
 import com.detoxmate.friend.repository.FriendRepository;
+import com.detoxmate.notification.event.FriendRequestAcceptedEvent;
+import com.detoxmate.notification.event.FriendRequestSentEvent;
 import com.detoxmate.user.domain.User;
 import com.detoxmate.user.domain.UserCode;
 import com.detoxmate.user.domain.UserStatus;
 import com.detoxmate.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,6 +49,7 @@ public class FriendService {
     private final FriendResponseMapper friendResponseMapper;
     private final FriendInviteStatisticsService friendInviteStatisticsService;
     private final Clock clock;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public FriendInviteResponse getMyInvite(Long userId) {
@@ -129,6 +133,7 @@ public class FriendService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 대기 중인 친구 요청이 있습니다.", exception);
         }
 
+        eventPublisher.publishEvent(new FriendRequestSentEvent(fromUserId, targetUserId));
         return friendResponseMapper.toRequestResponse(request, target, FriendRelationshipStatus.PENDING_SENT);
     }
 
@@ -172,6 +177,7 @@ public class FriendService {
 
         Friend acceptedFriend = getFriend(requestId);
         User friendUser = getUser(acceptedFriend.otherUserId(userId));
+        eventPublisher.publishEvent(new FriendRequestAcceptedEvent(userId, acceptedFriend.getFromUserId()));
         return friendResponseMapper.toFriendResponse(acceptedFriend, friendUser);
     }
 

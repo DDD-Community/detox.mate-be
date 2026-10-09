@@ -53,7 +53,7 @@ operation::users/me-get-unauthorized[snippets='http-request,request-headers,http
 === Update My Profile
 
 `PATCH /users/me`의 한 요청 본문에 `displayName`과 `profileImageObjectKey`를 함께 보내면 두 값을 함께 수정한다.
-닉네임은 공백 포함 1자 이상 10자 이하이며, `displayName`을 생략하면 기존 값을 유지한다.
+닉네임은 공백 없이 1자 이상 5자 이하(유니코드 코드 포인트 기준)로 이모지와 특수문자를 허용하며, `displayName`을 생략하거나 `null`로 보내면 기존 값을 유지한다.
 `profileImageObjectKey`를 생략하면 기존 이미지를 유지하고, 명시적으로 `null`을 보내면 이미지를 제거한다.
 다른 사용자의 이미지 경로 등 잘못된 요청은 두 값을 모두 변경하지 않는다.
 응답은 조회와 같은 다섯 필드이며 `userCode`는 프로필 수정으로 변경되지 않는다.
@@ -118,6 +118,26 @@ operation::friends/requests-delete-error-409[snippets='http-request,http-respons
 
 operation::friends/list-get[snippets='http-request,request-headers,http-response,response-fields']
 operation::friends/list-get-unauthorized[snippets='http-request,http-response,response-fields']
+
+=== Get Friend Profile
+
+마이페이지의 친구 목록에서 친구를 누르면 `GET /friends`의 `user.userId`를 이용해
+`GET /friends/{friendUserId}/profile`을 호출한다.
+화면 상단에는 `displayName`, `profileImageUrl`, `userCode`와 친구 상태(`relationshipStatus=FRIEND`)를 표시한다.
+`userCode`는 `GET /users/me`와 같은 사용자 코드이며, 아직 코드가 없는 기존 계정은 `null`이다.
+
+`friends`에는 대상 친구의 수락된 활성 친구를 수락 시각 내림차순으로 반환하며, 같은 시각이면 친구 관계 ID 내림차순이다.
+조회자도 대상의 친구 목록에 포함된다. 각 항목은 `displayName`, `profileImageUrl`만 제공한다.
+이 목록은 표시 전용이므로 프론트엔드에서 클릭이나 프로필 이동 핸들러를 연결하지 않는다. 공통 친구도 동일하다.
+서버는 직접 수락된 친구 관계를 검사하며 화면의 이동 경로를 추적하지 않는다.
+
+본인, 대기 중인 관계, 직접 친구가 아닌 사용자는 `403`, 존재하지 않거나 탈퇴한 대상은 `404`를 반환한다.
+인증 누락·실패 또는 탈퇴한 조회자는 `401`이다. 그룹 가입과 무관하며 조회 시 코드나 초대코드를 생성하지 않는다.
+
+operation::friends/profile-get[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+operation::friends/profile-unauthorized[snippets='http-request,path-parameters,http-response,response-fields']
+operation::friends/profile-forbidden[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+operation::friends/profile-not-found[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
 
 === Unfriend
 
@@ -274,6 +294,22 @@ operation::admin/screen-time-ocr-error-reports/update-forbidden[snippets='http-r
 === Request App Unlock Notification
 
 operation::notifications/app-unlock-requests-create[snippets='http-request,request-headers,http-response']
+
+=== Report Temporary Unlock After Exceeding Limit
+
+operation::notifications/app-unlocks-create[snippets='http-request,request-headers,request-fields,http-response']
+
+=== Preview App Registration Removal Recipients
+
+operation::notifications/app-lock-removal-recipients-create[snippets='http-request,request-headers,http-response,response-fields']
+
+=== Confirm App Registration Removal Notification
+
+operation::notifications/app-lock-removals-create[snippets='http-request,request-headers,request-fields,http-response']
+
+=== Request Relock Reminder
+
+operation::notifications/app-relock-reminders-create[snippets='http-request,request-headers,http-response']
 
 === Register FCM Token
 

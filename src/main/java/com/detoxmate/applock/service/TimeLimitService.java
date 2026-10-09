@@ -2,9 +2,11 @@ package com.detoxmate.applock.service;
 
 import com.detoxmate.applock.domain.TimeLimit;
 import com.detoxmate.applock.repository.TimeLimitRepository;
+import com.detoxmate.notification.event.TimeLimitChangedEvent;
 import com.detoxmate.user.domain.User;
 import com.detoxmate.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +18,7 @@ public class TimeLimitService {
 
     private final TimeLimitRepository timeLimitRepository;
     private final UserRepository userRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public int set(Long userId, Integer totalLockMinutes) {
@@ -23,8 +26,8 @@ public class TimeLimitService {
         TimeLimit timeLimit = timeLimitRepository.findByUser_Id(userId).orElse(null);
         if (timeLimit == null) {
             timeLimit = timeLimitRepository.save(TimeLimit.create(user, totalLockMinutes));
-        } else {
-            timeLimit.changeTotalLockMinutes(totalLockMinutes);
+        } else if (timeLimit.changeTotalLockMinutes(totalLockMinutes)) {
+            eventPublisher.publishEvent(new TimeLimitChangedEvent(userId, totalLockMinutes));
         }
         return timeLimit.getTotalLockMinutes();
     }

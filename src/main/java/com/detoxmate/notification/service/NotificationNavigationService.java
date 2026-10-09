@@ -32,8 +32,12 @@ public class NotificationNavigationService {
             return NotificationNavigationResponse.noNavigatable("NO_TARGET");
         }
 
-        if (history.getTargetType() == NotificationTargetType.MY_PAGE) {
-            return NotificationNavigationResponse.navigable(NotificationTargetType.MY_PAGE.name(), null);
+        if (history.getTargetType() == NotificationTargetType.MY_PAGE
+                || history.getTargetType() == NotificationTargetType.FRIEND_REQUESTS
+                || history.getTargetType() == NotificationTargetType.FRIENDS
+                || history.getTargetType() == NotificationTargetType.APP_UNLOCK_TIMER
+                || history.getTargetType() == NotificationTargetType.APP_UNLOCK_DURATION_SETTING) {
+            return NotificationNavigationResponse.navigable(history.getTargetType().name(), null);
         }
 
         if (history.getTargetId() == null) {

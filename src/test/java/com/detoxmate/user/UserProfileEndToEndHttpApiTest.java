@@ -84,8 +84,9 @@ class UserProfileEndToEndHttpApiTest {
     }
 
     @Test
-    @DisplayName("프로필 수정 API는 닉네임을 공백 포함 10자까지만 허용한다")
-    void updateMyProfile_rejectsDisplayNameOver10CharactersThroughHttpApi() throws Exception {
+    @DisplayName("프로필 수정 API는 공백 없이 이모지를 포함한 5자까지 저장하고 거절한 요청은 기존 이름을 유지한다")
+    void updateMyProfile_enforcesFiveCodePointsWithoutWhitespaceThroughHttpApi() throws Exception {
+        // given
         JsonNode login = postJson(
                 "/dev/auth/test-login",
                 null,
@@ -96,6 +97,7 @@ class UserProfileEndToEndHttpApiTest {
         );
         String bearer = bearer(login.get("accessToken").asText());
 
+        // when & then
         JsonNode oneCharacterResponse = patchJson(
                 "/users/me",
                 bearer,
@@ -106,25 +108,56 @@ class UserProfileEndToEndHttpApiTest {
         );
         assertThat(oneCharacterResponse.get("displayName").asText()).isEqualTo("가");
 
-        JsonNode tenCharacterResponse = patchJson(
+        JsonNode fiveCharacterResponse = patchJson(
                 "/users/me",
                 bearer,
                 """
-                        { "displayName": "1234567890" }
+                        { "displayName": "12345" }
                         """,
                 200
         );
-        assertThat(tenCharacterResponse.get("displayName").asText()).isEqualTo("1234567890");
+        assertThat(fiveCharacterResponse.get("displayName").asText()).isEqualTo("12345");
+
+        JsonNode emojiResponse = patchJson(
+                "/users/me",
+                bearer,
+                """
+                        { "displayName": "😀😁😂😃😄" }
+                        """,
+                200
+        );
+        assertThat(emojiResponse.get("displayName").asText()).isEqualTo("😀😁😂😃😄");
 
         HttpResponse<String> invalidResponse = send(
                 "PATCH",
                 "/users/me",
                 bearer,
                 """
-                        { "displayName": "12345678901" }
+                        { "displayName": "123456" }
                         """
         );
         assertThat(invalidResponse.statusCode()).as(invalidResponse.body()).isEqualTo(400);
+
+        HttpResponse<String> whitespaceResponse = send(
+                "PATCH",
+                "/users/me",
+                bearer,
+                """
+                        { "displayName": "의 진" }
+                        """
+        );
+        assertThat(whitespaceResponse.statusCode()).as(whitespaceResponse.body()).isEqualTo(400);
+
+        JsonNode nullNameResponse = patchJson("/users/me", bearer, "{\"displayName\":null}", 200);
+        assertThat(nullNameResponse.get("displayName").asText()).isEqualTo("😀😁😂😃😄");
+
+        JsonNode omittedNameResponse = patchJson("/users/me", bearer, "{}", 200);
+        assertThat(omittedNameResponse.get("displayName").asText()).isEqualTo("😀😁😂😃😄");
+
+        HttpResponse<String> persistedProfile = send("GET", "/users/me", bearer, null);
+        assertThat(persistedProfile.statusCode()).as(persistedProfile.body()).isEqualTo(200);
+        assertThat(objectMapper.readTree(persistedProfile.body()).get("displayName").asText())
+                .isEqualTo("😀😁😂😃😄");
     }
 
     private JsonNode postJson(String path, String bearer, String body, int expectedStatus) throws Exception {
