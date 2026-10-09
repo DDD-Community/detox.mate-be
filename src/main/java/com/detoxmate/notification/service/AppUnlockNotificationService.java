@@ -17,7 +17,7 @@ public class AppUnlockNotificationService {
                 userId,
                 NotificationTypeCode.APP_UNLOCK_REQUESTED,
                 NotificationContext.empty(),
-                NotificationPayload.appUnlockDurationSetting()
+                NotificationPayload.appUnlockTimer()
         ));
     }
 }

@@ -6,15 +6,14 @@ import com.detoxmate.notification.domain.NotificationTypeCode;
 import com.detoxmate.notification.dto.ChallengeRecordNotificationRow;
 import com.detoxmate.notification.event.*;
 import com.detoxmate.notification.service.NotificationCommand;
-import com.detoxmate.notification.util.NotificationCommentReader;
-import com.detoxmate.notification.util.NotificationGroupReader;
-import com.detoxmate.notification.util.NotificationRecipientReader;
+import com.detoxmate.notification.util.*;
 import com.detoxmate.notification.service.NotificationService;
-import com.detoxmate.notification.util.NotificationUserReader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
@@ -25,6 +24,7 @@ import java.util.Set;
 @Component
 @RequiredArgsConstructor
 @Slf4j
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
 public class NotificationEventListener {
 
     private static final int COMMENT_PREVIEW_MAX_LENGTH = 60;
@@ -34,6 +34,7 @@ public class NotificationEventListener {
     private final NotificationUserReader userReader;
     private final NotificationCommentReader commentReader;
     private final NotificationGroupReader groupReader;
+    private final FriendUnlockRecipientSelector friendUnlockRecipientSelector;
 
 
     @Async("notificationTaskExecutor")
@@ -206,6 +207,73 @@ public class NotificationEventListener {
                 ),
                 NotificationPayload.feed(info.groupChallengeId())
         ));
+    }
+
+    @Async("notificationTaskExecutor")
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void on(FriendUnlockEvent event) {
+        Long unlockUserId = event.unlockUserId();
+        List<Long> recipientUserIds = event.recipientUserIds();
+        if(recipientUserIds.isEmpty()){
+            return;
+        }
+        String unlockUserName = userReader.findDisplayName(unlockUserId);
+
+        for(Long recipientUserId : recipientUserIds){
+            notificationService.send(NotificationCommand.pushOnly(
+                    recipientUserId,
+                    event.unlockUserId(),
+                    NotificationTypeCode.FRIEND_UNLOCKED,
+                    NotificationContext.of("friendName", unlockUserName),
+                    NotificationPayload.none()
+            ));
+        }
+    }
+
+    @Async("notificationTaskExecutor")
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void on(FriendRequestSentEvent event) {
+        notificationService.send(NotificationCommand.history(
+                event.receiverUserId(), event.senderUserId(), NotificationTypeCode.FRIEND_REQUEST_RECEIVED,
+                NotificationContext.of("friendName", userReader.findDisplayName(event.senderUserId())),
+                NotificationPayload.friendRequests()
+        ));
+    }
+
+    @Async("notificationTaskExecutor")
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void on(FriendRequestAcceptedEvent event) {
+        notificationService.send(NotificationCommand.history(
+                event.requesterUserId(), event.acceptingUserId(), NotificationTypeCode.FRIEND_REQUEST_ACCEPTED,
+                NotificationContext.of("friendName", userReader.findDisplayName(event.acceptingUserId())),
+                NotificationPayload.friends()
+        ));
+    }
+
+    @Async("notificationTaskExecutor")
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void on(TimeLimitChangedEvent event) {
+        List<Long> recipients = friendUnlockRecipientSelector.select(recipientReader.findFriendWhenUnlock(event.userId()));
+        if (recipients.isEmpty()) {
+            return;
+        }
+        String name = userReader.findDisplayName(event.userId());
+        String duration = formatMinutes(event.totalLockMinutes());
+        for (Long recipient : recipients) {
+            notificationService.send(NotificationCommand.pushOnly(
+                    recipient, event.userId(), NotificationTypeCode.FRIEND_TIME_LIMIT_CHANGED,
+                    NotificationContext.of("friendName", name, "duration", duration), NotificationPayload.none()
+            ));
+        }
+    }
+
+    private String formatMinutes(int totalMinutes) {
+        int hours = totalMinutes / 60;
+        int minutes = totalMinutes % 60;
+        if (minutes == 0) {
+            return hours + "시간";
+        }
+        return hours == 0 ? minutes + "분" : hours + "시간 " + minutes + "분";
     }
 
     private String truncateComment(String commentBody) {

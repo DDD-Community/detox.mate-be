@@ -74,11 +74,11 @@ class AppUnlockNotificationControllerTest {
 
         verify(fcmSender).send(
                 eq("app-unlock-ios-token"),
-                eq("앱 잠금 해제"),
+                eq("Detoxmate"),
                 eq("앱을 사용하려면, 이 알림을 클릭해주세요!"),
                 eq(Map.of(
                         "type", "APP_UNLOCK_REQUESTED",
-                        "targetType", "APP_UNLOCK_DURATION_SETTING"
+                        "targetType", "APP_UNLOCK_TIMER"
                 ))
         );
         assertThat(notificationHistoryRepository.findAll()).isEmpty();

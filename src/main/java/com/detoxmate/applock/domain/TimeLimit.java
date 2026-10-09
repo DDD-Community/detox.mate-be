@@ -62,9 +62,13 @@ public class TimeLimit {
         return new TimeLimit(user, totalLockMinutes);
     }
 
-    public void changeTotalLockMinutes(Integer totalLockMinutes) {
+    public boolean changeTotalLockMinutes(Integer totalLockMinutes) {
         validateTotalLockMinutes(totalLockMinutes);
+        if (this.totalLockMinutes.equals(totalLockMinutes)) {
+            return false;
+        }
         this.totalLockMinutes = totalLockMinutes;
+        return true;
     }
 
     private static void validateTotalLockMinutes(Integer totalLockMinutes) {

@@ -7,7 +7,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Entity
@@ -18,7 +18,7 @@ public class Notification {
 
     private static final int TITLE_MAX_LENGTH = 50;
     private static final int MESSAGE_MAX_LENGTH = 255;
-    private static final Pattern UNRESOLVED_PLACEHOLDER = Pattern.compile(".*\\{[^}]+}.*");
+    private static final Pattern PLACEHOLDER = Pattern.compile("\\{([^}]+)}");
 
 
     @Id
@@ -53,17 +53,17 @@ public class Notification {
     public String resolve(NotificationContext context) {
         NotificationContext safeContext = context == null ? NotificationContext.empty() : context;
 
-        String resolved = messageTemplate;
-
-        for (Map.Entry<String, String> entry : safeContext.variables().entrySet()) {
-            resolved = resolved.replace("{" + entry.getKey() + "}", entry.getValue());
+        Matcher matcher = PLACEHOLDER.matcher(messageTemplate);
+        StringBuilder resolved = new StringBuilder();
+        while (matcher.find()) {
+            String value = safeContext.get(matcher.group(1));
+            if (value == null) {
+                throw new CustomException(NotificationErrorCode.NOTIFICATION_CONTEXT_MISSING_VARIABLE);
+            }
+            matcher.appendReplacement(resolved, Matcher.quoteReplacement(value));
         }
-
-        if (UNRESOLVED_PLACEHOLDER.matcher(resolved).matches()) {
-            throw new CustomException(NotificationErrorCode.NOTIFICATION_CONTEXT_MISSING_VARIABLE);
-        }
-
-        return resolved;
+        matcher.appendTail(resolved);
+        return resolved.toString();
     }
 
     public void updateTemplate(String title, String messageTemplate) {
