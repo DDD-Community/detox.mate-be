@@ -207,6 +207,24 @@ class UserControllerTest {
     }
 
     @Test
+    @DisplayName("프로필 이름을 null로 보내면 기존 이름을 유지한다")
+    void updateMyProfile_nullDisplayNameKeepsExistingName() throws Exception {
+        // given
+        MyProfileResponse profile = new MyProfileResponse(1L, "의진", null, "ABCDE", true);
+        when(userService.getMe("access-token")).thenReturn(profile);
+        when(userService.updateMe(eq(1L), argThat(request -> request.displayName() == null)))
+                .thenReturn(profile);
+
+        // when & then
+        mockMvc.perform(patch("/users/me")
+                        .header("Authorization", "Bearer access-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"displayName\":null}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.displayName").value("의진"));
+    }
+
+    @Test
     void 내_프로필_수정_요청의_필드가_공백이면_400_에러를_반환한다() throws Exception {
         when(userService.getMe("access-token"))
                 .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png", "ABCDE", true));
@@ -227,7 +245,8 @@ class UserControllerTest {
     }
 
     @Test
-    void 내_프로필_수정_요청의_닉네임이_10자를_초과하면_400_에러를_반환한다() throws Exception {
+    @DisplayName("내 프로필 수정 요청의 이름이 5자를 초과하면 400 에러를 반환한다")
+    void updateMyProfile_rejectsDisplayNameLongerThanFiveCharacters() throws Exception {
         when(userService.getMe("access-token"))
                 .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png", "ABCDE", true));
 
@@ -236,7 +255,7 @@ class UserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                         {
-                          "displayName": "12345678901"
+                          "displayName": "123456"
                         }
                         """))
                 .andExpect(status().isBadRequest())
@@ -377,7 +396,7 @@ class UserControllerTest {
         return new FieldDescriptor[] {
                 fieldWithPath("displayName")
                         .type(JsonFieldType.STRING)
-                        .description("변경할 사용자 닉네임. 공백 포함 1자 이상 10자 이하. 전달하지 않으면 기존 값을 유지한다.")
+                        .description("변경할 프로필 이름. 공백 없이 유니코드 코드 포인트 기준 1자 이상 5자 이하이며 이모지와 특수문자를 허용한다. 조합 이모지는 구성 코드 포인트 수로 계산한다. 생략하거나 null로 전달하면 기존 값을 유지한다.")
                         .optional(),
                 fieldWithPath("profileImageObjectKey")
                         .type(JsonFieldType.STRING)
