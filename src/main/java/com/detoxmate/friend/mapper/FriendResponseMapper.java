@@ -71,7 +71,7 @@ public class FriendResponseMapper {
         FriendUserResponse base = toUserResponse(user, status, requestId);
         return new FriendListUserResponse(
                 base.userId(), base.displayName(), base.profileImageUrl(), base.relationshipStatus(), base.requestId(),
-                user.isActive() ? user.getEmail() : null
+                user.getUserCode()
         );
     }
 }

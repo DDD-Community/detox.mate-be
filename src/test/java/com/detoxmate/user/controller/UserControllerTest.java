@@ -83,8 +83,8 @@ class UserControllerTest {
         mockMvc.perform(get("/users/me").header("Authorization", "Bearer access-token"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.id").doesNotExist())
-                .andExpect(jsonPath("$.pushNotificationEnabled").doesNotExist())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.pushNotificationEnabled").value(true))
                 .andExpect(jsonPath("$.userCode").value("ABCDE"))
                 .andDo(document("users/me-get",
                         preprocessRequest(prettyPrint()),
@@ -94,7 +94,7 @@ class UserControllerTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("User")
                                 .summary("Get my profile")
-                                .description("Authorization 헤더의 access token으로 닉네임, 5자리 사용자 코드, 프로필 이미지 URL을 조회한다.")
+                                .description("Authorization 헤더의 access token으로 사용자 ID, 닉네임, 5자리 사용자 코드, 프로필 이미지 URL과 알림 수신 여부를 조회한다.")
                                 .requestHeaders(requestHeaderDescriptors)
                                 .responseSchema(schema("MyPageResponse"))
                                 .responseFields(responseFieldDescriptors)
@@ -103,23 +103,23 @@ class UserControllerTest {
     }
 
     @Test
-    @DisplayName("사용자 코드가 미발급된 기존 계정의 프로필은 userCode를 null로 반환한다")
-    void getMe_returnsNullUserCodeForLegacyUser() throws Exception {
+    @DisplayName("프로필 응답은 이미지가 없고 알림이 꺼져 있어도 필드를 유지한다")
+    void getMe_returnsNullImageAndDisabledNotifications() throws Exception {
         // given
-        MyProfileResponse profile = new MyProfileResponse(
-                1L, "기존 사용자", "https://example.com/profile.png", null, true);
+        MyProfileResponse profile = new MyProfileResponse(1L, "사용자", null, "ABCDE", false);
         when(userService.getMe("access-token")).thenReturn(profile);
         when(userService.getMe(1L)).thenReturn(profile);
 
         // when & then
         mockMvc.perform(get("/users/me").header("Authorization", "Bearer access-token"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").doesNotExist())
-                .andExpect(jsonPath("$.pushNotificationEnabled").doesNotExist())
-                .andExpect(jsonPath("$.userCode").hasJsonPath())
-                .andExpect(jsonPath("$.userCode").value(nullValue()))
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.pushNotificationEnabled").value(false))
+                .andExpect(jsonPath("$.userCode").value("ABCDE"))
+                .andExpect(jsonPath("$.profileImageUrl").hasJsonPath())
+                .andExpect(jsonPath("$.profileImageUrl").value(nullValue()))
                 .andDo(org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document(
-                        "users/me-get-without-user-code",
+                        "users/me-get-without-image",
                         responseFields(myPageResponseFields())));
     }
 
@@ -156,8 +156,8 @@ class UserControllerTest {
                         """))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.id").doesNotExist())
-                .andExpect(jsonPath("$.pushNotificationEnabled").doesNotExist())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.pushNotificationEnabled").value(true))
                 .andExpect(jsonPath("$.userCode").value("ABCDE"))
                 .andExpect(jsonPath("$.displayName").value("의진"))
                 .andDo(document("users/me-patch",
@@ -200,8 +200,8 @@ class UserControllerTest {
                         """))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.id").doesNotExist())
-                .andExpect(jsonPath("$.pushNotificationEnabled").doesNotExist())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.pushNotificationEnabled").value(true))
                 .andExpect(jsonPath("$.userCode").value("ABCDE"))
                 .andExpect(jsonPath("$.profileImageUrl").value(nullValue()));
     }
@@ -338,7 +338,7 @@ class UserControllerTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("User")
                                 .summary("Get my profile")
-                                .description("Authorization 헤더의 access token으로 닉네임, 5자리 사용자 코드, 프로필 이미지 URL을 조회한다.")
+                                .description("Authorization 헤더의 access token으로 사용자 ID, 닉네임, 5자리 사용자 코드, 프로필 이미지 URL과 알림 수신 여부를 조회한다.")
                                 .requestHeaders(requestHeaderDescriptors)
                                 .responseSchema(schema("ErrorResponse"))
                                 .responseFields(errorResponseFieldDescriptors)
@@ -378,16 +378,17 @@ class UserControllerTest {
 
     private FieldDescriptor[] myPageResponseFields() {
         return new FieldDescriptor[] {
+                fieldWithPath("id").type(JsonFieldType.NUMBER).description("사용자 ID"),
+                fieldWithPath("pushNotificationEnabled").type(JsonFieldType.BOOLEAN).description("알림 수신 여부. OFF이면 false"),
                 fieldWithPath("displayName")
                         .type(JsonFieldType.STRING)
                         .description("사용자 닉네임"),
                 fieldWithPath("userCode")
                         .type(JsonFieldType.STRING)
-                        .description("친구 검색에 사용하는 5자리 사용자 코드. 아직 발급되지 않은 기존 계정은 null")
-                        .optional(),
+                        .description("친구 검색에 사용하는 5자리 사용자 코드"),
                 fieldWithPath("profileImageUrl")
                         .type(JsonFieldType.STRING)
-                        .description("저장된 프로필 이미지 object key를 읽기 URL로 변환한 값. 이미지가 없으면 null")
+                        .description("항상 포함되는 프로필 이미지 읽기 URL. 이미지가 없으면 null")
                         .optional()
         };
     }

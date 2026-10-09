@@ -7,6 +7,7 @@ import com.detoxmate.support.UserFixtures;
 import com.detoxmate.user.controller.UserController;
 import com.detoxmate.user.domain.User;
 import com.detoxmate.user.repository.UserRepository;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,7 +17,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -52,10 +52,9 @@ class UserProfileHttpIntegrationTest {
     private JwtTokenProvider jwtTokenProvider;
     @Autowired
     private UserRepository userRepository;
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper()
+            .enable(DeserializationFeature.USE_LONG_FOR_INTS);
     private MockMvc mockMvc;
     private User viewer;
 
@@ -64,6 +63,7 @@ class UserProfileHttpIntegrationTest {
         // Fixture writes commit independently of the HTTP request under test.
         userRepository.deleteAllInBatch();
         viewer = userRepository.saveAndFlush(UserFixtures.createUser("이전이름"));
+        viewer.updatePushNotificationEnabled(false);
         viewer.changeProfileImageObjectKey("profile-images/" + viewer.getId() + "/before.png");
         viewer = userRepository.saveAndFlush(viewer);
 
@@ -74,25 +74,27 @@ class UserProfileHttpIntegrationTest {
     }
 
     @Test
-    @DisplayName("내 프로필 조회는 닉네임과 사용자 코드 및 이미지 URL 세 필드만 반환한다")
-    void getMe_returnsExactlyThreeProfileFields() throws Exception {
+    @DisplayName("내 프로필 조회는 사용자 ID와 알림 OFF를 포함한 다섯 필드를 반환한다")
+    void getMe_returnsProfileWithIdentityAndDisabledNotifications() throws Exception {
         // when
         JsonNode response = responseBody(authenticated(get("/users/me"))
                 .andExpect(status().isOk()));
 
         // then
         assertThat(response).isEqualTo(objectMapper.createObjectNode()
+                .put("id", viewer.getId())
+                .put("pushNotificationEnabled", false)
                 .put("displayName", viewer.getDisplayName())
                 .put("userCode", viewer.getUserCode())
                 .put("profileImageUrl", IMAGE_BASE_URL + viewer.getProfileImageObjectKey()));
     }
 
     @Test
-    @DisplayName("코드와 이미지가 없는 기존 계정도 세 필드와 명시적인 null을 반환한다")
-    void getMe_preservesNullCodeAndImageFieldsForLegacyUser() throws Exception {
+    @DisplayName("이미지가 없는 계정도 다섯 필드와 명시적인 이미지 null을 반환한다")
+    void getMe_preservesExplicitNullImageField() throws Exception {
         // given
-        jdbcTemplate.update("update users set user_code = null, profile_image_object_key = null where user_id = ?",
-                viewer.getId());
+        viewer.changeProfileImageObjectKey(null);
+        userRepository.saveAndFlush(viewer);
 
         // when
         JsonNode response = responseBody(authenticated(get("/users/me"))
@@ -100,15 +102,17 @@ class UserProfileHttpIntegrationTest {
 
         // then
         assertThat(response).isEqualTo(objectMapper.createObjectNode()
+                .put("id", viewer.getId())
+                .put("pushNotificationEnabled", false)
                 .put("displayName", viewer.getDisplayName())
-                .putNull("userCode")
+                .put("userCode", viewer.getUserCode())
                 .putNull("profileImageUrl"));
-        assertThat(reloadViewer().getUserCode()).isNull();
+        assertThat(reloadViewer().getUserCode()).isEqualTo(viewer.getUserCode());
     }
 
     @Test
-    @DisplayName("프로필 수정 응답도 변경된 닉네임과 코드 및 이미지 URL 세 필드만 반환한다")
-    void updateMe_returnsExactlyThreeUpdatedProfileFields() throws Exception {
+    @DisplayName("프로필 수정 응답도 사용자 ID와 저장된 알림 OFF를 반환한다")
+    void updateMe_returnsUpdatedProfileWithIdentityAndDisabledNotifications() throws Exception {
         // given
         String imageKey = "profile-images/" + viewer.getId() + "/updated.png";
         String body = objectMapper.createObjectNode()
@@ -121,6 +125,8 @@ class UserProfileHttpIntegrationTest {
 
         // then
         assertThat(response).isEqualTo(objectMapper.createObjectNode()
+                .put("id", viewer.getId())
+                .put("pushNotificationEnabled", false)
                 .put("displayName", "새이름")
                 .put("userCode", viewer.getUserCode())
                 .put("profileImageUrl", IMAGE_BASE_URL + imageKey));

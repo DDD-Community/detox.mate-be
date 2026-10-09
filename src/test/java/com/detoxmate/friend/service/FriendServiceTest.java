@@ -138,7 +138,7 @@ class FriendServiceTest {
                 null,
                 FriendRelationshipStatus.FRIEND,
                 null,
-                "sender@example.com"
+                sender.getUserCode()
         ));
         assertThat(response.acceptedAt()).isEqualTo(FIXED_NOW);
         assertThat(friendRepository.findById(request.requestId()))
@@ -186,10 +186,10 @@ class FriendServiceTest {
     }
 
     @Test
-    void getMyInvite_includesOwnEmail() {
+    void getMyInvite_includesOwnUserCode() {
         User me = saveUser("나", "me@example.com");
-        assertThat(json(friendService.getMyInvite(me.getId())).path("email").asText())
-                .isEqualTo("me@example.com");
+        assertThat(json(friendService.getMyInvite(me.getId())).path("userCode").asText())
+                .isEqualTo(me.getUserCode());
     }
 
     @Test
@@ -204,15 +204,15 @@ class FriendServiceTest {
     }
 
     @Test
-    void receivedAndFriends_includeCounterpartEmail() {
+    void receivedAndFriends_includeCounterpartUserCode() {
         User sender = saveUser("보낸 사람", "sender@example.com");
         User receiver = saveUser("받는 사람", "receiver@example.com");
         FriendRequestResponse request = friendService.sendRequest(sender.getId(), receiver.getId());
-        assertThat(json(friendService.getReceivedRequests(receiver.getId()).getFirst()).path("user").path("email").asText())
-                .isEqualTo("sender@example.com");
+        assertThat(json(friendService.getReceivedRequests(receiver.getId()).getFirst()).path("user").path("userCode").asText())
+                .isEqualTo(sender.getUserCode());
         friendService.acceptRequest(request.requestId(), receiver.getId());
-        assertThat(json(friendService.getFriends(sender.getId()).getFirst()).path("user").path("email").asText())
-                .isEqualTo("receiver@example.com");
+        assertThat(json(friendService.getFriends(sender.getId()).getFirst()).path("user").path("userCode").asText())
+                .isEqualTo(receiver.getUserCode());
     }
 
     @Test
@@ -348,20 +348,20 @@ class FriendServiceTest {
         var redacted = friendService.getFriends(me.getId()).getFirst().user();
         assertThat(redacted.displayName()).isEqualTo(User.WITHDRAWN_DISPLAY_NAME);
         assertThat(redacted.profileImageUrl()).isNull();
-        assertThat(redacted.email()).isNull();
+        assertThat(redacted.userCode()).isEqualTo(friend.getUserCode());
     }
 
     @Test
-    void nullableEmails_remainNullAndEmptyListsRemainEmpty() {
+    void usersWithoutEmail_returnUserCodeAndEmptyListsRemainEmpty() {
         User me = saveUser("나", null);
         User target = saveUser("상대", null);
-        assertThat(json(friendService.getMyInvite(me.getId())).path("email").isNull()).isTrue();
+        assertThat(friendService.getMyInvite(me.getId()).userCode()).isEqualTo(me.getUserCode());
         assertThat(friendService.getFriends(me.getId())).isEmpty();
         assertThat(friendService.getReceivedRequests(me.getId())).isEmpty();
         FriendRequestResponse request = friendService.sendRequest(target.getId(), me.getId());
-        assertThat(friendService.getReceivedRequests(me.getId()).getFirst().user().email()).isNull();
+        assertThat(friendService.getReceivedRequests(me.getId()).getFirst().user().userCode()).isEqualTo(target.getUserCode());
         friendService.acceptRequest(request.requestId(), me.getId());
-        assertThat(friendService.getFriends(me.getId()).getFirst().user().email()).isNull();
+        assertThat(friendService.getFriends(me.getId()).getFirst().user().userCode()).isEqualTo(target.getUserCode());
     }
 
     private void accept(User sender, User receiver) {

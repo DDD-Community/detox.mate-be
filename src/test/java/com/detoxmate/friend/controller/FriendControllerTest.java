@@ -95,14 +95,14 @@ class FriendControllerTest {
     @Test
     @DisplayName("내 초대코드를 조회하면 코드를 반환한다")
     void getMyInvite_returnsInviteCode() throws Exception {
-        when(friendService.getMyInvite(1L)).thenReturn(new FriendInviteResponse("a".repeat(64), "me@example.com"));
+        when(friendService.getMyInvite(1L)).thenReturn(new FriendInviteResponse("a".repeat(64), "ABCDE"));
         HeaderDescriptor[] headers = authorizationHeaders();
         FieldDescriptor[] responseFields = inviteResponseFields();
 
         mockMvc.perform(get("/friends/invite").header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("a".repeat(64)))
-                .andExpect(jsonPath("$.email").value("me@example.com"))
+                .andExpect(jsonPath("$.userCode").value("ABCDE"))
                 .andDo(document("friends/invite-get",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
@@ -111,7 +111,7 @@ class FriendControllerTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Friend")
                                 .summary("Get my friend invite code")
-                                .description("로그인 사용자의 고정 초대코드와 공유용 본인 이메일을 조회한다. 자동 만료·재발급은 없으며 반복 조회에도 같은 코드를 반환한다. 이메일이 없는 기존 계정은 email=null이며 링크로 공유한다.")
+                                .description("로그인 사용자의 고정 링크용 초대코드와 검색용 5자리 사용자 코드를 조회한다. 링크용 code는 자동 만료·재발급 없이 반복 조회에도 유지되며, 공유 문구에는 userCode를 사용한다.")
                                 .requestHeaders(headers)
                                 .responseSchema(schema("FriendInviteResponse"))
                                 .responseFields(responseFields)
@@ -307,7 +307,7 @@ class FriendControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].requestId").value(101))
                 .andExpect(jsonPath("$[0].user.relationshipStatus").value("PENDING_RECEIVED"))
-                .andExpect(jsonPath("$[0].user.email").value("friend@example.com"))
+                .andExpect(jsonPath("$[0].user.userCode").value("FGHJK"))
                 .andDo(document("friends/requests-received-get",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
@@ -402,7 +402,7 @@ class FriendControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].friendshipId").value(201))
                 .andExpect(jsonPath("$[0].user.userId").value(2))
-                .andExpect(jsonPath("$[0].user.email").value("friend@example.com"))
+                .andExpect(jsonPath("$[0].user.userCode").value("FGHJK"))
                 .andDo(document("friends/list-get",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
@@ -570,7 +570,7 @@ class FriendControllerTest {
 
     private FriendListUserResponse listUserResponse(Long userId, String name,
                                                    FriendRelationshipStatus status, Long requestId) {
-        return new FriendListUserResponse(userId, name, null, status, requestId, "friend@example.com");
+        return new FriendListUserResponse(userId, name, null, status, requestId, "FGHJK");
     }
 
     private FriendRequestResponse requestResponse(
@@ -651,8 +651,8 @@ class FriendControllerTest {
 
     private FieldDescriptor[] inviteResponseFields() {
         return new FieldDescriptor[] {
-                fieldWithPath("code").type(JsonFieldType.STRING).description("자동 만료되지 않는 고정 랜덤 초대코드"),
-                fieldWithPath("email").type(JsonFieldType.STRING).optional().description("공유용 본인 이메일. 없는 기존 계정은 null")
+                fieldWithPath("code").type(JsonFieldType.STRING).description("Airbridge 링크에 사용하는 자동 만료되지 않는 64자리 고정 초대코드"),
+                fieldWithPath("userCode").type(JsonFieldType.STRING).description("공유 문구 및 친구 검색에 사용하는 본인의 5자리 사용자 코드")
         };
     }
 
@@ -668,7 +668,7 @@ class FriendControllerTest {
                 fieldWithPath("displayName").type(JsonFieldType.STRING).description("사용자 공개 닉네임"),
                 fieldWithPath("profileImageUrl").type(JsonFieldType.STRING).optional().description("프로필 이미지 읽기 URL"),
                 relationshipField("relationshipStatus"),
-                fieldWithPath("requestId").type(JsonFieldType.NUMBER).optional().description("대기 중인 친구 요청 ID")
+                fieldWithPath("requestId").type(JsonFieldType.NUMBER).optional().description("항상 포함되는 대기 중인 친구 요청 ID. 대기 중인 요청이 없으면 null")
         };
     }
 
@@ -677,9 +677,9 @@ class FriendControllerTest {
                 fieldWithPath("requestId").type(JsonFieldType.NUMBER).description("친구 요청 ID"),
                 fieldWithPath("user.userId").type(JsonFieldType.NUMBER).description("상대 사용자 ID"),
                 fieldWithPath("user.displayName").type(JsonFieldType.STRING).description("상대 사용자 공개 닉네임"),
-                fieldWithPath("user.profileImageUrl").type(JsonFieldType.STRING).optional().description("상대 사용자 프로필 이미지 읽기 URL"),
+                fieldWithPath("user.profileImageUrl").type(JsonFieldType.STRING).optional().description("항상 포함되는 상대 사용자 프로필 이미지 읽기 URL. 이미지가 없으면 null"),
                 relationshipField("user.relationshipStatus"),
-                fieldWithPath("user.requestId").type(JsonFieldType.NUMBER).optional().description("대기 중인 친구 요청 ID"),
+                fieldWithPath("user.requestId").type(JsonFieldType.NUMBER).optional().description("항상 포함되는 대기 중인 친구 요청 ID. 대기 중인 요청이 없으면 null"),
                 fieldWithPath("createdAt").type(JsonFieldType.STRING).description("친구 요청 생성 시각")
         };
     }
@@ -700,7 +700,7 @@ class FriendControllerTest {
 
     private FieldDescriptor[] receivedRequestResponseListFields() {
         return Stream.concat(Arrays.stream(requestResponseListFields()), Stream.of(
-                fieldWithPath("[].user.email").type(JsonFieldType.STRING).optional().description("요청자의 이메일. 없는 기존 계정은 null")
+                fieldWithPath("[].user.userCode").type(JsonFieldType.STRING).description("요청을 보낸 상대방의 5자리 사용자 코드")
         )).toArray(FieldDescriptor[]::new);
     }
 
@@ -709,9 +709,9 @@ class FriendControllerTest {
                 fieldWithPath("[].requestId").type(JsonFieldType.NUMBER).description("친구 요청 ID"),
                 fieldWithPath("[].user.userId").type(JsonFieldType.NUMBER).description("상대 사용자 ID"),
                 fieldWithPath("[].user.displayName").type(JsonFieldType.STRING).description("상대 사용자 공개 닉네임"),
-                fieldWithPath("[].user.profileImageUrl").type(JsonFieldType.STRING).optional().description("상대 사용자 프로필 이미지 읽기 URL"),
+                fieldWithPath("[].user.profileImageUrl").type(JsonFieldType.STRING).optional().description("항상 포함되는 상대 사용자 프로필 이미지 읽기 URL. 이미지가 없으면 null"),
                 relationshipField("[].user.relationshipStatus"),
-                fieldWithPath("[].user.requestId").type(JsonFieldType.NUMBER).optional().description("대기 중인 친구 요청 ID"),
+                fieldWithPath("[].user.requestId").type(JsonFieldType.NUMBER).optional().description("항상 포함되는 대기 중인 친구 요청 ID. 대기 중인 요청이 없으면 null"),
                 fieldWithPath("[].createdAt").type(JsonFieldType.STRING).description("친구 요청 생성 시각")
         };
     }
@@ -721,10 +721,10 @@ class FriendControllerTest {
                 fieldWithPath("friendshipId").type(JsonFieldType.NUMBER).description("친구 관계 ID"),
                 fieldWithPath("user.userId").type(JsonFieldType.NUMBER).description("친구 사용자 ID"),
                 fieldWithPath("user.displayName").type(JsonFieldType.STRING).description("친구 사용자 공개 닉네임"),
-                fieldWithPath("user.email").type(JsonFieldType.STRING).optional().description("친구 이메일. 이메일이 없거나 탈퇴한 계정은 null"),
-                fieldWithPath("user.profileImageUrl").type(JsonFieldType.STRING).optional().description("친구 사용자 프로필 이미지 읽기 URL"),
+                fieldWithPath("user.userCode").type(JsonFieldType.STRING).description("친구인 상대방의 5자리 사용자 코드"),
+                fieldWithPath("user.profileImageUrl").type(JsonFieldType.STRING).optional().description("항상 포함되는 친구 사용자 프로필 이미지 읽기 URL. 이미지가 없으면 null"),
                 relationshipField("user.relationshipStatus"),
-                fieldWithPath("user.requestId").type(JsonFieldType.NUMBER).optional().description("대기 중인 친구 요청 ID"),
+                fieldWithPath("user.requestId").type(JsonFieldType.NUMBER).optional().description("항상 포함되는 대기 중인 친구 요청 ID. 대기 중인 요청이 없으면 null"),
                 fieldWithPath("acceptedAt").type(JsonFieldType.STRING).description("친구 관계 수락 시각")
         };
     }
@@ -734,10 +734,10 @@ class FriendControllerTest {
                 fieldWithPath("[].friendshipId").type(JsonFieldType.NUMBER).description("친구 관계 ID"),
                 fieldWithPath("[].user.userId").type(JsonFieldType.NUMBER).description("친구 사용자 ID"),
                 fieldWithPath("[].user.displayName").type(JsonFieldType.STRING).description("친구 사용자 공개 닉네임"),
-                fieldWithPath("[].user.email").type(JsonFieldType.STRING).optional().description("친구 이메일. 이메일이 없거나 탈퇴한 계정은 null"),
-                fieldWithPath("[].user.profileImageUrl").type(JsonFieldType.STRING).optional().description("친구 사용자 프로필 이미지 읽기 URL"),
+                fieldWithPath("[].user.userCode").type(JsonFieldType.STRING).description("친구인 상대방의 5자리 사용자 코드"),
+                fieldWithPath("[].user.profileImageUrl").type(JsonFieldType.STRING).optional().description("항상 포함되는 친구 사용자 프로필 이미지 읽기 URL. 이미지가 없으면 null"),
                 relationshipField("[].user.relationshipStatus"),
-                fieldWithPath("[].user.requestId").type(JsonFieldType.NUMBER).optional().description("대기 중인 친구 요청 ID"),
+                fieldWithPath("[].user.requestId").type(JsonFieldType.NUMBER).optional().description("항상 포함되는 대기 중인 친구 요청 ID. 대기 중인 요청이 없으면 null"),
                 fieldWithPath("[].acceptedAt").type(JsonFieldType.STRING).description("친구 관계 수락 시각")
         };
     }

@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -227,5 +228,74 @@ class FriendUserCodeSearchHttpIntegrationTest {
     private ResultActions authenticated(MockHttpServletRequestBuilder request) throws Exception {
         return mockMvc.perform(request.header(HttpHeaders.AUTHORIZATION,
                 "Bearer " + jwtTokenProvider.createAccessToken(viewer.getId())));
+    }
+
+    @Test
+    @DisplayName("친구 목록은 로그인 사용자 대신 상대방의 사용자 코드를 반환하고 이메일을 숨긴다")
+    void getFriends_returnsOtherUsersCode() throws Exception {
+        // given
+        long requestId = friendService.sendRequest(target.getId(), viewer.getId()).requestId();
+        friendService.acceptRequest(requestId, viewer.getId());
+
+        // when & then
+        authenticated(get("/friends"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].user.userId").value(target.getId()))
+                .andExpect(jsonPath("$[0].user.userCode").value(TARGET_CODE))
+                .andExpect(jsonPath("$[0].user.relationshipStatus").value("FRIEND"))
+                .andExpect(jsonPath("$[0].user.requestId").isEmpty())
+                .andExpect(jsonPath("$[0].user.email").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("받은 친구 요청은 요청자의 사용자 코드를 반환하고 이메일을 숨긴다")
+    void getReceivedRequests_returnsSendersCode() throws Exception {
+        // given
+        long requestId = friendService.sendRequest(target.getId(), viewer.getId()).requestId();
+
+        // when & then
+        authenticated(get("/friends/requests/received"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].user.userId").value(target.getId()))
+                .andExpect(jsonPath("$[0].user.userCode").value(TARGET_CODE))
+                .andExpect(jsonPath("$[0].user.relationshipStatus").value("PENDING_RECEIVED"))
+                .andExpect(jsonPath("$[0].user.requestId").value(requestId))
+                .andExpect(jsonPath("$[0].user.email").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("친구 요청 수락 응답은 요청자의 사용자 코드를 반환하고 이메일을 숨긴다")
+    void acceptRequest_returnsSendersCode() throws Exception {
+        // given
+        long requestId = friendService.sendRequest(target.getId(), viewer.getId()).requestId();
+
+        // when & then
+        authenticated(post("/friends/requests/{requestId}/accept", requestId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.user.userId").value(target.getId()))
+                .andExpect(jsonPath("$.user.userCode").value(TARGET_CODE))
+                .andExpect(jsonPath("$.user.relationshipStatus").value("FRIEND"))
+                .andExpect(jsonPath("$.user.requestId").isEmpty())
+                .andExpect(jsonPath("$.user.email").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("공유 응답은 재사용하는 64자 링크 코드와 본인의 검색 코드를 구분해 반환한다")
+    void getInvite_returnsStableLinkCodeAndOwnUserCode() throws Exception {
+        // given
+        String linkCode = friendService.getMyInvite(viewer.getId()).code();
+        assertThat(linkCode).hasSize(64).isNotEqualTo(VIEWER_CODE);
+
+        // when & then
+        authenticated(get("/friends/invite"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(linkCode))
+                .andExpect(jsonPath("$.userCode").value(VIEWER_CODE))
+                .andExpect(jsonPath("$.email").doesNotExist());
+        authenticated(get("/friends/invite/{code}", linkCode))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userId").value(viewer.getId()))
+                .andExpect(jsonPath("$.daysSinceStart").isNumber())
+                .andExpect(jsonPath("$.targetSuccessCount").isNumber());
     }
 }
