@@ -139,7 +139,7 @@ tasks.matching { it.name == 'openapi3' }.configureEach {
         if (commonStatus?.type != 'string' || !(commonStatus.enum instanceof List) || commonStatus.enum.isEmpty()) {
             throw new GradleException('Missing documented friend relationship enum')
         }
-        ['FriendSearchResponse', 'FriendUserResponse', 'FriendListUserResponse', 'FriendInviteeResponse'].each { name ->
+        ['FriendSearchResponse', 'FriendUserResponse', 'FriendListUserResponse', 'FriendInviteeResponse', 'FriendProfileResponse'].each { name ->
             def field = schemas[name]?.properties?.relationshipStatus
             if (field != statusRef && field != commonStatus) {
                 throw new GradleException("Conflicting relationshipStatus contract in ${name}")
@@ -176,7 +176,7 @@ tasks.register('verifyFriendRelationshipSchema') {
             throw new GradleException('OpenAPI must define the FriendRelationshipStatus string enum once')
         }
         def statusRef = ['$ref': '#/components/schemas/FriendRelationshipStatus']
-        ['FriendSearchResponse', 'FriendUserResponse', 'FriendListUserResponse', 'FriendInviteeResponse'].each { name ->
+        ['FriendSearchResponse', 'FriendUserResponse', 'FriendListUserResponse', 'FriendInviteeResponse', 'FriendProfileResponse'].each { name ->
             if (schemas[name]?.properties?.relationshipStatus != statusRef) {
                 throw new GradleException("${name}.relationshipStatus must reference FriendRelationshipStatus")
             }
