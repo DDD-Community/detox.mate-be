@@ -1,5 +1,6 @@
 package com.detoxmate.applock.controller;
 
+import com.detoxmate.support.UserFixtures;
 import com.detoxmate.auth.JwtTokenProvider;
 import com.detoxmate.user.domain.User;
 import com.detoxmate.user.repository.UserRepository;
@@ -63,7 +64,7 @@ class TimeLimitControllerTest {
     void setUp(RestDocumentationContextProvider restDocumentation) {
         mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
                 .apply(documentationConfiguration(restDocumentation)).build();
-        ownerId = userRepository.save(User.createNew("time-limit-owner")).getId();
+        ownerId = userRepository.save(UserFixtures.createUser("time-limit-owner")).getId();
     }
 
     @Test
@@ -136,7 +137,7 @@ class TimeLimitControllerTest {
     @DisplayName("시간 삭제는 본인의 설정만 제거하며 사용자와 다른 사용자의 설정을 보존한다")
     void delete_removesOnlyCurrentUsersLimit() throws Exception {
         // given
-        Long otherId = userRepository.save(User.createNew("time-limit-other")).getId();
+        Long otherId = userRepository.save(UserFixtures.createUser("time-limit-other")).getId();
         expectMinutes(perform("PUT", ownerId, minutes(60)), 60);
         perform("GET", otherId, null).andExpect(status().isNotFound());
         expectMinutes(perform("PUT", otherId, minutes(120)), 120);
@@ -185,7 +186,7 @@ class TimeLimitControllerTest {
         } else if (credential.equals("unknown-user")) {
             builder.header(HttpHeaders.AUTHORIZATION, bearer(Long.MAX_VALUE));
         } else if (credential.equals("withdrawn-user")) {
-            User withdrawn = User.createNew("withdrawn-limit-user");
+            User withdrawn = UserFixtures.createUser("withdrawn-limit-user");
             withdrawn.withdraw();
             builder.header(HttpHeaders.AUTHORIZATION, bearer(userRepository.saveAndFlush(withdrawn).getId()));
         }

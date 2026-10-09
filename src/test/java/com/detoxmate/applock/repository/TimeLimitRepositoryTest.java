@@ -1,5 +1,6 @@
 package com.detoxmate.applock.repository;
 
+import com.detoxmate.support.UserFixtures;
 import com.detoxmate.applock.domain.TimeLimit;
 import com.detoxmate.user.domain.User;
 import com.detoxmate.user.repository.UserRepository;
@@ -31,7 +32,7 @@ class TimeLimitRepositoryTest {
     @DisplayName("시간 변경을 저장해도 사용자별 설정의 식별자와 생성 시각을 유지한다")
     void update_preservesSingleSettingIdentity() {
         // given
-        User owner = userRepository.save(User.createNew("owner"));
+        User owner = userRepository.save(UserFixtures.createUser("owner"));
         TimeLimit saved = timeLimitRepository.saveAndFlush(TimeLimit.create(owner, 60));
         Long settingId = saved.getId();
         var createdAt = saved.getCreatedAt();
@@ -56,7 +57,7 @@ class TimeLimitRepositoryTest {
     @DisplayName("DB는 같은 사용자에게 두 번째 시간 설정을 저장하지 못하게 한다")
     void save_rejectsDuplicateUser() {
         // given
-        User owner = userRepository.save(User.createNew("owner"));
+        User owner = userRepository.save(UserFixtures.createUser("owner"));
         timeLimitRepository.saveAndFlush(TimeLimit.create(owner, 60));
 
         // when & then
@@ -77,7 +78,7 @@ class TimeLimitRepositoryTest {
     @DisplayName("DB는 필수 시간 값과 0분부터 1440분까지의 범위를 보장한다")
     void insert_rejectsInvalidMinutes(Integer minutes) {
         // given
-        User owner = userRepository.saveAndFlush(User.createNew("owner"));
+        User owner = userRepository.saveAndFlush(UserFixtures.createUser("owner"));
 
         // when & then
         assertThatThrownBy(() -> insertLimit(owner.getId(), minutes))
@@ -88,8 +89,8 @@ class TimeLimitRepositoryTest {
     @DisplayName("사용자 행을 물리 삭제하면 해당 설정만 함께 삭제된다")
     void deleteUser_removesOnlyOwnersTimeLimit() {
         // given
-        User owner = userRepository.save(User.createNew("owner"));
-        User other = userRepository.save(User.createNew("other"));
+        User owner = userRepository.save(UserFixtures.createUser("owner"));
+        User other = userRepository.save(UserFixtures.createUser("other"));
         timeLimitRepository.save(TimeLimit.create(owner, 60));
         timeLimitRepository.saveAndFlush(TimeLimit.create(other, 120));
         entityManager.clear();

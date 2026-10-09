@@ -1,5 +1,6 @@
 package com.detoxmate.transferminute.controller;
 
+import com.detoxmate.support.UserFixtures;
 import com.detoxmate.applock.domain.TimeLimit;
 import com.detoxmate.auth.JwtTokenProvider;
 import com.detoxmate.user.domain.User;
@@ -70,7 +71,7 @@ class TransferPhraseControllerTest {
         mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
                 .apply(documentationConfiguration(restDocumentation)).build();
         jdbcTemplate.update("DELETE FROM transfer_phrase");
-        user = userRepository.saveAndFlush(User.createNew("transfer-phrase-reader"));
+        user = userRepository.saveAndFlush(UserFixtures.createUser("transfer-phrase-reader"));
     }
 
     @Test
@@ -191,7 +192,7 @@ class TransferPhraseControllerTest {
         } else if (credential.equals("unknown-user")) {
             request.header(HttpHeaders.AUTHORIZATION, bearer(Long.MAX_VALUE));
         } else if (credential.equals("withdrawn-user")) {
-            User withdrawn = User.createNew("withdrawn-phrase-reader");
+            User withdrawn = UserFixtures.createUser("withdrawn-phrase-reader");
             withdrawn.withdraw();
             request.header(HttpHeaders.AUTHORIZATION, bearer(userRepository.saveAndFlush(withdrawn).getId()));
         }

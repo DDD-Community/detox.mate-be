@@ -1,5 +1,6 @@
 package com.detoxmate.applock.domain;
 
+import com.detoxmate.support.UserFixtures;
 import com.detoxmate.user.domain.User;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -12,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 
 class TimeLimitTest {
 
-    private final User owner = User.createNew("owner");
+    private final User owner = UserFixtures.createUser("owner");
 
     @ParameterizedTest
     @ValueSource(ints = {0, 60, 1440})

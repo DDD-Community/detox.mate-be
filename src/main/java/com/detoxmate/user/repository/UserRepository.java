@@ -18,11 +18,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("""
             SELECT u
             FROM User u
-            WHERE u.email = :email
+            WHERE u.userCode = :userCode
               AND (u.status IS NULL OR u.status = :activeStatus)
             """)
-    Optional<User> findActiveByEmail(
-            @Param("email") String email,
+    Optional<User> findActiveByUserCode(
+            @Param("userCode") String userCode,
             @Param("activeStatus") UserStatus activeStatus
     );
 

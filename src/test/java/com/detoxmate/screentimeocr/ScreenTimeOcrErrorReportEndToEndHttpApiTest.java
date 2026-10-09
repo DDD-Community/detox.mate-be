@@ -1,5 +1,6 @@
 package com.detoxmate.screentimeocr;
 
+import com.detoxmate.support.UserFixtures;
 import com.detoxmate.activityrecord.domain.ActivityRecord;
 import com.detoxmate.activityrecord.domain.ActivityRecordDetail;
 import com.detoxmate.activityrecord.domain.UsageGoalType;
@@ -271,7 +272,7 @@ class ScreenTimeOcrErrorReportEndToEndHttpApiTest {
         UsageGoalType totalUsage = usageGoalTypeRepository.save(
                 UsageGoalType.create((long) sequence, UsageGoalTypeCode.TOTAL_USAGE)
         );
-        User user = userRepository.save(User.createNew("신고자"));
+        User user = userRepository.save(UserFixtures.createUser("신고자"));
 
         Group group = groupRepository.save(Group.createNew("OCR무기록" + sequence, "OR0" + sequence));
         GroupChallenge challenge = GroupChallenge.createFirst(group.getId());
@@ -292,7 +293,7 @@ class ScreenTimeOcrErrorReportEndToEndHttpApiTest {
         UsageGoalType totalUsage = usageGoalTypeRepository.save(
                 UsageGoalType.create((long) sequence, UsageGoalTypeCode.TOTAL_USAGE)
         );
-        User user = userRepository.save(User.createNew("신고자"));
+        User user = userRepository.save(UserFixtures.createUser("신고자"));
 
         Group group = groupRepository.save(Group.createNew("OCR검수" + sequence, "OCR0" + sequence));
         GroupChallenge challenge = GroupChallenge.createFirst(group.getId());

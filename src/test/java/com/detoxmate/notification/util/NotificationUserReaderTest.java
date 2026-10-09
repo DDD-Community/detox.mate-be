@@ -1,5 +1,6 @@
 package com.detoxmate.notification.util;
 
+import com.detoxmate.support.UserFixtures;
 import com.detoxmate.common.exception.CustomException;
 import com.detoxmate.common.exception.user.UserErrorCode;
 import com.detoxmate.user.domain.User;
@@ -35,7 +36,7 @@ class NotificationUserReaderTest {
     @DisplayName("userId로 사용자 닉네임을 조회한다")
     void findDisplayName_returnsDisplayName() {
         // given
-        User user = userRepository.save(User.createNew("슬빈"));
+        User user = userRepository.save(UserFixtures.createUser("슬빈"));
 
         // when
         String displayName = reader.findDisplayName(user.getId());
@@ -48,8 +49,8 @@ class NotificationUserReaderTest {
     @DisplayName("여러 userId로 사용자 닉네임 맵을 조회한다")
     void findDisplayNames_returnsDisplayNameMap() {
         // given
-        User user1 = userRepository.save(User.createNew("슬빈"));
-        User user2 = userRepository.save(User.createNew("지민"));
+        User user1 = userRepository.save(UserFixtures.createUser("슬빈"));
+        User user2 = userRepository.save(UserFixtures.createUser("지민"));
 
         // when
         Map<Long, String> displayNames = reader.findDisplayNames(Set.of(user1.getId(), user2.getId()));
@@ -74,7 +75,7 @@ class NotificationUserReaderTest {
     @DisplayName("여러 userId 중 누락된 사용자가 있으면 USER_NOT_FOUND 예외를 던진다")
     void findDisplayNames_throwsWhenAnyUserDoesNotExist() {
         // given
-        User user = userRepository.save(User.createNew("슬빈"));
+        User user = userRepository.save(UserFixtures.createUser("슬빈"));
 
         // when & then
         assertThatThrownBy(() -> reader.findDisplayNames(Set.of(user.getId(), 999L)))

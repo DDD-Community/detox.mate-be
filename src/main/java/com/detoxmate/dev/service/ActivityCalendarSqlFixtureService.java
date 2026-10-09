@@ -5,6 +5,7 @@ import com.detoxmate.dev.dto.ActivityCalendarRichFixtureResponse;
 import com.detoxmate.dev.dto.FixtureCheckDatesResponse;
 import com.detoxmate.dev.dto.FixtureSummaryResponse;
 import com.detoxmate.dev.dto.FixtureUserResponse;
+import com.detoxmate.user.service.UserCodeGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.ByteArrayResource;
@@ -44,6 +45,7 @@ public class ActivityCalendarSqlFixtureService {
     private final JdbcTemplate jdbcTemplate;
     private final JwtTokenProvider jwtTokenProvider;
     private final Clock clock;
+    private final UserCodeGenerator userCodeGenerator;
 
     @Transactional
     public synchronized ActivityCalendarRichFixtureResponse reset() {
@@ -189,6 +191,9 @@ public class ActivityCalendarSqlFixtureService {
         tokens.put("__ME_USER_ID__", String.valueOf(ids.meUserId()));
         tokens.put("__JISOO_USER_ID__", String.valueOf(ids.jisooUserId()));
         tokens.put("__MINJUN_USER_ID__", String.valueOf(ids.minjunUserId()));
+        tokens.put("__ME_USER_CODE__", userCodeGenerator.generate().value());
+        tokens.put("__JISOO_USER_CODE__", userCodeGenerator.generate().value());
+        tokens.put("__MINJUN_USER_CODE__", userCodeGenerator.generate().value());
         tokens.put("__GROUP_ID__", String.valueOf(ids.groupId()));
         tokens.put("__GROUP_CHALLENGE_ID__", String.valueOf(ids.groupChallengeId()));
         tokens.put("__ME_GROUP_MEMBER_ID__", String.valueOf(ids.meGroupMemberId()));

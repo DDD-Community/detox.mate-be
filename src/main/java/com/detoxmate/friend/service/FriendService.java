@@ -15,6 +15,7 @@ import com.detoxmate.friend.mapper.FriendResponseMapper;
 import com.detoxmate.friend.repository.FriendInviteRepository;
 import com.detoxmate.friend.repository.FriendRepository;
 import com.detoxmate.user.domain.User;
+import com.detoxmate.user.domain.UserCode;
 import com.detoxmate.user.domain.UserStatus;
 import com.detoxmate.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -87,14 +88,11 @@ public class FriendService {
     }
 
     @Transactional(readOnly = true)
-    public FriendSearchResponse searchByEmail(String email, Long currentUserId) {
-        String normalizedEmail = User.normalizeEmail(email);
-        if (normalizedEmail == null || !normalizedEmail.contains("@")) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "올바른 이메일을 입력해 주세요.");
-        }
+    public FriendSearchResponse searchByUserCode(String userCode, Long currentUserId) {
+        String normalizedUserCode = UserCode.parse(userCode).value();
 
-        User target = userRepository.findActiveByEmail(normalizedEmail, UserStatus.ACTIVE)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "이메일에 해당하는 사용자를 찾을 수 없습니다."));
+        User target = userRepository.findActiveByUserCode(normalizedUserCode, UserStatus.ACTIVE)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자 코드에 해당하는 사용자를 찾을 수 없습니다."));
 
         FriendUserResponse base = friendResponseMapper.toUserResponse(target, relationshipBetween(currentUserId, target.getId()));
         if (base.relationshipStatus() == FriendRelationshipStatus.SELF) {

@@ -1,5 +1,6 @@
 package com.detoxmate.user.domain;
 
+import com.detoxmate.support.UserFixtures;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -9,7 +10,7 @@ class SocialLoginUserTest {
     @Test
     void 소셜로그인_유저를_유저와_provider_providerUserId로_연결한다() {
         // given
-        User user = User.createNew("kakao-nickname", "profile-images/1/profile.png");
+        User user = UserFixtures.createUser("kakao-nickname", "profile-images/1/profile.png");
 
         // when
         SocialLoginUser socialLoginUser = SocialLoginUser.link(user, SocialProvider.KAKAO, "123456789");
