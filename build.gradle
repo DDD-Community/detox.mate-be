@@ -130,6 +130,10 @@ tasks.matching { it.name == 'openapi3' }.configureEach {
                 }
                 canonical = canonical ?: user
                 container.properties.user = userRef
+                // Nested descriptors do not make the containing object required in API Spec 0.20.
+                if (name == 'FriendListUserResponse') {
+                    container.required = ((container.required ?: []) + ['user']).unique().sort()
+                }
             }
             schemas[name] = canonical
         }
