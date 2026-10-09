@@ -130,6 +130,10 @@ tasks.matching { it.name == 'openapi3' }.configureEach {
                 }
                 canonical = canonical ?: user
                 container.properties.user = userRef
+                // Nested descriptors do not make the containing object required in API Spec 0.20.
+                if (name == 'FriendListUserResponse') {
+                    container.required = ((container.required ?: []) + ['user']).unique().sort()
+                }
             }
             schemas[name] = canonical
         }
@@ -147,6 +151,17 @@ tasks.matching { it.name == 'openapi3' }.configureEach {
             schemas[name].properties.relationshipStatus = statusRef
         }
         schemas.FriendRelationshipStatus = commonStatus
+        // REST Docs API Spec couples nullable to optional; these response keys are always present.
+        [MyPageResponse: ['profileImageUrl'],
+         FriendListUserResponse: ['profileImageUrl', 'requestId']].each { name, nullableFields ->
+            def schema = schemas[name]
+            nullableFields.each { field ->
+                if (schema?.properties?.get(field)?.nullable != true) {
+                    throw new GradleException("${name}.${field} must be documented as nullable")
+                }
+            }
+            schema.required = ((schema.required ?: []) + nullableFields).unique().sort()
+        }
         mapper.writeValue(specFile, spec)
     }
 }
@@ -201,8 +216,42 @@ tasks.register('verifyFriendRelationshipSchema') {
     }
 }
 
+tasks.register('verifyFriendInviteResponseSchemas') {
+    dependsOn 'openapi3'
+    inputs.file(layout.buildDirectory.file('api-spec/openapi3.yaml'))
+    doLast {
+        def schemas = io.swagger.v3.core.util.Yaml.mapper()
+                .readValue(inputs.files.singleFile, Map).components.schemas
+        [MyPageResponse: ['id', 'displayName', 'userCode', 'profileImageUrl', 'pushNotificationEnabled'],
+         FriendListUserResponse: ['userId', 'displayName', 'userCode', 'profileImageUrl', 'relationshipStatus', 'requestId'],
+         FriendInviteResponse: ['code', 'userCode']].each { name, fields ->
+            def schema = schemas[name]
+            if (schema?.properties?.keySet() != fields.toSet()
+                    || (schema?.required ?: []).toSet() != fields.toSet()) {
+                throw new GradleException("${name} must expose exactly the required response fields: ${fields}")
+            }
+            fields.each { field ->
+                def nullable = field in ['profileImageUrl', 'requestId']
+                if ((schema.properties[field].nullable == true) != nullable) {
+                    throw new GradleException("${name}.${field} nullable must be ${nullable}")
+                }
+            }
+        }
+        [FriendResponse: ['friendshipId', 'user', 'acceptedAt'],
+         FriendResponseList: ['friendshipId', 'user', 'acceptedAt'],
+         FriendReceivedRequestResponseList: ['requestId', 'user', 'createdAt']].each { name, fields ->
+            def schema = schemas[name]?.type == 'array' ? schemas[name].items : schemas[name]
+            if (schema?.properties?.keySet() != fields.toSet()
+                    || (schema?.required ?: []).toSet() != fields.toSet()
+                    || schema.properties.values().any { it.nullable == true }) {
+                throw new GradleException("${name} must expose required, non-null response wrapper fields: ${fields}")
+            }
+        }
+    }
+}
+
 tasks.register('copyOpenapi3Spec', Copy) {
-    dependsOn 'verifyFriendRelationshipSchema'
+    dependsOn 'verifyFriendRelationshipSchema', 'verifyFriendInviteResponseSchemas'
     from(layout.buildDirectory.file('api-spec/openapi3.yaml'))
     into(layout.buildDirectory.dir('resources/main/static'))
 }

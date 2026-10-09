@@ -21,6 +21,9 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -43,6 +46,42 @@ class UserProfileEndToEndHttpApiTest {
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Test
+    @DisplayName("실제 v3 API 문서는 프로필과 친구 초대 응답의 필수 필드 및 null 허용을 일치시킨다")
+    void apiDocs_exposesFriendInviteResponseContracts() throws Exception {
+        // when
+        HttpResponse<String> response = send("GET", "/v3/api-docs", null, null);
+
+        // then
+        assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
+        JsonNode schemas = objectMapper.readTree(response.body()).path("components").path("schemas");
+        Map<String, Set<String>> contracts = Map.of(
+                "MyPageResponse", Set.of("id", "displayName", "userCode", "profileImageUrl", "pushNotificationEnabled"),
+                "FriendListUserResponse", Set.of("userId", "displayName", "userCode", "profileImageUrl", "relationshipStatus", "requestId"),
+                "FriendInviteResponse", Set.of("code", "userCode"),
+                "FriendResponse", Set.of("friendshipId", "user", "acceptedAt"),
+                "FriendReceivedRequestResponse", Set.of("requestId", "user", "createdAt"));
+        contracts.forEach((name, fields) -> {
+            JsonNode schema = schemas.path(name);
+            Set<String> properties = new HashSet<>();
+            schema.path("properties").fieldNames().forEachRemaining(properties::add);
+            assertThat(properties).as(name + " properties").isEqualTo(fields);
+            Set<String> required = new HashSet<>();
+            schema.path("required").forEach(field -> required.add(field.asText()));
+            assertThat(required).as(name + " required").isEqualTo(fields);
+            fields.forEach(field -> {
+                JsonNode property = schema.path("properties").path(field);
+                boolean nullable = property.path("nullable").asBoolean(false);
+                for (JsonNode type : property.path("type")) {
+                    nullable |= "null".equals(type.asText());
+                }
+                assertThat(nullable).as(name + "." + field + " nullable")
+                        .isEqualTo("profileImageUrl".equals(field)
+                                || ("FriendListUserResponse".equals(name) && "requestId".equals(field)));
+            });
+        });
+    }
 
     @Test
     @DisplayName("프로필 수정 API는 닉네임을 공백 포함 10자까지만 허용한다")

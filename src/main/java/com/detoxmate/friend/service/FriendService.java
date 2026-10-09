@@ -55,7 +55,7 @@ public class FriendService {
 
         Optional<FriendInvite> existingInvite = friendInviteRepository.findByUserId(userId);
         if (existingInvite.isPresent()) {
-            return new FriendInviteResponse(existingInvite.get().getCode(), currentUser.getEmail());
+            return new FriendInviteResponse(existingInvite.get().getCode(), currentUser.getUserCode());
         }
 
         for (int attempt = 0; attempt < MAX_INVITE_CODE_GENERATION_ATTEMPTS; attempt++) {
@@ -63,12 +63,12 @@ public class FriendService {
                 FriendInvite invite = friendInviteRepository.saveAndFlush(
                         FriendInvite.create(userId, friendInviteCodeGenerator.generate())
                 );
-                return new FriendInviteResponse(invite.getCode(), currentUser.getEmail());
+                return new FriendInviteResponse(invite.getCode(), currentUser.getUserCode());
             } catch (DataIntegrityViolationException exception) {
                 FriendInvite inviteCreatedByConcurrentRequest = friendInviteRepository.findByUserId(userId)
                         .orElse(null);
                 if (inviteCreatedByConcurrentRequest != null) {
-                    return new FriendInviteResponse(inviteCreatedByConcurrentRequest.getCode(), currentUser.getEmail());
+                    return new FriendInviteResponse(inviteCreatedByConcurrentRequest.getCode(), currentUser.getUserCode());
                 }
             }
         }

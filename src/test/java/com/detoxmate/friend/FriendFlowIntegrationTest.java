@@ -80,8 +80,10 @@ class FriendFlowIntegrationTest {
     void friendshipFlow_preservesRecipientApprovalAndBothSidesOfRelationship() throws Exception {
         JsonNode invite = json(perform(receiver, get("/friends/invite"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.email").value(receiver.getEmail())));
+                .andExpect(jsonPath("$.userCode").value(receiver.getUserCode()))
+                .andExpect(jsonPath("$.email").doesNotExist()));
         String code = invite.path("code").asText();
+        assertThat(code).hasSize(64);
         perform(receiver, get("/friends/invite"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(code));
         perform(sender, get("/friends/invite/{code}", code))
@@ -108,7 +110,8 @@ class FriendFlowIntegrationTest {
         perform(receiver, get("/friends/requests/received"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].requestId").value(original))
-                .andExpect(jsonPath("$[0].user.email").value(sender.getEmail()));
+                .andExpect(jsonPath("$[0].user.userCode").value(sender.getUserCode()))
+                .andExpect(jsonPath("$[0].user.email").doesNotExist());
         perform(sender, get("/friends/invite/{code}", code))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.relationshipStatus").value("PENDING_SENT"));
@@ -129,7 +132,8 @@ class FriendFlowIntegrationTest {
         assertThat(friendRepository.findById(replacement)).get().matches(friend -> friend.isPending());
         JsonNode accepted = json(perform(receiver, post("/friends/requests/{id}/accept", replacement))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.user.email").value(sender.getEmail())));
+                .andExpect(jsonPath("$.user.userCode").value(sender.getUserCode()))
+                .andExpect(jsonPath("$.user.email").doesNotExist()));
         long friendshipId = accepted.path("friendshipId").asLong();
         assertThat(friendshipId).isEqualTo(replacement);
         assertFriendListed(sender, receiver, true);
