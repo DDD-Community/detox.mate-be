@@ -1,5 +1,6 @@
 package com.detoxmate.friend.service;
 
+import com.detoxmate.support.UserFixtures;
 import com.detoxmate.challengerecord.domain.ChallengeRecord;
 import com.detoxmate.challengerecord.domain.ChallengeRecordCertificationResult;
 import com.detoxmate.challengerecord.repository.ChallengeRecordRepository;
@@ -48,7 +49,7 @@ class FriendInviteStatisticsServiceTest {
     @Test
     @DisplayName("가입 당일은 1일차이며 성공 기록이 없으면 0회다")
     void enrich_returnsDayOneAndZeroSuccessesOnSignupDate() {
-        User user = userRepository.saveAndFlush(User.createNew("초대한 친구"));
+        User user = userRepository.saveAndFlush(UserFixtures.createUser("초대한 친구"));
         ReflectionTestUtils.setField(user, "createdAt", LocalDateTime.of(2026, 10, 1, 0, 0));
         FriendUserResponse base = new FriendUserResponse(
                 user.getId(), "초대한 친구", "https://example.com/profile.png",
@@ -66,7 +67,7 @@ class FriendInviteStatisticsServiceTest {
     @Test
     @DisplayName("UTC 시계여도 한국 자정을 기준으로 가입일을 포함한 일차가 증가한다")
     void enrich_countsCalendarDaysAtKoreanMidnight() {
-        User user = userRepository.saveAndFlush(User.createNew("초대한 친구"));
+        User user = userRepository.saveAndFlush(UserFixtures.createUser("초대한 친구"));
         ReflectionTestUtils.setField(user, "createdAt", LocalDateTime.of(2026, 9, 30, 23, 59));
         FriendUserResponse base = baseFor(user);
 
@@ -77,8 +78,8 @@ class FriendInviteStatisticsServiceTest {
     @Test
     @DisplayName("모든 그룹의 성공 기록을 세며 같은 날의 별도 기록과 탈퇴 전 기록도 포함한다")
     void enrich_countsAllSuccessfulRecordsAcrossHistoricalParticipations() {
-        User user = userRepository.saveAndFlush(User.createNew("초대한 친구"));
-        User other = userRepository.saveAndFlush(User.createNew("다른 사용자"));
+        User user = userRepository.saveAndFlush(UserFixtures.createUser("초대한 친구"));
+        User other = userRepository.saveAndFlush(UserFixtures.createUser("다른 사용자"));
         ReflectionTestUtils.setField(user, "createdAt", LocalDateTime.of(2026, 9, 28, 12, 0));
         GroupMember currentMembership = groupMemberRepository.save(GroupMember.createMember(user.getId(), 10L));
         GroupMember formerMembership = groupMemberRepository.save(GroupMember.createMember(user.getId(), 20L));
@@ -105,7 +106,7 @@ class FriendInviteStatisticsServiceTest {
     @Test
     @DisplayName("성공 기록이 실패로 정정되면 성공 횟수에서도 제외된다")
     void enrich_usesCurrentCertificationResults() {
-        User user = userRepository.saveAndFlush(User.createNew("초대한 친구"));
+        User user = userRepository.saveAndFlush(UserFixtures.createUser("초대한 친구"));
         ReflectionTestUtils.setField(user, "createdAt", LocalDateTime.of(2026, 9, 30, 12, 0));
         GroupMember member = groupMemberRepository.save(GroupMember.createMember(user.getId(), 10L));
         GroupChallengeParticipant participant = participantRepository.save(GroupChallengeParticipant.join(member.getId(), 100L));

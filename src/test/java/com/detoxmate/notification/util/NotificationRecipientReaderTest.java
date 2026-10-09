@@ -1,5 +1,7 @@
 package com.detoxmate.notification.util;
 
+import com.detoxmate.support.UserFixtures;
+
 import com.detoxmate.challengerecord.domain.ChallengeRecord;
 import com.detoxmate.challengerecord.repository.ChallengeRecordRepository;
 import com.detoxmate.common.exception.CustomException;
@@ -62,9 +64,9 @@ class NotificationRecipientReaderTest {
         // given
         Group group = groupRepository.save(Group.createNew("알림방", "A1001"));
         Group otherGroup = groupRepository.save(Group.createNew("다른방", "A1002"));
-        User activeUser = userRepository.save(User.createNew("활성"));
-        User leftUser = userRepository.save(User.createNew("탈퇴"));
-        User otherGroupUser = userRepository.save(User.createNew("다른그룹"));
+        User activeUser = userRepository.save(UserFixtures.createUser("활성"));
+        User leftUser = userRepository.save(UserFixtures.createUser("탈퇴"));
+        User otherGroupUser = userRepository.save(UserFixtures.createUser("다른그룹"));
         groupMemberRepository.save(GroupMember.createMember(activeUser.getId(), group.getId()));
         GroupMember leftMember = groupMemberRepository.save(GroupMember.createMember(leftUser.getId(), group.getId()));
         leftMember.leave();
@@ -83,9 +85,9 @@ class NotificationRecipientReaderTest {
         // given
         Group group = groupRepository.save(Group.createNew("챌린지방", "A1003"));
         Long groupChallengeId = 100L;
-        User joinedUser = userRepository.save(User.createNew("참여자"));
-        User withdrawnUser = userRepository.save(User.createNew("철회자"));
-        User leftUser = userRepository.save(User.createNew("탈퇴자"));
+        User joinedUser = userRepository.save(UserFixtures.createUser("참여자"));
+        User withdrawnUser = userRepository.save(UserFixtures.createUser("철회자"));
+        User leftUser = userRepository.save(UserFixtures.createUser("탈퇴자"));
 
         GroupMember joinedMember = groupMemberRepository.save(GroupMember.createMember(joinedUser.getId(), group.getId()));
         GroupMember withdrawnMember = groupMemberRepository.save(GroupMember.createMember(withdrawnUser.getId(), group.getId()));
@@ -111,7 +113,7 @@ class NotificationRecipientReaderTest {
         // given
         Group group = groupRepository.save(Group.createNew("피드방", "A1004"));
         Long groupChallengeId = 200L;
-        User author = userRepository.save(User.createNew("작성자"));
+        User author = userRepository.save(UserFixtures.createUser("작성자"));
         GroupMember authorMember = groupMemberRepository.save(GroupMember.createMember(author.getId(), group.getId()));
         GroupChallengeParticipant participant =
                 participantRepository.save(GroupChallengeParticipant.join(authorMember.getId(), groupChallengeId));

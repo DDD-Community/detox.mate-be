@@ -1,5 +1,6 @@
 package com.detoxmate.notification.controller;
 
+import com.detoxmate.support.UserFixtures;
 import com.detoxmate.auth.JwtTokenProvider;
 import com.detoxmate.notification.domain.DevicePlatform;
 import com.detoxmate.notification.domain.FcmToken;
@@ -59,7 +60,7 @@ class AppUnlockNotificationControllerTest {
 
     @BeforeEach
     void setUp() {
-        User user = userRepository.save(User.createNew("잠금사용자"));
+        User user = userRepository.save(UserFixtures.createUser("잠금사용자"));
         userId = user.getId();
         fcmTokenRepository.save(FcmToken.create(userId, "app-unlock-ios-token", DevicePlatform.IOS));
     }

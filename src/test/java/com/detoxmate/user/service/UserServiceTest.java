@@ -1,5 +1,6 @@
 package com.detoxmate.user.service;
 
+import com.detoxmate.support.UserFixtures;
 import com.detoxmate.auth.JwtTokenProvider;
 import com.detoxmate.auth.service.RefreshTokenSessionService;
 import com.detoxmate.group.domain.GroupMember;
@@ -52,7 +53,7 @@ class UserServiceTest {
         JwtTokenProvider jwtTokenProvider = new JwtTokenProvider(JWT_SECRET, ACCESS_TOKEN_EXPIRES_IN);
         UserService userService = userService(userRepository, socialLoginUserRepository, refreshTokenSessionService, jwtTokenProvider);
 
-        User user = User.createNew("카카오닉네임", "profile-images/1/profile.png");
+        User user = UserFixtures.createUser("카카오닉네임", "profile-images/1/profile.png");
         ReflectionTestUtils.setField(user, "id", 1L);
         String accessToken = jwtTokenProvider.createAccessToken(1L);
 
@@ -64,6 +65,7 @@ class UserServiceTest {
         // then
         assertThat(response.id()).isEqualTo(1L);
         assertThat(response.displayName()).isEqualTo("카카오닉네임");
+        assertThat(response.userCode()).isEqualTo(user.getUserCode());
         assertThat(response.profileImageUrl()).isEqualTo(TEST_IMAGE_BASE_URL + "/profile-images/1/profile.png");
     }
 
@@ -95,7 +97,7 @@ class UserServiceTest {
         JwtTokenProvider jwtTokenProvider = new JwtTokenProvider(JWT_SECRET, ACCESS_TOKEN_EXPIRES_IN);
         UserService userService = userService(userRepository, socialLoginUserRepository, refreshTokenSessionService, jwtTokenProvider);
         String accessToken = jwtTokenProvider.createAccessToken(1L);
-        User user = User.createNew("카카오닉네임", "profile-images/1/profile.png");
+        User user = UserFixtures.createUser("카카오닉네임", "profile-images/1/profile.png");
         user.withdraw();
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
@@ -115,7 +117,7 @@ class UserServiceTest {
         RefreshTokenSessionService refreshTokenSessionService = mock(RefreshTokenSessionService.class);
         JwtTokenProvider jwtTokenProvider = new JwtTokenProvider(JWT_SECRET, ACCESS_TOKEN_EXPIRES_IN);
         UserService userService = userService(userRepository, socialLoginUserRepository, refreshTokenSessionService, jwtTokenProvider);
-        User user = User.createNew("카카오닉네임", null);
+        User user = UserFixtures.createUser("카카오닉네임", null);
         ReflectionTestUtils.setField(user, "id", 1L);
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
@@ -129,6 +131,7 @@ class UserServiceTest {
         // then
         assertThat(user.getDisplayName()).isEqualTo("의진");
         assertThat(user.getProfileImageObjectKey()).isEqualTo("profile-images/1/updated.png");
+        assertThat(response.userCode()).isEqualTo(user.getUserCode());
         assertThat(response.profileImageUrl()).isEqualTo(TEST_IMAGE_BASE_URL + "/profile-images/1/updated.png");
     }
 
@@ -141,7 +144,7 @@ class UserServiceTest {
         RefreshTokenSessionService refreshTokenSessionService = mock(RefreshTokenSessionService.class);
         JwtTokenProvider jwtTokenProvider = new JwtTokenProvider(JWT_SECRET, ACCESS_TOKEN_EXPIRES_IN);
         UserService userService = userService(userRepository, socialLoginUserRepository, refreshTokenSessionService, jwtTokenProvider);
-        User user = User.createNew("카카오닉네임", "profile-images/1/profile.png");
+        User user = UserFixtures.createUser("카카오닉네임", "profile-images/1/profile.png");
         ReflectionTestUtils.setField(user, "id", 1L);
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
@@ -153,6 +156,7 @@ class UserServiceTest {
 
         // then
         assertThat(user.getProfileImageObjectKey()).isNull();
+        assertThat(response.userCode()).isEqualTo(user.getUserCode());
         assertThat(response.profileImageUrl()).isNull();
     }
 
@@ -165,7 +169,7 @@ class UserServiceTest {
         RefreshTokenSessionService refreshTokenSessionService = mock(RefreshTokenSessionService.class);
         JwtTokenProvider jwtTokenProvider = new JwtTokenProvider(JWT_SECRET, ACCESS_TOKEN_EXPIRES_IN);
         UserService userService = userService(userRepository, socialLoginUserRepository, refreshTokenSessionService, jwtTokenProvider);
-        User user = User.createNew("카카오닉네임", "profile-images/1/profile.png");
+        User user = UserFixtures.createUser("카카오닉네임", "profile-images/1/profile.png");
         ReflectionTestUtils.setField(user, "id", 1L);
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
@@ -178,6 +182,7 @@ class UserServiceTest {
         // then
         assertThat(user.getDisplayName()).isEqualTo("의진");
         assertThat(user.getProfileImageObjectKey()).isEqualTo("profile-images/1/profile.png");
+        assertThat(response.userCode()).isEqualTo(user.getUserCode());
         assertThat(response.profileImageUrl()).isEqualTo(TEST_IMAGE_BASE_URL + "/profile-images/1/profile.png");
     }
 
@@ -190,7 +195,7 @@ class UserServiceTest {
         RefreshTokenSessionService refreshTokenSessionService = mock(RefreshTokenSessionService.class);
         JwtTokenProvider jwtTokenProvider = new JwtTokenProvider(JWT_SECRET, ACCESS_TOKEN_EXPIRES_IN);
         UserService userService = userService(userRepository, socialLoginUserRepository, refreshTokenSessionService, jwtTokenProvider);
-        User user = User.createNew("카카오닉네임", null);
+        User user = UserFixtures.createUser("카카오닉네임", null);
         ReflectionTestUtils.setField(user, "id", 1L);
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
@@ -228,7 +233,7 @@ class UserServiceTest {
                 providerAccountDisconnectService
         );
 
-        User user = User.createNew("카카오닉네임", "profile-images/1/profile.png");
+        User user = UserFixtures.createUser("카카오닉네임", "profile-images/1/profile.png");
         ReflectionTestUtils.setField(user, "id", 1L);
         String accessToken = jwtTokenProvider.createAccessToken(1L);
 
@@ -273,7 +278,7 @@ class UserServiceTest {
                 fcmTokenRepository,
                 providerAccountDisconnectService
         );
-        User user = User.createNew("카카오닉네임", "profile-images/1/profile.png");
+        User user = UserFixtures.createUser("카카오닉네임", "profile-images/1/profile.png");
         ReflectionTestUtils.setField(user, "id", 1L);
         GroupMember groupMember = GroupMember.createMember(1L, 10L);
 
@@ -316,7 +321,7 @@ class UserServiceTest {
                 fcmTokenRepository,
                 providerAccountDisconnectService
         );
-        User user = User.createNew("카카오닉네임", "profile-images/1/profile.png");
+        User user = UserFixtures.createUser("카카오닉네임", "profile-images/1/profile.png");
         ReflectionTestUtils.setField(user, "id", 1L);
         SocialLoginUser socialLoginUser = SocialLoginUser.link(user, SocialProvider.KAKAO, "123456789");
 
@@ -360,7 +365,7 @@ class UserServiceTest {
                 fcmTokenRepository,
                 providerAccountDisconnectService
         );
-        User user = User.createNew("카카오닉네임", "profile-images/1/profile.png");
+        User user = UserFixtures.createUser("카카오닉네임", "profile-images/1/profile.png");
         ReflectionTestUtils.setField(user, "id", 1L);
         SocialLoginUser socialLoginUser = SocialLoginUser.link(user, SocialProvider.KAKAO, "123456789");
         GroupMember groupMember = GroupMember.createMember(1L, 10L);
@@ -389,7 +394,7 @@ class UserServiceTest {
         RefreshTokenSessionService refreshTokenSessionService = mock(RefreshTokenSessionService.class);
         JwtTokenProvider jwtTokenProvider = new JwtTokenProvider(JWT_SECRET, ACCESS_TOKEN_EXPIRES_IN);
         UserService userService = userService(userRepository, socialLoginUserRepository, refreshTokenSessionService, jwtTokenProvider);
-        User user = User.createNew("카카오닉네임");
+        User user = UserFixtures.createUser("카카오닉네임");
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 

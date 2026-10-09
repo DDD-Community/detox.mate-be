@@ -1,5 +1,8 @@
 package com.detoxmate.friend.service;
 
+import com.detoxmate.support.UserFixtures;
+import com.detoxmate.common.exception.CustomException;
+import com.detoxmate.common.exception.user.UserCodeException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.detoxmate.friend.domain.Friend;
@@ -28,6 +31,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Locale;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -70,12 +74,12 @@ class FriendServiceTest {
     }
 
     @Test
-    @DisplayName("이메일로 검색하면 일치하는 활성 사용자의 공개 정보와 관계 상태를 반환한다")
-    void searchByEmail_returnsTheMatchingUserWithoutExposingEmail() {
+    @DisplayName("사용자 코드로 검색하면 일치하는 활성 사용자의 공개 정보와 관계 상태를 반환한다")
+    void searchByUserCode_returnsTheMatchingUserWithoutExposingEmail() {
         User me = saveUser("나", "me@example.com");
         User target = saveUser("친구", "friend@example.com", "profile-images/friend/profile.png");
 
-        FriendSearchResponse response = friendService.searchByEmail("  FRIEND@EXAMPLE.COM ", me.getId());
+        FriendSearchResponse response = friendService.searchByUserCode("  " + target.getUserCode().toLowerCase(Locale.ROOT) + " ", me.getId());
 
         assertThat(response).isEqualTo(new FriendSearchResponse(
                 target.getId(),
@@ -212,13 +216,13 @@ class FriendServiceTest {
     }
 
     @Test
-    void searchByEmail_includesMutualSummary() {
+    void searchByUserCode_includesMutualSummary() {
         User me = saveUser("나", "me@example.com");
         User target = saveUser("친구", "friend@example.com");
         User common = saveUser("공통 친구", "common@example.com");
         accept(me, common);
         accept(common, target);
-        JsonNode response = json(friendService.searchByEmail(target.getEmail(), me.getId()));
+        JsonNode response = json(friendService.searchByUserCode(target.getUserCode(), me.getId()));
         assertThat(response.path("mutualFriendCount").asLong(-1)).isEqualTo(1);
         assertThat(response.path("mutualFriendPreviewName").asText()).isEqualTo("공통 친구");
         assertThat(response.has("email")).isFalse();
@@ -231,16 +235,16 @@ class FriendServiceTest {
         User thirdParty = saveUser("제삼자", "third@example.com");
         String code = friendService.getMyInvite(receiver.getId()).code();
         assertThat(friendService.getInvitee(code, sender.getId()).relationshipStatus()).isEqualTo(FriendRelationshipStatus.NONE);
-        friendService.searchByEmail(receiver.getEmail(), sender.getId());
+        friendService.searchByUserCode(receiver.getUserCode(), sender.getId());
         assertThat(friendRepository.findByUserPair(sender.getId(), receiver.getId())).isEmpty();
         assertStatus(400, () -> friendService.sendRequest(sender.getId(), sender.getId()));
         FriendRequestResponse request = friendService.sendRequest(sender.getId(), receiver.getId());
         assertThat(json(request).path("user").has("email")).isFalse();
         assertThat(friendService.getFriends(sender.getId())).isEmpty();
         assertThat(friendService.getFriends(receiver.getId())).isEmpty();
-        assertThat(friendService.searchByEmail(receiver.getEmail(), sender.getId()).relationshipStatus())
+        assertThat(friendService.searchByUserCode(receiver.getUserCode(), sender.getId()).relationshipStatus())
                 .isEqualTo(FriendRelationshipStatus.PENDING_SENT);
-        assertThat(friendService.searchByEmail(sender.getEmail(), receiver.getId()).relationshipStatus())
+        assertThat(friendService.searchByUserCode(sender.getUserCode(), receiver.getId()).relationshipStatus())
                 .isEqualTo(FriendRelationshipStatus.PENDING_RECEIVED);
         assertThat(friendService.getInvitee(code, sender.getId()).relationshipStatus()).isEqualTo(FriendRelationshipStatus.PENDING_SENT);
         assertStatus(409, () -> friendService.sendRequest(sender.getId(), receiver.getId()));
@@ -260,7 +264,7 @@ class FriendServiceTest {
         friendService.unfriend(request.requestId(), receiver.getId());
         assertThat(friendService.getFriends(sender.getId())).isEmpty();
         assertThat(friendService.getFriends(receiver.getId())).isEmpty();
-        assertThat(friendService.searchByEmail(receiver.getEmail(), sender.getId()).relationshipStatus())
+        assertThat(friendService.searchByUserCode(receiver.getUserCode(), sender.getId()).relationshipStatus())
                 .isEqualTo(FriendRelationshipStatus.NONE);
         FriendRequestResponse newRequest = friendService.sendRequest(sender.getId(), receiver.getId());
         assertThat(newRequest.requestId()).isNotEqualTo(request.requestId());
@@ -282,7 +286,7 @@ class FriendServiceTest {
     }
 
     @Test
-    void searchByEmail_countsAcceptedDistinctActiveMutualFriendsWithStablePreview() {
+    void searchByUserCode_countsAcceptedDistinctActiveMutualFriendsWithStablePreview() {
         User me = saveUser("나", "me@example.com");
         User target = saveUser("상대", "target@example.com");
         User earliest = saveUser("첫 공통 친구", "first@example.com");
@@ -302,28 +306,31 @@ class FriendServiceTest {
         accept(me, target);
         withdrawn.withdraw();
         userRepository.saveAndFlush(withdrawn);
-        var response = friendService.searchByEmail(target.getEmail(), me.getId());
+        var response = friendService.searchByUserCode(target.getUserCode(), me.getId());
         assertThat(response.mutualFriendCount()).isEqualTo(2);
         assertThat(response.mutualFriendPreviewName()).isEqualTo("첫 공통 친구");
         assertThat(response.relationshipStatus()).isEqualTo(FriendRelationshipStatus.FRIEND);
-        var reverse = friendService.searchByEmail(me.getEmail(), target.getId());
+        var reverse = friendService.searchByUserCode(me.getUserCode(), target.getId());
         assertThat(reverse.mutualFriendCount()).isEqualTo(2);
         assertThat(reverse.mutualFriendPreviewName()).isEqualTo(response.mutualFriendPreviewName());
-        var self = friendService.searchByEmail(me.getEmail(), me.getId());
+        var self = friendService.searchByUserCode(me.getUserCode(), me.getId());
         assertThat(self.relationshipStatus()).isEqualTo(FriendRelationshipStatus.SELF);
         assertThat(self.mutualFriendCount()).isZero();
         assertThat(self.mutualFriendPreviewName()).isNull();
     }
 
     @Test
-    void searchByEmail_rejectsInvalidMissingAndWithdrawnTargets() {
+    void searchByUserCode_rejectsInvalidMissingAndWithdrawnTargets() {
         User me = saveUser("나", "me@example.com");
         User target = saveUser("탈퇴", "target@example.com");
         target.withdraw();
         userRepository.saveAndFlush(target);
-        assertStatus(400, () -> friendService.searchByEmail("invalid", me.getId()));
-        assertStatus(404, () -> friendService.searchByEmail("missing@example.com", me.getId()));
-        assertStatus(404, () -> friendService.searchByEmail("target@example.com", me.getId()));
+        assertThatThrownBy(() -> friendService.searchByUserCode("invalid", me.getId()))
+                .isInstanceOf(CustomException.class)
+                .extracting("errorCode")
+                .isEqualTo(UserCodeException.INVALID_USER_CODE);
+        assertStatus(404, () -> friendService.searchByUserCode("ZZZZZ", me.getId()));
+        assertStatus(404, () -> friendService.searchByUserCode(target.getUserCode(), me.getId()));
     }
 
     @Test
@@ -378,7 +385,7 @@ class FriendServiceTest {
     }
 
     private User saveUser(String displayName, String email, String profileImageObjectKey) {
-        return userRepository.saveAndFlush(User.createNew(displayName, profileImageObjectKey, email));
+        return userRepository.saveAndFlush(UserFixtures.createUser(displayName, profileImageObjectKey, email));
     }
 
     @TestConfiguration

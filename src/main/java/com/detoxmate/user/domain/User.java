@@ -8,6 +8,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,10 +17,11 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.Locale;
+import java.util.Objects;
 
 @Getter
 @Entity
-@Table(name = "users")
+@Table(name = "users", uniqueConstraints = @UniqueConstraint(name = "uk_users_user_code", columnNames = "user_code"))
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User {
 
@@ -29,6 +31,10 @@ public class User {
     @Column(name = "user_id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    // 기존 User들을 위한 nullable 입니다. 추후 Backfill을 통해 마이그레이션합니다.
+    @Column(name = "user_code", length = UserCode.LENGTH, updatable = false)
+    private String userCode;
 
     @Column(name = "display_name", nullable = false, length = 30)
     private String displayName;
@@ -57,7 +63,8 @@ public class User {
     @Column(name = "withdrawn_at")
     private LocalDateTime withdrawnAt;
 
-    private User(String displayName, String profileImageObjectKey, String email) {
+    private User(String displayName, String profileImageObjectKey, String email, UserCode userCode) {
+        this.userCode = Objects.requireNonNull(userCode, "UserCode is required for new users").value();
         this.displayName = displayName;
         this.profileImageObjectKey = profileImageObjectKey;
         this.email = normalizeEmail(email);
@@ -65,16 +72,16 @@ public class User {
         this.pushNotificationEnabled = true;
     }
 
-    public static User createNew(String displayName) {
-        return createNew(displayName, null);
+    public static User createNew(String displayName, UserCode userCode) {
+        return createNew(displayName, null, userCode);
     }
 
-    public static User createNew(String displayName, String profileImageObjectKey) {
-        return createNew(displayName, profileImageObjectKey, null);
+    public static User createNew(String displayName, String profileImageObjectKey, UserCode userCode) {
+        return createNew(displayName, profileImageObjectKey, null, userCode);
     }
 
-    public static User createNew(String displayName, String profileImageObjectKey, String email) {
-        return new User(displayName, profileImageObjectKey, email);
+    public static User createNew(String displayName, String profileImageObjectKey, String email, UserCode userCode) {
+        return new User(displayName, profileImageObjectKey, email, userCode);
     }
 
     public void changeDisplayName(String displayName) {

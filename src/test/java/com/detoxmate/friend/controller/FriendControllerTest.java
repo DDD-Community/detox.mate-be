@@ -1,6 +1,8 @@
 package com.detoxmate.friend.controller;
 
 import com.detoxmate.auth.CurrentUserResolver;
+import com.detoxmate.common.exception.CustomException;
+import com.detoxmate.common.exception.user.UserCodeException;
 import com.detoxmate.friend.dto.FriendInviteResponse;
 import com.detoxmate.friend.dto.FriendInviteeResponse;
 import com.detoxmate.friend.dto.FriendListUserResponse;
@@ -81,7 +83,7 @@ class FriendControllerTest {
         friendService = mock(FriendService.class);
         UserService userService = mock(UserService.class);
         when(userService.getMe("access-token"))
-                .thenReturn(new MyProfileResponse(1L, "나", "https://example.com/profile.png", true));
+                .thenReturn(new MyProfileResponse(1L, "나", "https://example.com/profile.png", "ABCDE", true));
 
         mockMvc = MockMvcBuilders.standaloneSetup(new FriendController(friendService))
                 .setCustomArgumentResolvers(new CurrentUserResolver(userService))
@@ -154,25 +156,25 @@ class FriendControllerTest {
     }
 
     @Test
-    @DisplayName("이메일로 친구를 검색하면 정확히 일치하는 사용자를 반환한다")
-    void searchByEmail_returnsExactMatch() throws Exception {
-        when(friendService.searchByEmail("friend@example.com", 1L))
+    @DisplayName("사용자 코드로 친구를 검색하면 정확히 일치하는 사용자를 반환한다")
+    void searchByUserCode_returnsExactMatch() throws Exception {
+        when(friendService.searchByUserCode("MNPQR", 1L))
                 .thenReturn(new FriendSearchResponse(2L, "친구", null, FriendRelationshipStatus.NONE,
                         null, 2L, "공통 친구"));
         HeaderDescriptor[] headers = authorizationHeaders();
-        ParameterDescriptor[] queryParameters = emailQueryParameters();
+        ParameterDescriptor[] queryParameters = userCodeQueryParameters();
         FieldDescriptor[] responseFields = searchResponseFields();
 
         mockMvc.perform(get("/friends/search")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
-                        .param("email", "friend@example.com"))
+                        .param("userCode", "MNPQR"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.userId").value(2))
                 .andExpect(jsonPath("$.relationshipStatus").value("NONE"))
                 .andExpect(jsonPath("$.mutualFriendCount").value(2))
                 .andExpect(jsonPath("$.mutualFriendPreviewName").value("공통 친구"))
                 .andExpect(jsonPath("$.email").doesNotExist())
-                .andDo(document("friends/search-email-get",
+                .andDo(document("friends/search-user-code-get",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
                         requestHeaders(headers),
@@ -180,10 +182,10 @@ class FriendControllerTest {
                         responseFields(responseFields),
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Friend")
-                                .summary("Search friend by exact email")
-                                .description("정규화한 이메일 전체 주소와 정확히 일치하는 활성 사용자를 조회한다. 현재 양쪽의 수락된 관계 중 활성 공통 친구 수와 대표 이름을 반환한다. 대표는 가장 작은 사용자 ID이며 공통 친구가 없거나 자기 자신이면 0/null이다. 대기 요청은 집계하지 않는다. 이메일·상세 활동은 응답에 포함하지 않는다.")
+                                .summary("Search friend by exact user code")
+                                .description("정규화한 5자리 사용자 코드와 정확히 일치하는 활성 사용자를 조회한다. 대소문자와 앞뒤 공백을 허용하며 하이픈은 허용하지 않는다. 코드 누락·형식 오류는 400, 미존재·탈퇴한 사용자는 404이다. 현재 양쪽의 수락된 관계 중 활성 공통 친구 수와 대표 이름을 반환한다. 대표는 가장 작은 사용자 ID이며 공통 친구가 없거나 자기 자신이면 0/null이다. 대기 요청은 집계하지 않는다. 이메일·상세 활동은 응답에 포함하지 않는다.")
                                 .requestHeaders(headers)
-                                .queryParameters(emailQueryParametersForOpenApi())
+                                .queryParameters(userCodeQueryParametersForOpenApi())
                                 .responseSchema(schema("FriendSearchResponse"))
                                 .responseFields(responseFields)
                                 .build()
@@ -468,16 +470,19 @@ class FriendControllerTest {
     @ParameterizedTest(name = "{0} returns {1}")
     @MethodSource("errorCases")
     void documentedErrors(String operation, int httpStatus) throws Exception {
-        ResponseStatusException error = new ResponseStatusException(HttpStatus.valueOf(httpStatus));
+        RuntimeException error = operation.equals("search-user-code-get") && httpStatus == 400
+                ? new CustomException(UserCodeException.INVALID_USER_CODE)
+                : new ResponseStatusException(HttpStatus.valueOf(httpStatus));
         MockHttpServletRequestBuilder request;
         switch (operation) {
             case "invitee-get" -> {
                 when(friendService.getInvitee("invite-code", 1L)).thenThrow(error);
                 request = get("/friends/invite/{code}", "invite-code");
             }
-            case "search-email-get" -> {
-                when(friendService.searchByEmail("friend@example.com", 1L)).thenThrow(error);
-                request = get("/friends/search").param("email", "friend@example.com");
+            case "search-user-code-get" -> {
+                String userCode = httpStatus == 400 ? "invalid" : "MNPQR";
+                when(friendService.searchByUserCode(userCode, 1L)).thenThrow(error);
+                request = get("/friends/search").param("userCode", userCode);
             }
             case "requests-create" -> {
                 when(friendService.sendRequest(1L, 2L)).thenThrow(error);
@@ -499,10 +504,14 @@ class FriendControllerTest {
             default -> throw new IllegalArgumentException(operation);
         }
         FieldDescriptor[] fields = errorResponseFields();
-        mockMvc.perform(request.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+        var response = mockMvc.perform(request.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
                 .andExpect(status().is(httpStatus))
-                .andExpect(jsonPath("$.status").value(httpStatus))
-                .andDo(document("friends/" + operation + "-error-" + httpStatus,
+                .andExpect(jsonPath("$.status").value(httpStatus));
+        if (error instanceof CustomException custom) {
+            response.andExpect(jsonPath("$.code").value(custom.getErrorCode().name()))
+                    .andExpect(jsonPath("$.message").value(custom.getErrorCode().getMessage()));
+        }
+        response.andDo(document("friends/" + operation + "-error-" + httpStatus,
                         preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint()),
                         responseFields(fields),
                         resource(ResourceSnippetParameters.builder().tag("Friend")
@@ -512,7 +521,7 @@ class FriendControllerTest {
     private static Stream<Arguments> errorCases() {
         return Stream.of(
                 Arguments.of("invitee-get", 404),
-                Arguments.of("search-email-get", 400), Arguments.of("search-email-get", 404),
+                Arguments.of("search-user-code-get", 400), Arguments.of("search-user-code-get", 404),
                 Arguments.of("requests-create", 400), Arguments.of("requests-create", 404), Arguments.of("requests-create", 409),
                 Arguments.of("requests-accept", 403), Arguments.of("requests-accept", 404), Arguments.of("requests-accept", 409),
                 Arguments.of("requests-delete", 403), Arguments.of("requests-delete", 404), Arguments.of("requests-delete", 409),
@@ -540,7 +549,7 @@ class FriendControllerTest {
         return Stream.of(
                 Arguments.of("invite-get", "GET", "/friends/invite"),
                 Arguments.of("invitee-get", "GET", "/friends/invite/{code}"),
-                Arguments.of("search-email-get", "GET", "/friends/search?email=friend@example.com"),
+                Arguments.of("search-user-code-get", "GET", "/friends/search?userCode=MNPQR"),
                 Arguments.of("requests-create", "POST", "/friends/requests"),
                 Arguments.of("requests-sent-get", "GET", "/friends/requests/sent"),
                 Arguments.of("requests-received-get", "GET", "/friends/requests/received"),
@@ -590,17 +599,17 @@ class FriendControllerTest {
         };
     }
 
-    private ParameterDescriptor[] emailQueryParameters() {
+    private ParameterDescriptor[] userCodeQueryParameters() {
         return new ParameterDescriptor[] {
-                parameterWithName("email").description("정확히 검색할 사용자 이메일")
+                parameterWithName("userCode").description("필수 사용자 코드. 영문 대문자·숫자 5자리(ABCDEFGHJKLMNPQRSTUVWXYZ23456789). 대소문자와 앞뒤 공백 허용, 하이픈 불가")
         };
     }
 
-    private com.epages.restdocs.apispec.ParameterDescriptorWithType[] emailQueryParametersForOpenApi() {
+    private com.epages.restdocs.apispec.ParameterDescriptorWithType[] userCodeQueryParametersForOpenApi() {
         return new com.epages.restdocs.apispec.ParameterDescriptorWithType[] {
-                com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName("email")
+                com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName("userCode")
                         .type(SimpleType.STRING)
-                        .description("정확히 검색할 사용자 이메일")
+                        .description("필수 사용자 코드. 영문 대문자·숫자 5자리(ABCDEFGHJKLMNPQRSTUVWXYZ23456789). 대소문자와 앞뒤 공백 허용, 하이픈 불가")
         };
     }
 

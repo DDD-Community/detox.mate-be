@@ -1,5 +1,7 @@
 package com.detoxmate.reaction.controller;
 
+import com.detoxmate.support.UserFixtures;
+
 
 import com.detoxmate.auth.JwtTokenProvider;
 import com.detoxmate.challengerecord.domain.ChallengeRecord;
@@ -73,8 +75,8 @@ class ReactionControllerTest {
 
     @BeforeEach
     void setUp() {
-        currentUserId = userRepository.save(User.createNew("xeulbn")).getId();
-        otherUserId = userRepository.save(User.createNew("other")).getId();
+        currentUserId = userRepository.save(UserFixtures.createUser("xeulbn")).getId();
+        otherUserId = userRepository.save(UserFixtures.createUser("other")).getId();
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.detoxmate.activityrecord.domain;
 
+import com.detoxmate.support.UserFixtures;
 import com.detoxmate.activityrecord.dto.UsageGoalTypeCode;
 import com.detoxmate.user.domain.User;
 import org.junit.jupiter.api.Test;
@@ -44,7 +45,7 @@ class ActivityRecordDetailTest {
     }
 
     private ActivityRecord activityRecord() {
-        User user = User.createNew("tester");
+        User user = UserFixtures.createUser("tester");
         return ActivityRecord.create(user, nullSafeParticipant(), "activity-records/sample.png", null);
     }
 
@@ -54,6 +55,6 @@ class ActivityRecordDetailTest {
 
     private UserUsageGoalTime userUsageGoalTime(UsageGoalTypeCode usageGoalTypeCode, int goalMinutes) {
         UsageGoalType usageGoalType = UsageGoalType.create(usageGoalTypeCode.ordinal() + 1L, usageGoalTypeCode);
-        return UserUsageGoalTime.create(User.createNew("tester"), usageGoalType, goalMinutes);
+        return UserUsageGoalTime.create(UserFixtures.createUser("tester"), usageGoalType, goalMinutes);
     }
 }

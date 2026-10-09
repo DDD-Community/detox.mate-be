@@ -1,5 +1,6 @@
 package com.detoxmate.applock.service;
 
+import com.detoxmate.support.UserFixtures;
 import com.detoxmate.applock.domain.TimeLimit;
 import com.detoxmate.applock.repository.TimeLimitRepository;
 import com.detoxmate.user.domain.User;
@@ -43,7 +44,7 @@ class TimeLimitServiceTest {
 
     @BeforeEach
     void setUp() {
-        userId = userRepository.saveAndFlush(User.createNew("time-limit-owner")).getId();
+        userId = userRepository.saveAndFlush(UserFixtures.createUser("time-limit-owner")).getId();
     }
 
     @AfterEach

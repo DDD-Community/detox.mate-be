@@ -1,5 +1,6 @@
 package com.detoxmate.comment.controller;
 
+import com.detoxmate.support.UserFixtures;
 import com.detoxmate.auth.JwtTokenProvider;
 import com.detoxmate.challengerecord.domain.ChallengeRecord;
 import com.detoxmate.challengerecord.domain.ChallengeRecordCertificationResult;
@@ -71,7 +72,7 @@ class CommentControllerTest {
 
     @BeforeEach
     void setUp() {
-        User user = userRepository.save(User.createNew("xeulbn"));
+        User user = userRepository.save(UserFixtures.createUser("xeulbn"));
         currentUserId = user.getId();
     }
 

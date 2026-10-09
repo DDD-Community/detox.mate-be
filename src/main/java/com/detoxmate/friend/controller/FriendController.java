@@ -10,8 +10,6 @@ import com.detoxmate.friend.dto.FriendReceivedRequestResponse;
 import com.detoxmate.friend.dto.FriendSearchResponse;
 import com.detoxmate.friend.service.FriendService;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
@@ -49,11 +47,11 @@ public class FriendController {
     }
 
     @GetMapping("/search")
-    public FriendSearchResponse searchByEmail(
+    public FriendSearchResponse searchByUserCode(
             CurrentUser currentUser,
-            @RequestParam("email") @NotBlank @Email String email
+            @RequestParam(value = "userCode", required = false) String userCode
     ) {
-        return friendService.searchByEmail(email, currentUser.id());
+        return friendService.searchByUserCode(userCode, currentUser.id());
     }
 
     @PostMapping("/requests")

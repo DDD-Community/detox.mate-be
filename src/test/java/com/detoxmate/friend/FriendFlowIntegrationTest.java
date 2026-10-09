@@ -1,5 +1,6 @@
 package com.detoxmate.friend;
 
+import com.detoxmate.support.UserFixtures;
 import com.detoxmate.auth.CurrentUserResolver;
 import com.detoxmate.common.error.GlobalExceptionHandlerTestFixture;
 import com.detoxmate.friend.controller.FriendController;
@@ -57,13 +58,13 @@ class FriendFlowIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        sender = userRepository.saveAndFlush(User.createNew("신청자", null, "flow-sender@example.com"));
-        receiver = userRepository.saveAndFlush(User.createNew("수신자", null, "flow-receiver@example.com"));
-        common = userRepository.saveAndFlush(User.createNew("공통 친구", null, "flow-common@example.com"));
+        sender = userRepository.saveAndFlush(UserFixtures.createUser("신청자", null, "flow-sender@example.com"));
+        receiver = userRepository.saveAndFlush(UserFixtures.createUser("수신자", null, "flow-receiver@example.com"));
+        common = userRepository.saveAndFlush(UserFixtures.createUser("공통 친구", null, "flow-common@example.com"));
         UserService authentication = mock(UserService.class);
         for (User user : new User[]{sender, receiver, common}) {
             when(authentication.getMe(token(user))).thenReturn(
-                    new MyProfileResponse(user.getId(), user.getDisplayName(), null, true)
+                    new MyProfileResponse(user.getId(), user.getDisplayName(), null, user.getUserCode(), true)
             );
         }
         mockMvc = MockMvcBuilders.standaloneSetup(new FriendController(friendService))
@@ -90,13 +91,13 @@ class FriendFlowIntegrationTest {
                 .andExpect(jsonPath("$.daysSinceStart").isNumber())
                 .andExpect(jsonPath("$.targetSuccessCount").value(0))
                 .andExpect(jsonPath("$.email").doesNotExist());
-        perform(sender, get("/friends/search").param("email", receiver.getEmail()))
+        perform(sender, get("/friends/search").param("userCode", receiver.getUserCode()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.userId").value(receiver.getId()))
                 .andExpect(jsonPath("$.mutualFriendCount").value(1))
                 .andExpect(jsonPath("$.mutualFriendPreviewName").value(common.getDisplayName()))
                 .andExpect(jsonPath("$.email").doesNotExist());
-        perform(sender, get("/friends/search").param("email", "flow-receive@example.com"))
+        perform(sender, get("/friends/search").param("userCode", "ZZZZZ"))
                 .andExpect(status().isNotFound());
 
         long original = sendRequest(sender, receiver);

@@ -107,7 +107,16 @@ class ActivityCalendarSqlFixtureApiTest {
                 .getResponse()
                 .getContentAsString();
 
-        return objectMapper.readTree(response);
+        JsonNode fixture = objectMapper.readTree(response);
+        assertThat(jdbcTemplate.queryForList("""
+                SELECT u.user_code FROM users u
+                JOIN group_members gm ON gm.user_id = u.user_id
+                WHERE gm.group_id = ?
+                """, String.class, fixture.get("groupId").asLong()))
+                .hasSize(3)
+                .doesNotHaveDuplicates()
+                .allSatisfy(code -> assertThat(code).matches("[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{5}"));
+        return fixture;
     }
 
     private void assertStaggeredFixtureDates(long groupId, JsonNode fixture) {

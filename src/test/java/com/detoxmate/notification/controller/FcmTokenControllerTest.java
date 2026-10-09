@@ -1,5 +1,6 @@
 package com.detoxmate.notification.controller;
 
+import com.detoxmate.support.UserFixtures;
 import com.detoxmate.auth.JwtTokenProvider;
 import com.detoxmate.notification.domain.DevicePlatform;
 import com.detoxmate.notification.domain.FcmToken;
@@ -54,7 +55,7 @@ class FcmTokenControllerTest {
 
     @BeforeEach
     void setUp(){
-        User user = userRepository.save(User.createNew("xeulbn"));
+        User user = userRepository.save(UserFixtures.createUser("xeulbn"));
         testUserId = user.getId();
     }
 

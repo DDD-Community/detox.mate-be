@@ -1,5 +1,6 @@
 package com.detoxmate.feed.service;
 
+import com.detoxmate.support.UserFixtures;
 import com.detoxmate.activityrecord.domain.ActivityRecord;
 import com.detoxmate.activityrecord.repository.ActivityRecordRepository;
 import com.detoxmate.challengerecord.domain.ChallengeRecord;
@@ -91,10 +92,10 @@ class FeedDetailServiceTest {
         Group group = groupRepository.save(Group.createNew("수능방", "ABCDE"));
         GroupChallenge challenge = groupChallengeRepository.save(GroupChallenge.createFirst(group.getId()));
 
-        User currentUser = userRepository.save(User.createNew("나"));
-        User author = userRepository.save(User.createNew("민준"));
-        User poker1 = userRepository.save(User.createNew("Alice"));
-        User poker2 = userRepository.save(User.createNew("Bob"));
+        User currentUser = userRepository.save(UserFixtures.createUser("나"));
+        User author = userRepository.save(UserFixtures.createUser("민준"));
+        User poker1 = userRepository.save(UserFixtures.createUser("Alice"));
+        User poker2 = userRepository.save(UserFixtures.createUser("Bob"));
 
         saveParticipant(group.getId(), challenge.getId(), currentUser);
         GroupChallengeParticipant authorParticipant = saveParticipant(group.getId(), challenge.getId(), author);
@@ -154,8 +155,8 @@ class FeedDetailServiceTest {
         Group group = groupRepository.save(Group.createNew("수능방", "ABCDE"));
         GroupChallenge challenge = groupChallengeRepository.save(GroupChallenge.createFirst(group.getId()));
 
-        User currentUser = userRepository.save(User.createNew("나"));
-        User author = userRepository.save(User.createNew("민준"));
+        User currentUser = userRepository.save(UserFixtures.createUser("나"));
+        User author = userRepository.save(UserFixtures.createUser("민준"));
 
         saveParticipant(group.getId(), challenge.getId(), currentUser);
         GroupChallengeParticipant authorParticipant = saveParticipant(group.getId(), challenge.getId(), author);
@@ -186,8 +187,8 @@ class FeedDetailServiceTest {
         Group group = groupRepository.save(Group.createNew("수능방", "ABCDE"));
         GroupChallenge challenge = groupChallengeRepository.save(GroupChallenge.createFirst(group.getId()));
 
-        User currentUser = userRepository.save(User.createNew("나"));
-        User author = userRepository.save(User.createNew("민준"));
+        User currentUser = userRepository.save(UserFixtures.createUser("나"));
+        User author = userRepository.save(UserFixtures.createUser("민준"));
 
         saveParticipant(group.getId(), challenge.getId(), currentUser);
         GroupChallengeParticipant authorParticipant = saveParticipant(group.getId(), challenge.getId(), author);
@@ -215,10 +216,10 @@ class FeedDetailServiceTest {
         Group group = groupRepository.save(Group.createNew("수능방", "ABCDE"));
         GroupChallenge challenge = groupChallengeRepository.save(GroupChallenge.createFirst(group.getId()));
 
-        User currentUser = userRepository.save(User.createNew("나"));
-        User author = userRepository.save(User.createNew("민준"));
-        User reactor1 = userRepository.save(User.createNew("Alice"));
-        User reactor2 = userRepository.save(User.createNew("Bob"));
+        User currentUser = userRepository.save(UserFixtures.createUser("나"));
+        User author = userRepository.save(UserFixtures.createUser("민준"));
+        User reactor1 = userRepository.save(UserFixtures.createUser("Alice"));
+        User reactor2 = userRepository.save(UserFixtures.createUser("Bob"));
 
         saveParticipant(group.getId(), challenge.getId(), currentUser);
         GroupChallengeParticipant authorParticipant = saveParticipant(group.getId(), challenge.getId(), author);
@@ -286,8 +287,8 @@ class FeedDetailServiceTest {
         Group group = groupRepository.save(Group.createNew("수능방", "ABCDE"));
         GroupChallenge challenge = groupChallengeRepository.save(GroupChallenge.createFirst(group.getId()));
 
-        User currentUser = userRepository.save(User.createNew("나"));
-        User author = userRepository.save(User.createNew("민준", "profile-images/2/profile.png"));
+        User currentUser = userRepository.save(UserFixtures.createUser("나"));
+        User author = userRepository.save(UserFixtures.createUser("민준", "profile-images/2/profile.png"));
 
         saveParticipant(group.getId(), challenge.getId(), currentUser);
         GroupChallengeParticipant authorParticipant = saveParticipant(group.getId(), challenge.getId(), author);

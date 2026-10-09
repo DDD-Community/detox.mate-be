@@ -4,6 +4,7 @@ public record MyProfileResponse(
         Long id,
         String displayName,
         String profileImageUrl,
+        String userCode,
         boolean pushNotificationEnabled
 ) {
 }

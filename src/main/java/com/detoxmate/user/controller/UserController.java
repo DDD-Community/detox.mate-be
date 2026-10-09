@@ -1,7 +1,7 @@
 package com.detoxmate.user.controller;
 
 import com.detoxmate.auth.CurrentUser;
-import com.detoxmate.user.dto.MyProfileResponse;
+import com.detoxmate.user.dto.MyPageResponse;
 import com.detoxmate.user.dto.UpdateMyProfileRequest;
 import com.detoxmate.user.dto.UpdatePushNotificationSettingRequest;
 import com.detoxmate.user.service.UserService;
@@ -24,16 +24,16 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping("/me")
-    public MyProfileResponse getMe(CurrentUser currentUser) {
-        return userService.getMe(currentUser.id());
+    public MyPageResponse getMe(CurrentUser currentUser) {
+        return MyPageResponse.from(userService.getMe(currentUser.id()));
     }
 
     @PatchMapping("/me")
-    public MyProfileResponse updateMe(
+    public MyPageResponse updateMe(
             CurrentUser currentUser,
             @Valid @RequestBody UpdateMyProfileRequest request
     ) {
-        return userService.updateMe(currentUser.id(), request);
+        return MyPageResponse.from(userService.updateMe(currentUser.id(), request));
     }
 
     @DeleteMapping("/me")

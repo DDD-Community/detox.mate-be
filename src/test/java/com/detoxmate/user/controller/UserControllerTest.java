@@ -6,6 +6,7 @@ import com.detoxmate.user.dto.MyProfileResponse;
 import com.detoxmate.user.service.UserService;
 import io.jsonwebtoken.JwtException;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.http.MediaType;
@@ -71,18 +72,20 @@ class UserControllerTest {
     @Test
     void Authorization_헤더가_있으면_유저_정보를_반환한다() throws Exception {
         when(userService.getMe("access-token"))
-                .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png", true));
+                .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png", "ABCDE", true));
         when(userService.getMe(1L))
-                .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png", true));
+                .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png", "ABCDE", true));
 
         HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
-        FieldDescriptor[] responseFieldDescriptors = myProfileResponseFields();
+        FieldDescriptor[] responseFieldDescriptors = myPageResponseFields();
 
         // when & then
         mockMvc.perform(get("/users/me").header("Authorization", "Bearer access-token"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.id").doesNotExist())
+                .andExpect(jsonPath("$.pushNotificationEnabled").doesNotExist())
+                .andExpect(jsonPath("$.userCode").value("ABCDE"))
                 .andDo(document("users/me-get",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
@@ -91,18 +94,39 @@ class UserControllerTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("User")
                                 .summary("Get my profile")
-                                .description("Authorization 헤더의 access token으로 내 프로필 정보를 조회한다.")
+                                .description("Authorization 헤더의 access token으로 닉네임, 5자리 사용자 코드, 프로필 이미지 URL을 조회한다.")
                                 .requestHeaders(requestHeaderDescriptors)
-                                .responseSchema(schema("MyProfileResponse"))
+                                .responseSchema(schema("MyPageResponse"))
                                 .responseFields(responseFieldDescriptors)
                                 .build()
                         )));
     }
 
     @Test
+    @DisplayName("사용자 코드가 미발급된 기존 계정의 프로필은 userCode를 null로 반환한다")
+    void getMe_returnsNullUserCodeForLegacyUser() throws Exception {
+        // given
+        MyProfileResponse profile = new MyProfileResponse(
+                1L, "기존 사용자", "https://example.com/profile.png", null, true);
+        when(userService.getMe("access-token")).thenReturn(profile);
+        when(userService.getMe(1L)).thenReturn(profile);
+
+        // when & then
+        mockMvc.perform(get("/users/me").header("Authorization", "Bearer access-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").doesNotExist())
+                .andExpect(jsonPath("$.pushNotificationEnabled").doesNotExist())
+                .andExpect(jsonPath("$.userCode").hasJsonPath())
+                .andExpect(jsonPath("$.userCode").value(nullValue()))
+                .andDo(org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document(
+                        "users/me-get-without-user-code",
+                        responseFields(myPageResponseFields())));
+    }
+
+    @Test
     void 내_프로필을_수정하면_수정된_유저_정보를_반환한다() throws Exception {
         when(userService.getMe("access-token"))
-                .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png", true));
+                .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png", "ABCDE", true));
         when(userService.updateMe(eq(1L), argThat(request ->
                 "의진".equals(request.displayName())
                         && "profile-images/1/550e8400-e29b-41d4-a716-446655440000-profile.png"
@@ -113,12 +137,13 @@ class UserControllerTest {
                         1L,
                         "의진",
                         "https://media.detoxmate.co.kr/profile-images/1/550e8400-e29b-41d4-a716-446655440000-profile.png",
+                        "ABCDE",
                         true
                 ));
 
         HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
         FieldDescriptor[] requestFieldDescriptors = updateMyProfileRequestFields();
-        FieldDescriptor[] responseFieldDescriptors = myProfileResponseFields();
+        FieldDescriptor[] responseFieldDescriptors = myPageResponseFields();
 
         mockMvc.perform(patch("/users/me")
                         .header("Authorization", "Bearer access-token")
@@ -131,7 +156,9 @@ class UserControllerTest {
                         """))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.id").doesNotExist())
+                .andExpect(jsonPath("$.pushNotificationEnabled").doesNotExist())
+                .andExpect(jsonPath("$.userCode").value("ABCDE"))
                 .andExpect(jsonPath("$.displayName").value("의진"))
                 .andDo(document("users/me-patch",
                         preprocessRequest(prettyPrint()),
@@ -142,10 +169,10 @@ class UserControllerTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("User")
                                 .summary("Update my profile")
-                                .description("로그인 사용자의 표시 이름과 프로필 이미지 object key를 부분 수정한다.")
+                                .description("한 요청 본문에 displayName과 profileImageObjectKey를 함께 보내면 두 값을 함께 수정한다. 생략한 필드는 유지하며 profileImageObjectKey가 null이면 이미지를 제거한다. 잘못된 이미지 경로는 두 변경 모두 롤백한다.")
                                 .requestHeaders(requestHeaderDescriptors)
                                 .requestSchema(schema("UpdateMyProfileRequest"))
-                                .responseSchema(schema("MyProfileResponse"))
+                                .responseSchema(schema("MyPageResponse"))
                                 .requestFields(requestFieldDescriptors)
                                 .responseFields(responseFieldDescriptors)
                                 .build()
@@ -155,13 +182,13 @@ class UserControllerTest {
     @Test
     void 내_프로필_수정_요청에서_프로필_이미지_object_key를_null로_보내면_이미지를_제거한다() throws Exception {
         when(userService.getMe("access-token"))
-                .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png", true));
+                .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png", "ABCDE", true));
         when(userService.updateMe(eq(1L), argThat(request ->
                 request.displayName() == null
                         && request.profileImageObjectKey() == null
                         && request.hasProfileImageObjectKey()
         )))
-                .thenReturn(new MyProfileResponse(1L, "카카오닉네임", null, true));
+                .thenReturn(new MyProfileResponse(1L, "카카오닉네임", null, "ABCDE", true));
 
         mockMvc.perform(patch("/users/me")
                         .header("Authorization", "Bearer access-token")
@@ -173,14 +200,16 @@ class UserControllerTest {
                         """))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.id").doesNotExist())
+                .andExpect(jsonPath("$.pushNotificationEnabled").doesNotExist())
+                .andExpect(jsonPath("$.userCode").value("ABCDE"))
                 .andExpect(jsonPath("$.profileImageUrl").value(nullValue()));
     }
 
     @Test
     void 내_프로필_수정_요청의_필드가_공백이면_400_에러를_반환한다() throws Exception {
         when(userService.getMe("access-token"))
-                .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png", true));
+                .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png", "ABCDE", true));
 
         mockMvc.perform(patch("/users/me")
                         .header("Authorization", "Bearer access-token")
@@ -200,7 +229,7 @@ class UserControllerTest {
     @Test
     void 내_프로필_수정_요청의_닉네임이_10자를_초과하면_400_에러를_반환한다() throws Exception {
         when(userService.getMe("access-token"))
-                .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png", true));
+                .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png", "ABCDE", true));
 
         mockMvc.perform(patch("/users/me")
                         .header("Authorization", "Bearer access-token")
@@ -219,7 +248,7 @@ class UserControllerTest {
     @Test
     void 회원_탈퇴를_요청하면_204_응답을_반환한다() throws Exception {
         when(userService.getMe("access-token"))
-                .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png", true));
+                .thenReturn(new MyProfileResponse(1L, "카카오닉네임", "https://example.com/profile.png", "ABCDE", true));
 
         HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
 
@@ -290,7 +319,7 @@ class UserControllerTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("User")
                                 .summary("Get my profile")
-                                .description("Authorization 헤더의 access token으로 내 프로필 정보를 조회한다.")
+                                .description("Authorization 헤더의 access token으로 닉네임, 5자리 사용자 코드, 프로필 이미지 URL을 조회한다.")
                                 .requestHeaders(requestHeaderDescriptors)
                                 .responseSchema(schema("ErrorResponse"))
                                 .responseFields(errorResponseFieldDescriptors)
@@ -328,21 +357,18 @@ class UserControllerTest {
         };
     }
 
-    private FieldDescriptor[] myProfileResponseFields() {
+    private FieldDescriptor[] myPageResponseFields() {
         return new FieldDescriptor[] {
-                fieldWithPath("id")
-                        .type(JsonFieldType.NUMBER)
-                        .description("서비스 사용자 ID"),
                 fieldWithPath("displayName")
                         .type(JsonFieldType.STRING)
                         .description("사용자 닉네임"),
+                fieldWithPath("userCode")
+                        .type(JsonFieldType.STRING)
+                        .description("친구 검색에 사용하는 5자리 사용자 코드. 아직 발급되지 않은 기존 계정은 null")
+                        .optional(),
                 fieldWithPath("profileImageUrl")
                         .type(JsonFieldType.STRING)
-                        .description("저장된 프로필 이미지 object key를 읽기 URL로 변환한 값")
-                        .optional(),
-                fieldWithPath("pushNotificationEnabled")
-                        .type(JsonFieldType.BOOLEAN)
-                        .description("푸시 알림 수신 여부")
+                        .description("저장된 프로필 이미지 object key를 읽기 URL로 변환한 값. 이미지가 없으면 null")
                         .optional()
         };
     }

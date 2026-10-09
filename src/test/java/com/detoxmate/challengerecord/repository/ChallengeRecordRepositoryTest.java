@@ -1,5 +1,6 @@
 package com.detoxmate.challengerecord.repository;
 
+import com.detoxmate.support.UserFixtures;
 import com.detoxmate.challengerecord.domain.ChallengeRecord;
 import com.detoxmate.challengerecord.domain.ChallengeRecordCertificationResult;
 import com.detoxmate.challengerecord.domain.ChallengeRecordStatus;
@@ -212,9 +213,9 @@ class ChallengeRecordRepositoryTest {
     @DisplayName("그룹 챌린지와 날짜로 챌린지 기록을 사용자 이름 오름차순으로 조회한다")
     void findAllByGroupChallengeDateOrderByDisplayName_returnsRecordsOrderedByDisplayName() {
         // given
-        User xeulbn = userRepository.save(User.createNew("슬빈"));
-        User gorapaduck = userRepository.save(User.createNew("고라파덕"));
-        User jammanbo = userRepository.save(User.createNew("잠만보"));
+        User xeulbn = userRepository.save(UserFixtures.createUser("슬빈"));
+        User gorapaduck = userRepository.save(UserFixtures.createUser("고라파덕"));
+        User jammanbo = userRepository.save(UserFixtures.createUser("잠만보"));
 
         GroupMember xeulbnMember = groupMemberRepository.save(GroupMember.createMember(xeulbn.getId(), 1L));
         GroupMember gorapaduckMember = groupMemberRepository.save(GroupMember.createMember(gorapaduck.getId(), 1L));

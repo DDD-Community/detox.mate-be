@@ -1,5 +1,6 @@
 package com.detoxmate.friend.repository;
 
+import com.detoxmate.support.UserFixtures;
 import com.detoxmate.friend.domain.Friend;
 import com.detoxmate.friend.domain.FriendStatus;
 import com.detoxmate.user.domain.User;
@@ -27,8 +28,8 @@ class FriendRepositoryTest {
     @Test
     @DisplayName("사용자 쌍의 순서가 달라도 동일한 친구 관계를 조회한다")
     void findByUserPair_findsTheSameRelationshipRegardlessOfDirection() {
-        User from = userRepository.save(User.createNew("보낸 사람"));
-        User to = userRepository.save(User.createNew("받은 사람"));
+        User from = userRepository.save(UserFixtures.createUser("보낸 사람"));
+        User to = userRepository.save(UserFixtures.createUser("받은 사람"));
         Friend request = friendRepository.saveAndFlush(Friend.request(from.getId(), to.getId()));
 
         assertThat(friendRepository.findByUserPair(to.getId(), from.getId()))
@@ -40,8 +41,8 @@ class FriendRepositoryTest {
     @Test
     @DisplayName("받은 사용자가 수락한 대기 요청 행만 친구 상태로 변경한다")
     void acceptPendingRequest_updatesOnlyTheReceiverOwnedPendingRow() {
-        User from = userRepository.save(User.createNew("보낸 사람"));
-        User to = userRepository.save(User.createNew("받은 사람"));
+        User from = userRepository.save(UserFixtures.createUser("보낸 사람"));
+        User to = userRepository.save(UserFixtures.createUser("받은 사람"));
         Friend request = friendRepository.saveAndFlush(Friend.request(from.getId(), to.getId()));
         LocalDateTime acceptedAt = LocalDateTime.of(2026, 9, 14, 18, 0);
 
@@ -58,9 +59,9 @@ class FriendRepositoryTest {
     }
     @Test
     void deletePendingRequest_requiresReceiverEvenWhenServiceIsBypassed() {
-        User from = userRepository.save(User.createNew("보낸 사람"));
-        User to = userRepository.save(User.createNew("받은 사람"));
-        User thirdParty = userRepository.save(User.createNew("제삼자"));
+        User from = userRepository.save(UserFixtures.createUser("보낸 사람"));
+        User to = userRepository.save(UserFixtures.createUser("받은 사람"));
+        User thirdParty = userRepository.save(UserFixtures.createUser("제삼자"));
         Friend request = friendRepository.saveAndFlush(Friend.request(from.getId(), to.getId()));
         Long requestId = request.getId();
 
@@ -72,8 +73,8 @@ class FriendRepositoryTest {
 
     @Test
     void deletePendingRequest_doesNotDeleteAcceptedRelationship() {
-        User from = userRepository.save(User.createNew("보낸 사람"));
-        User to = userRepository.save(User.createNew("받은 사람"));
+        User from = userRepository.save(UserFixtures.createUser("보낸 사람"));
+        User to = userRepository.save(UserFixtures.createUser("받은 사람"));
         Friend request = friendRepository.saveAndFlush(Friend.request(from.getId(), to.getId()));
         Long requestId = request.getId();
         friendRepository.acceptPendingRequest(requestId, to.getId(), LocalDateTime.now());

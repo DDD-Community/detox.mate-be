@@ -1,5 +1,6 @@
 package com.detoxmate.notification.service;
 
+import com.detoxmate.support.UserFixtures;
 import com.detoxmate.common.exception.CustomException;
 import com.detoxmate.common.exception.notification.FcmSenderErrorCode;
 import com.detoxmate.common.exception.notification.NotificationErrorCode;
@@ -236,7 +237,7 @@ class NotificationServiceTest {
     }
 
     private User saveUser(String displayName) {
-        return userRepository.save(User.createNew(displayName));
+        return userRepository.save(UserFixtures.createUser(displayName));
     }
 
     private NotificationCommand defaultCommand(Long userId) {

@@ -1,5 +1,6 @@
 package com.detoxmate.feed.controller;
 
+import com.detoxmate.support.UserFixtures;
 import com.detoxmate.auth.JwtTokenProvider;
 import com.detoxmate.challengerecord.domain.ChallengeRecord;
 import com.detoxmate.challengerecord.repository.ChallengeRecordRepository;
@@ -89,7 +90,7 @@ class FeedControllerTest {
         Group group = groupRepository.save(Group.createNew("수능방", "ABCDE"));
         GroupChallenge challenge = groupChallengeRepository.save(GroupChallenge.createFirst(group.getId()));
 
-        User currentUser = userRepository.save(User.createNew("나"));
+        User currentUser = userRepository.save(UserFixtures.createUser("나"));
         saveParticipant(group.getId(), challenge.getId(), currentUser);
 
         // when & then
@@ -112,8 +113,8 @@ class FeedControllerTest {
         Group group = groupRepository.save(Group.createNew("수능방", "ABCDE"));
         GroupChallenge challenge = groupChallengeRepository.save(GroupChallenge.createFirst(group.getId()));
 
-        User currentUser = userRepository.save(User.createNew("나"));
-        User targetUser = userRepository.save(User.createNew("민준"));
+        User currentUser = userRepository.save(UserFixtures.createUser("나"));
+        User targetUser = userRepository.save(UserFixtures.createUser("민준"));
 
         saveParticipant(group.getId(), challenge.getId(), currentUser);
         saveParticipant(group.getId(), challenge.getId(), targetUser);
@@ -155,8 +156,8 @@ class FeedControllerTest {
         Group group = groupRepository.save(Group.createNew("수능방", "ABCDE"));
         GroupChallenge challenge = groupChallengeRepository.save(GroupChallenge.createFirst(group.getId()));
 
-        User currentUser = userRepository.save(User.createNew("나"));
-        User targetUser = userRepository.save(User.createNew("민준"));
+        User currentUser = userRepository.save(UserFixtures.createUser("나"));
+        User targetUser = userRepository.save(UserFixtures.createUser("민준"));
 
         saveParticipant(group.getId(), challenge.getId(), currentUser);
         saveParticipant(group.getId(), challenge.getId(), targetUser);
@@ -183,8 +184,8 @@ class FeedControllerTest {
                 GroupChallenge.createFirst(group.getId())
         );
 
-        User currentUser = userRepository.save(User.createNew("나"));
-        User author = userRepository.save(User.createNew("민준"));
+        User currentUser = userRepository.save(UserFixtures.createUser("나"));
+        User author = userRepository.save(UserFixtures.createUser("민준"));
 
         saveParticipant(group.getId(), challenge.getId(), currentUser);
         GroupChallengeParticipant authorParticipant =
@@ -237,8 +238,8 @@ class FeedControllerTest {
                 GroupChallenge.createFirst(otherGroup.getId())
         );
 
-        User currentUser = userRepository.save(User.createNew("나"));
-        User author = userRepository.save(User.createNew("민준"));
+        User currentUser = userRepository.save(UserFixtures.createUser("나"));
+        User author = userRepository.save(UserFixtures.createUser("민준"));
 
         saveParticipant(group.getId(), challenge.getId(), currentUser);
         GroupChallengeParticipant authorParticipant =
@@ -267,8 +268,8 @@ class FeedControllerTest {
                 GroupChallenge.createFirst(group.getId())
         );
 
-        User currentUser = userRepository.save(User.createNew("나"));
-        User author = userRepository.save(User.createNew("민준"));
+        User currentUser = userRepository.save(UserFixtures.createUser("나"));
+        User author = userRepository.save(UserFixtures.createUser("민준"));
 
         saveParticipant(group.getId(), challenge.getId(), currentUser);
         GroupChallengeParticipant authorParticipant =
@@ -315,7 +316,7 @@ class FeedControllerTest {
                 GroupChallenge.createFirst(group.getId())
         );
 
-        User author = userRepository.save(User.createNew("민준"));
+        User author = userRepository.save(UserFixtures.createUser("민준"));
         GroupChallengeParticipant participant =
                 saveParticipant(group.getId(), challenge.getId(), author);
 

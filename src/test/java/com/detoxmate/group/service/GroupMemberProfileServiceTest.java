@@ -1,5 +1,6 @@
 package com.detoxmate.group.service;
 
+import com.detoxmate.support.UserFixtures;
 import com.detoxmate.activityrecord.domain.ActivityRecord;
 import com.detoxmate.activityrecord.domain.UsageGoalType;
 import com.detoxmate.activityrecord.domain.UserUsageGoalTime;
@@ -87,8 +88,8 @@ class GroupMemberProfileServiceTest {
         Group group = groupRepository.save(Group.createNew("수능방", "ABCDE"));
         GroupChallenge challenge = groupChallengeRepository.save(GroupChallenge.createFirst(group.getId()));
 
-        User currentUser = userRepository.save(User.createNew("나"));
-        User targetUser = userRepository.save(User.createNew("민준", "profile-images/2/profile.png"));
+        User currentUser = userRepository.save(UserFixtures.createUser("나"));
+        User targetUser = userRepository.save(UserFixtures.createUser("민준", "profile-images/2/profile.png"));
 
         saveParticipant(group.getId(), challenge.getId(), currentUser);
         GroupMember targetGroupMember = saveParticipant(group.getId(), challenge.getId(), targetUser);
@@ -121,8 +122,8 @@ class GroupMemberProfileServiceTest {
         GroupChallenge challenge = groupChallengeRepository.save(GroupChallenge.createFirst(group.getId()));
         UsageGoalType totalUsage = usageGoalTypeRepository.save(UsageGoalType.create(1L, UsageGoalTypeCode.TOTAL_USAGE));
 
-        User currentUser = userRepository.save(User.createNew("나"));
-        User targetUser = userRepository.save(User.createNew("민준"));
+        User currentUser = userRepository.save(UserFixtures.createUser("나"));
+        User targetUser = userRepository.save(UserFixtures.createUser("민준"));
 
         saveParticipant(group.getId(), challenge.getId(), currentUser);
         GroupMember targetGroupMember = saveParticipant(group.getId(), challenge.getId(), targetUser);
@@ -159,7 +160,7 @@ class GroupMemberProfileServiceTest {
     @DisplayName("목표와 인증이 없으면 미설정 상태와 0 집계를 반환한다")
     void getGroupMemberProfile_withoutGoalAndCertification_returnsEmptySummary() {
         Group group = groupRepository.save(Group.createNew("수능방", "ABCDE"));
-        User user = userRepository.save(User.createNew("나"));
+        User user = userRepository.save(UserFixtures.createUser("나"));
         GroupMember groupMember = groupMemberRepository.save(GroupMember.createMember(user.getId(), group.getId()));
 
         GroupMemberProfileResponse response = groupMemberProfileService.getGroupMemberProfile(
@@ -188,7 +189,7 @@ class GroupMemberProfileServiceTest {
     void getGroupMemberProfile_selfProfile_returnsGoalChangeAvailability() {
         Group group = groupRepository.save(Group.createNew("수능방", "ABCDE"));
         UsageGoalType totalUsage = usageGoalTypeRepository.save(UsageGoalType.create(1L, UsageGoalTypeCode.TOTAL_USAGE));
-        User user = userRepository.save(User.createNew("나"));
+        User user = userRepository.save(UserFixtures.createUser("나"));
         GroupMember groupMember = groupMemberRepository.save(GroupMember.createMember(user.getId(), group.getId()));
         saveGoal(user, totalUsage, 120, LocalDateTime.of(2026, 5, 2, 10, 0));
 
@@ -209,7 +210,7 @@ class GroupMemberProfileServiceTest {
         Group group = groupRepository.save(Group.createNew("수능방", "ABCDE"));
         GroupChallenge challenge = groupChallengeRepository.save(GroupChallenge.createFirst(group.getId()));
         UsageGoalType totalUsage = usageGoalTypeRepository.save(UsageGoalType.create(1L, UsageGoalTypeCode.TOTAL_USAGE));
-        User user = userRepository.save(User.createNew("나"));
+        User user = userRepository.save(UserFixtures.createUser("나"));
         GroupMember groupMember = saveParticipant(group.getId(), challenge.getId(), user);
         GroupChallengeParticipant participant = participantRepository
                 .findByGroupChallengeIdAndGroupMemberId(challenge.getId(), groupMember.getId())
@@ -232,8 +233,8 @@ class GroupMemberProfileServiceTest {
     @DisplayName("활성 그룹원이 아니면 과거 그룹 멤버 프로필도 조회할 수 없다")
     void getGroupMemberProfile_withoutActiveRequester_throwsForbidden() {
         Group group = groupRepository.save(Group.createNew("수능방", "ABCDE"));
-        User requester = userRepository.save(User.createNew("나"));
-        User targetUser = userRepository.save(User.createNew("민준"));
+        User requester = userRepository.save(UserFixtures.createUser("나"));
+        User targetUser = userRepository.save(UserFixtures.createUser("민준"));
         GroupMember targetGroupMember = groupMemberRepository.save(GroupMember.createMember(targetUser.getId(), group.getId()));
 
         assertThatThrownBy(() -> groupMemberProfileService.getGroupMemberProfile(
