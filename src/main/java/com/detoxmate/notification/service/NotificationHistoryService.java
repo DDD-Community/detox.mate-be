@@ -1,6 +1,7 @@
 package com.detoxmate.notification.service;
 
 import com.detoxmate.notification.domain.NotificationHistory;
+import com.detoxmate.notification.domain.NotificationTypeCode;
 import com.detoxmate.notification.dto.NotificationHistoryItemResponse;
 import com.detoxmate.notification.dto.NotificationHistoryListResponse;
 import com.detoxmate.notification.repository.NotificationHistoryRepository;
@@ -33,8 +34,10 @@ public class NotificationHistoryService {
     public NotificationHistoryListResponse getMyNotifications(Long userId){
         LocalDateTime now = LocalDateTime.now(clock.withZone(KST));
 
-        List<NotificationHistory> histories = historyRepository.findActiveByUserId(userId, now);
-        long unreadCount = historyRepository.countUnreadActiveByUserId(userId, now);
+        List<NotificationHistory> histories = historyRepository.findActiveByUserId(
+                userId, now, now.minusHours(168), NotificationTypeCode.FRIEND_HISTORY_TYPES
+        );
+        long unreadCount = histories.stream().filter(history -> !history.isRead()).count();
         Map<Long, UserProfileSummary> senderProfiles = findSenderProfiles(histories);
 
         List<NotificationHistoryItemResponse> notifications = histories.stream()

@@ -61,7 +61,7 @@ class NotificationHistoryRepositoryTest {
     void findActiveByUserId() {
         // given
         Notification notification = persistTemplate(
-                NotificationTypeCode.COMMENT_CREATED,
+                NotificationTypeCode.FRIEND_REQUEST_RECEIVED,
                 "댓글 알림",
                 "{nickname}님이 댓글을 남겼습니다"
         );
@@ -85,7 +85,7 @@ class NotificationHistoryRepositoryTest {
         em.clear();
 
         // when
-        List<NotificationHistory> results = historyRepository.findActiveByUserId(myId, now);
+        List<NotificationHistory> results = historyRepository.findActiveByUserId(myId, now, now.minusHours(168), NotificationTypeCode.FRIEND_HISTORY_TYPES);
 
         // then : 내용 & 순서를 한 번에
         assertThat(results)
@@ -137,7 +137,7 @@ class NotificationHistoryRepositoryTest {
     void findActiveByUserId_whenExpiredAtEqualsNow_excludes() {
         // given
         Notification notification = persistTemplate(
-                NotificationTypeCode.COMMENT_CREATED,
+                NotificationTypeCode.FRIEND_REQUEST_RECEIVED,
                 "댓글 알림",
                 "{nickname}님이 댓글을 남겼습니다"
         );
@@ -150,12 +150,58 @@ class NotificationHistoryRepositoryTest {
         em.clear();
 
         // when
-        List<NotificationHistory> results = historyRepository.findActiveByUserId(myId, now);
+        List<NotificationHistory> results = historyRepository.findActiveByUserId(myId, now, now.minusHours(168), NotificationTypeCode.FRIEND_HISTORY_TYPES);
 
         // then
         assertThat(results).isEmpty();
     }
 
+
+    @Test
+    void findActiveByUserId_onlyFriendTypesWithin168Hours() {
+        LocalDateTime now = LocalDateTime.of(2026, 10, 13, 15, 0);
+        Notification friend = persistTemplate(NotificationTypeCode.FRIEND_REQUEST_RECEIVED, "친구", "친구");
+        Notification personal = persistTemplate(NotificationTypeCode.APP_UNLOCK_REQUESTED, "본인", "본인");
+        Notification legacy = persistTemplate(NotificationTypeCode.COMMENT_CREATED, "댓글", "댓글");
+        NotificationHistory recent = createHistory(friend, 1L, "recent");
+        setCreatedAt(recent, now.minusHours(168).plusSeconds(1));
+        em.persist(recent);
+        NotificationHistory boundary = createHistory(friend, 1L, "boundary");
+        setCreatedAt(boundary, now.minusHours(168));
+        em.persist(boundary);
+        NotificationHistory old = createHistory(friend, 1L, "old");
+        setCreatedAt(old, now.minusHours(169));
+        em.persist(old);
+        em.persist(createHistory(personal, 1L, "personal"));
+        em.persist(createHistory(legacy, 1L, "legacy"));
+        em.flush();
+        em.clear();
+
+        assertThat(historyRepository.findActiveByUserId(1L, now, now.minusHours(168), NotificationTypeCode.FRIEND_HISTORY_TYPES))
+                .extracting(NotificationHistory::getMessage)
+                .containsExactly("recent님이 댓글을 남겼습니다");
+    }
+
+    @Test
+    void findActiveByUserId_includesAllFiveFriendTypes() {
+        LocalDateTime now = LocalDateTime.now();
+        for (NotificationTypeCode code : List.of(
+                NotificationTypeCode.FRIEND_REQUEST_RECEIVED,
+                NotificationTypeCode.FRIEND_REQUEST_ACCEPTED,
+                NotificationTypeCode.FRIEND_APP_UNLOCKED,
+                NotificationTypeCode.FRIEND_TIME_LIMIT_CHANGED,
+                NotificationTypeCode.FRIEND_UNLOCKED)) {
+            Notification template = persistTemplate(code, "친구", "친구");
+            NotificationHistory history = createHistory(template, 1L, code.name());
+            setCreatedAt(history, now.minusHours(1));
+            em.persist(history);
+        }
+        em.flush();
+        em.clear();
+
+        assertThat(historyRepository.findActiveByUserId(1L, now, now.minusHours(168), NotificationTypeCode.FRIEND_HISTORY_TYPES))
+                .hasSize(5);
+    }
 
     private void setCreatedAt(NotificationHistory h, LocalDateTime t) {
         ReflectionTestUtils.setField(h, "createdAt", t);
