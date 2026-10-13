@@ -3,6 +3,7 @@ package com.detoxmate.common.error;
 import com.detoxmate.common.logging.ApiLogContext;
 import com.detoxmate.common.logging.ApiLogWriter;
 import com.detoxmate.common.exception.CustomException;
+import com.detoxmate.common.exception.ErrorCode;
 import io.jsonwebtoken.JwtException;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.servlet.ServletException;
@@ -85,13 +86,16 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<ErrorResponse> handleCustomException(CustomException exception, HttpServletRequest request) {
-        HttpStatus status = exception.getErrorCode().getHttpStatus();
-        logHandledError(request, status, exception.getErrorCode().name());
+        ErrorCode errorCode = exception.getErrorCode();
+        HttpStatus status = errorCode.getHttpStatus();
+        if (errorCode.shouldAlert()) {
+            logHandledError(request, status, errorCode.name());
+        }
 
         return ResponseEntity.status(status)
                 .body(new ErrorResponse(
-                        exception.getErrorCode().name(),
-                        exception.getErrorCode().getMessage(),
+                        errorCode.name(),
+                        errorCode.getMessage(),
                         status.value()
                 ));
     }

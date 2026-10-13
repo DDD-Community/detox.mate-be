@@ -6,7 +6,12 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 public enum UserCodeException implements ErrorCode {
-    INVALID_USER_CODE(HttpStatus.BAD_REQUEST,"올바른 사용자 코드가 아닙니다."),
+    INVALID_USER_CODE(HttpStatus.BAD_REQUEST,"올바른 사용자 코드가 아닙니다.") {
+        @Override
+        public boolean shouldAlert() {
+            return false;
+        }
+    },
     USER_CODE_REQUIRED(HttpStatus.BAD_REQUEST,"사용자 코드를 입력해 주세요.");
 
 

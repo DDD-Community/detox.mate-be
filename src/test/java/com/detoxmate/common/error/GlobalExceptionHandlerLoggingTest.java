@@ -3,6 +3,7 @@ package com.detoxmate.common.error;
 import com.detoxmate.auth.JwtTokenProvider;
 import com.detoxmate.common.exception.CustomException;
 import com.detoxmate.common.exception.ErrorCode;
+import com.detoxmate.common.exception.user.UserCodeException;
 import com.detoxmate.common.logging.ApiLogWriter;
 import com.detoxmate.common.logging.HttpBodySanitizer;
 import com.detoxmate.common.logging.QueryStringSanitizer;
@@ -26,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup;
 
 @ExtendWith(OutputCaptureExtension.class)
@@ -76,6 +78,39 @@ class GlobalExceptionHandlerLoggingTest {
     }
 
     @Test
+    @DisplayName("잘못된 사용자 코드는 400 응답과 HTTP 로그를 유지하고 오류 이벤트는 남기지 않는다")
+    void preserves_http_response_and_logs_without_error_events_when_user_code_is_invalid(CapturedOutput output) throws Exception {
+        mockMvc.perform(get("/invalid-user-code")
+                        .header("X-Request-Id", "req-invalid-code"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_USER_CODE"))
+                .andExpect(jsonPath("$.message").value("올바른 사용자 코드가 아닙니다."))
+                .andExpect(jsonPath("$.status").value(400));
+
+        assertThat(output).contains(
+                "event=http_response_body requestId=req-invalid-code userId=anonymous method=GET path=/invalid-user-code status=400",
+                "event=http_request requestId=req-invalid-code userId=anonymous method=GET path=/invalid-user-code"
+        );
+        assertThat(output).doesNotContain("event=api_handled_error", "event=api_error");
+    }
+
+    @Test
+    @DisplayName("사용자 코드 누락은 기존 400 응답과 handled error 기록을 유지한다")
+    void logs_handled_error_when_user_code_is_required(CapturedOutput output) throws Exception {
+        mockMvc.perform(get("/required-user-code")
+                        .header("X-Request-Id", "req-required-code"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("USER_CODE_REQUIRED"))
+                .andExpect(jsonPath("$.message").value("사용자 코드를 입력해 주세요."))
+                .andExpect(jsonPath("$.status").value(400));
+
+        assertThat(output).contains(
+                "event=api_handled_error requestId=req-required-code userId=anonymous method=GET path=/required-user-code status=400 errorCode=USER_CODE_REQUIRED"
+        );
+        assertThat(output).doesNotContain("event=api_error");
+    }
+
+    @Test
     @DisplayName("예상하지 못한 예외는 api_error와 stack trace를 ERROR로 남긴다")
     void logs_api_error_with_stack_trace_when_exception_is_unexpected(CapturedOutput output) throws Exception {
         // when & then
@@ -121,6 +156,16 @@ class GlobalExceptionHandlerLoggingTest {
         @GetMapping(value = "/server-error", produces = MediaType.APPLICATION_JSON_VALUE)
         void serverError() {
             throw new IllegalStateException("boom");
+        }
+
+        @GetMapping("/invalid-user-code")
+        void invalidUserCode() {
+            throw new CustomException(UserCodeException.INVALID_USER_CODE);
+        }
+
+        @GetMapping("/required-user-code")
+        void requiredUserCode() {
+            throw new CustomException(UserCodeException.USER_CODE_REQUIRED);
         }
 
         @GetMapping("/missing-resource")
