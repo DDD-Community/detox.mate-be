@@ -6,4 +6,8 @@ public interface ErrorCode {
     HttpStatus getHttpStatus();
     String getMessage();
     String name();
+
+    default boolean shouldAlert() {
+        return true;
+    }
 }
