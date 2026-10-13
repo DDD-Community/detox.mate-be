@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public interface NotificationHistoryRepository extends JpaRepository<NotificationHistory,Long> {
@@ -18,11 +19,15 @@ public interface NotificationHistoryRepository extends JpaRepository<Notificatio
             SELECT h FROM NotificationHistory h
             WHERE h.userId = :userId
                 AND(h.expiredAt IS NULL OR h.expiredAt>:now)
+                AND h.createdAt > :createdAfter
+                AND h.notification.type.typeCode IN :types
             ORDER BY h.createdAt DESC 
             """)
     List<NotificationHistory> findActiveByUserId(
             @Param("userId") Long userId,
-            @Param("now") LocalDateTime now
+            @Param("now") LocalDateTime now,
+            @Param("createdAfter") LocalDateTime createdAfter,
+            @Param("types") Set<NotificationTypeCode> types
     );
 
     @Query("""

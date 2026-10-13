@@ -5,6 +5,10 @@ import com.detoxmate.challengerecord.repository.ChallengeRecordRepository;
 import com.detoxmate.comment.domain.Comment;
 import com.detoxmate.comment.repository.CommentRepository;
 import com.detoxmate.group.repository.GroupChallengeParticipantRepository;
+import com.detoxmate.friend.domain.Friend;
+import com.detoxmate.friend.repository.FriendRepository;
+import com.detoxmate.user.domain.User;
+import com.detoxmate.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +22,19 @@ public class NotificationNavigationReader {
     private final ChallengeRecordRepository challengeRecordRepository;
     private final CommentRepository commentRepository;
     private final GroupChallengeParticipantRepository participantRepository;
+
+    private final UserRepository userRepository;
+    private final FriendRepository friendRepository;
+
+    @Transactional(readOnly = true)
+    public Optional<User> findActiveUser(Long userId) {
+        return userRepository.findById(userId).filter(User::isActive);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Friend> findFriendship(Long firstUserId, Long secondUserId) {
+        return friendRepository.findByUserPair(firstUserId, secondUserId);
+    }
 
     @Transactional(readOnly = true)
     public Optional<ChallengeRecord> findChallengeRecord(Long challengeRecordId) {

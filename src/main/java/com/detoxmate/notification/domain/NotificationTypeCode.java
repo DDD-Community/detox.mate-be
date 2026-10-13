@@ -1,5 +1,7 @@
 package com.detoxmate.notification.domain;
 
+import java.util.Set;
+
 public enum NotificationTypeCode {
     GROUP_JOINED,
     CERTIFICATION_START_TOMORROW,
@@ -20,5 +22,10 @@ public enum NotificationTypeCode {
     FRIEND_REQUEST_ACCEPTED,
     FRIEND_APP_UNLOCKED,
     FRIEND_TIME_LIMIT_CHANGED,
-    APP_RELOCK_REMINDER
+    APP_RELOCK_REMINDER;
+
+    public static final Set<NotificationTypeCode> FRIEND_HISTORY_TYPES = Set.of(
+            FRIEND_REQUEST_RECEIVED, FRIEND_REQUEST_ACCEPTED, FRIEND_APP_UNLOCKED,
+            FRIEND_TIME_LIMIT_CHANGED, FRIEND_UNLOCKED
+    );
 }
