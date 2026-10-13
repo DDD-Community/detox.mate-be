@@ -15,6 +15,17 @@ Detoxmate는 Spring Boot와 JPA/Hibernate 기반 백엔드이다. 이 하네스�
 
 Pipeline을 기본으로 선택한 이유는 RED, GREEN, REVIEW, REFACTOR, AUDIT, VERIFY가 순차 의존 관계를 갖기 때문이다. 구현과 리팩터링 사이에 Producer-Reviewer를 둔 이유는 GREEN 상태의 변경분을 별도 품질 기준으로 검토해야 하지만, 최종 반영 여부는 오케스트레이터가 요구사항과 비용을 보고 결정해야 하기 때문이다.
 
+요청 작성에는 [개발 요청 템플릿](development-request-template.md)을 선택적으로 사용한다. 모르는 기술 항목과 기존 동작의 근거는 Phase 0에서 조사한다.
+
+## Cross-Phase Gates
+
+- **기존 계약 보존:** 변경 전 관련 호출 흐름·호출자/소비자·코드·테스트·문서/정책·git 이력을 확인해 기존 동작의 이유와 보존/변경 계약을 `_workspace/00_*`에 기록한다. API 응답은 필드 존재와 값의 의미·생성 조건·null/누락 조건을 함께 확인한다. 근거가 없으면 `미확인`으로 남긴다.
+- **제품 결정:** 사용자가 기존 동작/필드의 제거 대상을 명시하면 호출자 영향과 활성 제품 정책을 조사·기록하고, 아래 보류 조건이 없으면 의도적 계약 변경으로 진행한다. 제거 의도 또는 중대한 영향이 불명확하거나 활성 정책과 충돌하면 `Needs Product Decision`으로 기록하고 해당 계약을 바꾸는 RED/GREEN은 결정 전까지 진행하지 않는다. `필드 3개만` 같은 문구만으로 기존 필드를 삭제하거나 assertion을 약화하지 않는다.
+- **최소 완결 구현:** 수정 범위를 읽고 기존 프로젝트 패턴/도우미 → JDK·플랫폼 기능 → 설치된 의존성 → 새 코드 순서로 선택한다. 현재 필요가 없는 추상화·래퍼·인터페이스·설정·추가 계층과 범위 밖 정리를 피하며 DDD 책임, 검증, 오류 처리, 보안, 필요한 테스트를 유지한다.
+- **검증:** 리뷰와 감사에서 수정된 기존 assertion을 확인한다. API 계약 변경은 DTO 내부값만이 아니라 실제 HTTP JSON의 기존 필드와 새 동작을 검증한다. 기존 handoff에 판단과 근거를 남기며 새 역할·단계·산출물을 만들지 않는다.
+
+최소 완결 구현 원칙은 [Ponytail Skill](https://github.com/DietrichGebert/ponytail/blob/main/skills/ponytail/SKILL.md)을 Detoxmate의 DDD·TDD 규칙에 맞게 적용한 것이다.
+
 ## Roles
 
 | Role | Responsibility | Skill or brief | Writes |
@@ -30,42 +41,42 @@ Pipeline을 기본으로 선택한 이유는 RED, GREEN, REVIEW, REFACTOR, AUDIT
 ### Phase 0. Intake
 
 - input sources: user request, AGENTS.md, related source and test files
-- actions: scope the feature, identify bounded context and aggregate, decide DDD package placement, list candidate files, assign write ownership
+- actions: scope the feature, trace existing behavior and consumers, identify preserved/changed contract and evidence, decide bounded context, aggregate, DDD package placement, and file ownership
 - output files: `_workspace/00_orchestrator_request-summary.md`
-- completion criteria: requirement scope, domain boundary, package placement, and file ownership are explicit
+- completion criteria: requirement scope, existing contract evidence/unknowns, domain boundary, package placement, and file ownership are explicit
 
 ### Phase 1. Test Design
 
 - input sources: request summary, current tests, related production code
-- actions: define acceptance criteria and RED test candidate
+- actions: define acceptance criteria, preserved regression conditions, and RED test candidate; inspect any proposed change to old assertions
 - output files: `_workspace/01_test-designer_acceptance-criteria.md`
-- completion criteria: normal, failure, boundary, regression criteria are separated
+- completion criteria: normal, failure, boundary, regression criteria and contract conflicts are explicit
 
 ### Phase 2. Baseline Green
 
 - input sources: related existing tests
-- actions: run relevant tests before new RED
+- actions: run relevant tests before new RED; for API changes confirm baseline HTTP JSON where possible
 - output files: `_workspace/02_orchestrator_baseline.md`
 - completion criteria: related baseline is green, or pre-existing failures are reported and the feature work stops
 
 ### Phase 3. RED
 
 - input sources: acceptance criteria
-- actions: write one smallest failing test before touching `src/main`
+- actions: write one smallest failing test before touching `src/main`, preserving existing observable contracts
 - output files: `_workspace/03_test-designer_red-record.md`
 - completion criteria: test compiles, fails for missing behavior, and command output is recorded
 
 ### Phase 4. GREEN
 
 - input sources: RED test and record
-- actions: implement the smallest production change that passes the RED test in the agreed domain/package boundary
+- actions: implement the smallest complete production change that passes RED in the agreed domain/package boundary
 - output files: `_workspace/04_implementer_green-record.md`
 - completion criteria: new test and related tests pass
 
 ### Phase 5. Refactor Review
 
 - input sources: user request, acceptance criteria, current git diff, GREEN record
-- actions: apply existing `detoxmate-code-review` skill in read-only mode
+- actions: apply existing `detoxmate-code-review` skill in read-only mode; compare diff with contract evidence and assess new complexity
 - output files: `_workspace/05_refactor-reviewer_review.md`
 - completion criteria: findings are concrete, evidenced, scoped to current diff, and include DDD package/dependency risks when relevant
 
@@ -79,9 +90,9 @@ Pipeline을 기본으로 선택한 이유는 RED, GREEN, REVIEW, REFACTOR, AUDIT
 ### Phase 7. Test Audit
 
 - input sources: acceptance criteria, changed tests, changed production code, verification records
-- actions: check for missing regression, boundary, exception, transaction, and JPA tests
+- actions: check for missing regression, boundary, exception, transaction, and JPA tests; audit old assertions and actual HTTP JSON for API changes
 - output files: `_workspace/07_test-auditor_test-audit.md`
-- completion criteria: no blocking missing tests remain; otherwise return to Phase 3
+- completion criteria: no blocking missing tests or unresolved contract conflicts remain; otherwise return to Phase 3 or `Needs Product Decision`
 
 ### Phase 8. Final Verification
 
@@ -129,6 +140,7 @@ Use `docs/harness/detoxmate/ddd-package-structure.md` as the package placement c
 
 - Baseline failure: stop feature work and report the pre-existing failure separately.
 - RED invalid: rewrite the test before production changes.
+- Contract conflict with unclear removal intent, unclear material impact, or active product policy: record `Needs Product Decision`; do not remove existing behavior or weaken assertions before the decision. For explicitly requested removal, investigate and record caller impact and policy, then proceed if none of those conflicts remain.
 - GREEN failure: remain in Phase 4 until the targeted and related tests pass.
 - Review disagreement: orchestrator records the decision as `REJECTED` or `DEFERRED` with a reason.
 - Refactor failure: revert only the agent's own refactor change or return to RED if behavior changed.
@@ -177,6 +189,16 @@ git diff
 - failure point: related baseline test fails before a new RED test is written
 - expected fallback behavior: stop before modifying `src/main`, record the failing command in `_workspace/02_orchestrator_baseline.md`, ask whether to fix the pre-existing failure or narrow the task
 - expected reporting: final response clearly states that new feature work did not proceed because baseline was not green
+
+### Existing Response Field Regression
+
+- request: add fields to an existing API response with wording such as `필드 3개만`
+- expected: trace existing fields and consumers, preserve fields not explicitly named for removal in HTTP JSON tests, and mark unclear intent/material impact or policy conflict as `Needs Product Decision`; for explicitly named removal, record caller impact and policy, then proceed if no conflict remains
+
+### Unnecessary Abstraction Regression
+
+- request: make a narrow change already supported by an existing project helper
+- expected: use the helper and keep the DDD boundary; review flags any new wrapper, interface, or configuration without a current need
 
 ## Removable Codex Adapter
 
