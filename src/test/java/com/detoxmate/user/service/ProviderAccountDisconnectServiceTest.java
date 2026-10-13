@@ -1,5 +1,6 @@
 package com.detoxmate.user.service;
 
+import com.detoxmate.support.UserFixtures;
 import com.detoxmate.user.domain.SocialLoginUser;
 import com.detoxmate.user.domain.SocialProvider;
 import com.detoxmate.user.domain.User;
@@ -25,7 +26,7 @@ class ProviderAccountDisconnectServiceTest {
                 mock(ProviderTokenCipher.class)
         );
         SocialLoginUser socialLoginUser = SocialLoginUser.link(
-                User.createNew("카카오닉네임"),
+                UserFixtures.createUser("카카오닉네임"),
                 SocialProvider.KAKAO,
                 "123456789"
         );
@@ -49,7 +50,7 @@ class ProviderAccountDisconnectServiceTest {
                 providerTokenCipher
         );
         SocialLoginUser socialLoginUser = SocialLoginUser.link(
-                User.createNew("애플유저"),
+                UserFixtures.createUser("애플유저"),
                 SocialProvider.APPLE,
                 "apple-sub"
         );
@@ -77,7 +78,7 @@ class ProviderAccountDisconnectServiceTest {
                 providerTokenCipher
         );
         SocialLoginUser socialLoginUser = SocialLoginUser.link(
-                User.createNew("테스트유저"),
+                UserFixtures.createUser("테스트유저"),
                 SocialProvider.TEST,
                 "test33"
         );

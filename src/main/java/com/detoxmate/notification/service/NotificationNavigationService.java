@@ -1,7 +1,11 @@
 package com.detoxmate.notification.service;
 
 import com.detoxmate.challengerecord.domain.ChallengeRecord;
-import com.detoxmate.challengerecord.service.ChallengeRecordService;
+import com.detoxmate.friend.domain.Friend;
+import com.detoxmate.friend.dto.FriendRelationshipStatus;
+import com.detoxmate.notification.domain.NotificationTypeCode;
+import com.detoxmate.user.domain.User;
+import org.springframework.web.util.UriComponentsBuilder;
 import com.detoxmate.comment.domain.Comment;
 import com.detoxmate.comment.domain.CommentStatus;
 import com.detoxmate.common.exception.CustomException;
@@ -28,12 +32,20 @@ public class NotificationNavigationService {
         NotificationHistory history = historyRepository.findByIdAndUserId(notificationHistoryId, userId)
                 .orElseThrow(() -> new CustomException(NotificationErrorCode.NOTIFICATION_HISTORY_NOT_FOUND));
 
+        if (NotificationTypeCode.FRIEND_HISTORY_TYPES.contains(history.getNotification().getType().getTypeCode())) {
+            return resolveFriend(userId, history);
+        }
+
         if (history.getTargetType() == NotificationTargetType.NONE) {
             return NotificationNavigationResponse.noNavigatable("NO_TARGET");
         }
 
-        if (history.getTargetType() == NotificationTargetType.MY_PAGE) {
-            return NotificationNavigationResponse.navigable(NotificationTargetType.MY_PAGE.name(), null);
+        if (history.getTargetType() == NotificationTargetType.MY_PAGE
+                || history.getTargetType() == NotificationTargetType.FRIEND_REQUESTS
+                || history.getTargetType() == NotificationTargetType.FRIENDS
+                || history.getTargetType() == NotificationTargetType.APP_UNLOCK_TIMER
+                || history.getTargetType() == NotificationTargetType.APP_UNLOCK_DURATION_SETTING) {
+            return NotificationNavigationResponse.navigable(history.getTargetType().name(), null);
         }
 
         if (history.getTargetId() == null) {
@@ -51,6 +63,35 @@ public class NotificationNavigationService {
         return NotificationNavigationResponse.navigable(
                 history.getTargetType().name(),
                 history.getTargetId()
+        );
+    }
+
+    private NotificationNavigationResponse resolveFriend(Long userId, NotificationHistory history) {
+        if (history.getSenderUserId() == null) {
+            return NotificationNavigationResponse.noNavigatable("TARGET_NOT_FOUND");
+        }
+        User sender = navigationReader.findActiveUser(history.getSenderUserId()).orElse(null);
+        if (sender == null) {
+            return NotificationNavigationResponse.noNavigatable("TARGET_NOT_FOUND");
+        }
+
+        Friend friendship = navigationReader.findFriendship(userId, sender.getId()).orElse(null);
+        UriComponentsBuilder url = UriComponentsBuilder.fromPath("/friend-page")
+                .queryParam("userId", sender.getId())
+                .queryParam("displayName", "{displayName}");
+        if (friendship == null) {
+            url.queryParam("relationshipStatus", FriendRelationshipStatus.NONE);
+        } else if (friendship.isAccepted()) {
+            url.queryParam("relationshipStatus", FriendRelationshipStatus.FRIEND)
+                    .queryParam("friendshipId", friendship.getId());
+        } else {
+            url.queryParam("relationshipStatus", friendship.isFrom(userId)
+                            ? FriendRelationshipStatus.PENDING_SENT : FriendRelationshipStatus.PENDING_RECEIVED)
+                    .queryParam("requestId", friendship.getId());
+        }
+        return NotificationNavigationResponse.friendPage(
+                history.getTargetType().name(), history.getTargetId(),
+                url.encode().buildAndExpand(sender.getPublicDisplayName()).toUriString()
         );
     }
 

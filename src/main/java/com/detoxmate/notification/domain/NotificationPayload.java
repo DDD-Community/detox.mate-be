@@ -52,9 +52,34 @@ public record NotificationPayload(
         return new NotificationPayload(NotificationTargetType.MY_PAGE, null, NotificationSourceType.NONE, null);
     }
 
+    public static NotificationPayload appUnlockDurationSetting() {
+        return new NotificationPayload(
+                NotificationTargetType.APP_UNLOCK_DURATION_SETTING,
+                null,
+                NotificationSourceType.NONE,
+                null
+        );
+    }
+
+    public static NotificationPayload appUnlockTimer() {
+        return new NotificationPayload(NotificationTargetType.APP_UNLOCK_TIMER, null, NotificationSourceType.NONE, null);
+    }
+
+    public static NotificationPayload friendRequests() {
+        return new NotificationPayload(NotificationTargetType.FRIEND_REQUESTS, null, NotificationSourceType.NONE, null);
+    }
+
+    public static NotificationPayload friends() {
+        return new NotificationPayload(NotificationTargetType.FRIENDS, null, NotificationSourceType.NONE, null);
+    }
+
     private static boolean requiresTargetId(NotificationTargetType targetType) {
         return targetType != NotificationTargetType.NONE
-                && targetType != NotificationTargetType.MY_PAGE;
+                && targetType != NotificationTargetType.MY_PAGE
+                && targetType != NotificationTargetType.APP_UNLOCK_DURATION_SETTING
+                && targetType != NotificationTargetType.APP_UNLOCK_TIMER
+                && targetType != NotificationTargetType.FRIEND_REQUESTS
+                && targetType != NotificationTargetType.FRIENDS;
     }
 
 

@@ -1,5 +1,6 @@
 package com.detoxmate.poke.controller;
 
+import com.detoxmate.support.UserFixtures;
 import com.detoxmate.challengerecord.domain.ChallengeRecord;
 import com.detoxmate.challengerecord.domain.ChallengeRecordCertificationResult;
 import com.detoxmate.challengerecord.repository.ChallengeRecordRepository;
@@ -64,8 +65,8 @@ class PokeControllerTest {
 
     @BeforeEach
     void setUp() {
-        senderUserId = userRepository.save(User.createNew("sender")).getId();
-        receiverUserId = userRepository.save(User.createNew("receiver")).getId();
+        senderUserId = userRepository.save(UserFixtures.createUser("sender")).getId();
+        receiverUserId = userRepository.save(UserFixtures.createUser("receiver")).getId();
     }
 
     @Test

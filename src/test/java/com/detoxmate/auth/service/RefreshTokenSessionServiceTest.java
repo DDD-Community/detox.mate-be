@@ -1,5 +1,6 @@
 package com.detoxmate.auth.service;
 
+import com.detoxmate.support.UserFixtures;
 import com.detoxmate.auth.RefreshTokenProvider;
 import com.detoxmate.auth.domain.RefreshTokenSession;
 import com.detoxmate.auth.repository.RefreshTokenSessionRepository;
@@ -30,7 +31,7 @@ class RefreshTokenSessionServiceTest {
                 refreshTokenSessionRepository,
                 refreshTokenProvider
         );
-        User user = User.createNew("kakao-nickname");
+        User user = UserFixtures.createUser("kakao-nickname");
 
         when(refreshTokenProvider.createRefreshToken()).thenReturn("raw-refresh-token");
         when(refreshTokenProvider.getRefreshTokenExpiresIn()).thenReturn(15552000L);
@@ -58,7 +59,7 @@ class RefreshTokenSessionServiceTest {
                 refreshTokenSessionRepository,
                 refreshTokenProvider
         );
-        User user = User.createNew("kakao-nickname");
+        User user = UserFixtures.createUser("kakao-nickname");
         RefreshTokenSession refreshTokenSession = RefreshTokenSession.issue(
                 user,
                 refreshTokenSessionService.hash("raw-refresh-token"),
@@ -84,7 +85,7 @@ class RefreshTokenSessionServiceTest {
                 refreshTokenSessionRepository,
                 refreshTokenProvider
         );
-        User user = User.createNew("kakao-nickname");
+        User user = UserFixtures.createUser("kakao-nickname");
         RefreshTokenSession refreshTokenSession = RefreshTokenSession.issue(
                 user,
                 refreshTokenSessionService.hash("expired-refresh-token"),
@@ -128,7 +129,7 @@ class RefreshTokenSessionServiceTest {
                 refreshTokenSessionRepository,
                 refreshTokenProvider
         );
-        User user = User.createNew("kakao-nickname");
+        User user = UserFixtures.createUser("kakao-nickname");
         RefreshTokenSession refreshTokenSession = RefreshTokenSession.issue(
                 user,
                 refreshTokenSessionService.hash("revoked-refresh-token"),

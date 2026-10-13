@@ -1,5 +1,6 @@
 package com.detoxmate.user.service;
 
+import com.detoxmate.support.UserFixtures;
 import com.detoxmate.auth.JwtTokenProvider;
 import com.detoxmate.auth.domain.RefreshTokenSession;
 import com.detoxmate.auth.dto.AppleSocialLoginRequest;
@@ -17,11 +18,15 @@ import com.detoxmate.user.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.SimpleTransactionStatus;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -33,6 +38,46 @@ class AuthServiceTest {
     private static final String JWT_SECRET = "this-is-a-very-long-secret-key-for-temp-auth";
     private static final long ACCESS_TOKEN_EXPIRES_IN = 3600L;
     private static final String TEST_IMAGE_BASE_URL = "https://media.detoxmate.co.kr";
+
+    @Test
+    @DisplayName("다른 계정이 사용 중인 이메일로 소셜 로그인을 시도하면 409를 반환한다")
+    void loginWithSocialUser_rejectsEmailAlreadyUsedByAnotherUser() {
+        UserRepository userRepository = mock(UserRepository.class);
+        SocialLoginUserRepository socialLoginUserRepository = mock(SocialLoginUserRepository.class);
+        AuthService authService = new AuthService(
+                mock(KakaoRestApiClient.class),
+                mock(AppleIdentityTokenVerifier.class),
+                mock(AppleRestApiClient.class),
+                mock(ProviderTokenCipher.class),
+                userRepository,
+                socialLoginUserRepository,
+                new JwtTokenProvider(JWT_SECRET, ACCESS_TOKEN_EXPIRES_IN),
+                mock(RefreshTokenSessionService.class),
+                imageReadUrlBuilder(),
+                UserFixtures::nextCode,
+                transactionManager()
+        );
+        User existingUser = UserFixtures.createUser("기존유저", null, "shared@example.com");
+        ReflectionTestUtils.setField(existingUser, "id", 7L);
+
+        when(socialLoginUserRepository.findByProviderAndProviderUserId(SocialProvider.KAKAO, "new-kakao-id"))
+                .thenReturn(Optional.empty());
+        when(userRepository.findByEmail("shared@example.com")).thenReturn(Optional.of(existingUser));
+
+        assertThatThrownBy(() -> authService.loginWithSocialUser(
+                SocialProvider.KAKAO,
+                "new-kakao-id",
+                "새 유저",
+                null,
+                "shared@example.com",
+                null
+        ))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(exception -> ((ResponseStatusException) exception).getStatusCode().value())
+                .isEqualTo(409);
+        verify(userRepository, never()).saveAndFlush(any(User.class));
+        verify(socialLoginUserRepository, never()).saveAndFlush(any(SocialLoginUser.class));
+    }
 
     @Test
     void 기존_카카오_계정이면_기존_유저로_로그인한다() {
@@ -53,10 +98,12 @@ class AuthServiceTest {
                 socialLoginUserRepository,
                 jwtTokenProvider,
                 refreshTokenSessionService,
-                imageReadUrlBuilder()
+                imageReadUrlBuilder(),
+                UserFixtures::nextCode,
+                transactionManager()
         );
 
-        User existingUser = User.createNew("기존유저", "profile-images/7/existing.png");
+        User existingUser = UserFixtures.createUser("기존유저", "profile-images/7/existing.png");
         ReflectionTestUtils.setField(existingUser, "id", 7L);
         SocialLoginUser existingSocialLoginUser = SocialLoginUser.link(existingUser, SocialProvider.KAKAO, "123456789");
         when(socialLoginUserRepository.findByProviderAndProviderUserId(SocialProvider.KAKAO, "123456789"))
@@ -72,8 +119,8 @@ class AuthServiceTest {
         assertThat(response.profileImageUrl()).isEqualTo(TEST_IMAGE_BASE_URL + "/profile-images/7/existing.png");
         assertThat(response.refreshToken()).isEqualTo("service-refresh-token");
         verify(socialLoginUserRepository).findByProviderAndProviderUserId(SocialProvider.KAKAO, "123456789");
-        verify(userRepository, never()).save(any(User.class));
-        verify(socialLoginUserRepository, never()).save(any(SocialLoginUser.class));
+        verify(userRepository, never()).saveAndFlush(any(User.class));
+        verify(socialLoginUserRepository, never()).saveAndFlush(any(SocialLoginUser.class));
     }
 
     @Test
@@ -95,19 +142,21 @@ class AuthServiceTest {
                 socialLoginUserRepository,
                 jwtTokenProvider,
                 refreshTokenSessionService,
-                imageReadUrlBuilder()
+                imageReadUrlBuilder(),
+                UserFixtures::nextCode,
+                transactionManager()
         );
 
         when(socialLoginUserRepository.findByProviderAndProviderUserId(SocialProvider.KAKAO, "123456789"))
                 .thenReturn(Optional.empty());
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+        when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> {
             User savedUser = invocation.getArgument(0);
             assertThat(savedUser.getDisplayName()).isEqualTo("1234567890");
             assertThat(savedUser.getProfileImageObjectKey()).isNull();
             ReflectionTestUtils.setField(savedUser, "id", 1L);
             return savedUser;
         });
-        when(socialLoginUserRepository.save(any(SocialLoginUser.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(socialLoginUserRepository.saveAndFlush(any(SocialLoginUser.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(refreshTokenSessionService.issueRefreshToken(any(User.class))).thenReturn("service-refresh-token");
 
         // when
@@ -119,8 +168,8 @@ class AuthServiceTest {
         assertThat(response.profileImageUrl()).isNull();
         assertThat(response.refreshToken()).isEqualTo("service-refresh-token");
         verify(socialLoginUserRepository).findByProviderAndProviderUserId(SocialProvider.KAKAO, "123456789");
-        verify(userRepository).save(any(User.class));
-        verify(socialLoginUserRepository).save(any(SocialLoginUser.class));
+        verify(userRepository).saveAndFlush(any(User.class));
+        verify(socialLoginUserRepository).saveAndFlush(any(SocialLoginUser.class));
     }
 
     @Test
@@ -143,7 +192,9 @@ class AuthServiceTest {
                 socialLoginUserRepository,
                 jwtTokenProvider,
                 refreshTokenSessionService,
-                imageReadUrlBuilder()
+                imageReadUrlBuilder(),
+                UserFixtures::nextCode,
+                transactionManager()
         );
         AppleSocialLoginRequest request = new AppleSocialLoginRequest(
                 "apple-id-token",
@@ -151,7 +202,7 @@ class AuthServiceTest {
                 "apple-authorization-code",
                 "새로받은이름"
         );
-        User existingUser = User.createNew("기존애플유저", "profile-images/11/existing.png");
+        User existingUser = UserFixtures.createUser("기존애플유저", "profile-images/11/existing.png");
         ReflectionTestUtils.setField(existingUser, "id", 11L);
         SocialLoginUser existingSocialLoginUser = SocialLoginUser.link(existingUser, SocialProvider.APPLE, "apple-sub-123");
 
@@ -201,7 +252,9 @@ class AuthServiceTest {
                 socialLoginUserRepository,
                 jwtTokenProvider,
                 refreshTokenSessionService,
-                imageReadUrlBuilder()
+                imageReadUrlBuilder(),
+                UserFixtures::nextCode,
+                transactionManager()
         );
         AppleSocialLoginRequest request = new AppleSocialLoginRequest(
                 "apple-id-token",
@@ -218,14 +271,14 @@ class AuthServiceTest {
                 .thenReturn("encrypted-apple-refresh-token");
         when(socialLoginUserRepository.findByProviderAndProviderUserId(SocialProvider.APPLE, "apple-sub-456"))
                 .thenReturn(Optional.empty());
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+        when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> {
             User savedUser = invocation.getArgument(0);
             assertThat(savedUser.getDisplayName()).isEqualTo("애플닉네임12345");
             assertThat(savedUser.getProfileImageObjectKey()).isNull();
             ReflectionTestUtils.setField(savedUser, "id", 12L);
             return savedUser;
         });
-        when(socialLoginUserRepository.save(any(SocialLoginUser.class))).thenAnswer(invocation -> {
+        when(socialLoginUserRepository.saveAndFlush(any(SocialLoginUser.class))).thenAnswer(invocation -> {
             SocialLoginUser savedSocialLoginUser = invocation.getArgument(0);
             assertThat(savedSocialLoginUser.getProvider()).isEqualTo(SocialProvider.APPLE);
             assertThat(savedSocialLoginUser.getProviderUserId()).isEqualTo("apple-sub-456");
@@ -241,8 +294,8 @@ class AuthServiceTest {
         assertThat(response.id()).isEqualTo(12L);
         assertThat(response.isNewUser()).isTrue();
         assertThat(response.refreshToken()).isEqualTo("service-refresh-token");
-        verify(userRepository).save(any(User.class));
-        verify(socialLoginUserRepository).save(any(SocialLoginUser.class));
+        verify(userRepository).saveAndFlush(any(User.class));
+        verify(socialLoginUserRepository).saveAndFlush(any(SocialLoginUser.class));
     }
 
     @Test
@@ -265,7 +318,9 @@ class AuthServiceTest {
                 socialLoginUserRepository,
                 jwtTokenProvider,
                 refreshTokenSessionService,
-                imageReadUrlBuilder()
+                imageReadUrlBuilder(),
+                UserFixtures::nextCode,
+                transactionManager()
         );
         AppleSocialLoginRequest request = new AppleSocialLoginRequest(
                 "apple-id-token",
@@ -282,13 +337,13 @@ class AuthServiceTest {
                 .thenReturn("encrypted-apple-refresh-token");
         when(socialLoginUserRepository.findByProviderAndProviderUserId(SocialProvider.APPLE, "apple-sub-789"))
                 .thenReturn(Optional.empty());
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+        when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> {
             User savedUser = invocation.getArgument(0);
             assertThat(savedUser.getDisplayName()).isEqualTo("AppleUser");
             ReflectionTestUtils.setField(savedUser, "id", 13L);
             return savedUser;
         });
-        when(socialLoginUserRepository.save(any(SocialLoginUser.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(socialLoginUserRepository.saveAndFlush(any(SocialLoginUser.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(refreshTokenSessionService.issueRefreshToken(any(User.class))).thenReturn("service-refresh-token");
 
         // when
@@ -316,9 +371,11 @@ class AuthServiceTest {
                 socialLoginUserRepository,
                 jwtTokenProvider,
                 refreshTokenSessionService,
-                imageReadUrlBuilder()
+                imageReadUrlBuilder(),
+                UserFixtures::nextCode,
+                transactionManager()
         );
-        User user = User.createNew("카카오닉네임");
+        User user = UserFixtures.createUser("카카오닉네임");
         ReflectionTestUtils.setField(user, "id", 1L);
         RefreshTokenSession refreshTokenSession = RefreshTokenSession.issue(
                 user,
@@ -358,7 +415,9 @@ class AuthServiceTest {
                 socialLoginUserRepository,
                 jwtTokenProvider,
                 refreshTokenSessionService,
-                imageReadUrlBuilder()
+                imageReadUrlBuilder(),
+                UserFixtures::nextCode,
+                transactionManager()
         );
 
         // when
@@ -387,6 +446,12 @@ class AuthServiceTest {
         private String lastProviderAccessToken() {
             return lastProviderAccessToken;
         }
+    }
+
+    private PlatformTransactionManager transactionManager() {
+        PlatformTransactionManager manager = mock(PlatformTransactionManager.class);
+        when(manager.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
+        return manager;
     }
 
     private ImageReadUrlBuilder imageReadUrlBuilder() {

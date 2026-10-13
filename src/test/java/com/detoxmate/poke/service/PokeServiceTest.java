@@ -1,5 +1,6 @@
 package com.detoxmate.poke.service;
 
+import com.detoxmate.support.UserFixtures;
 import com.detoxmate.activityrecord.domain.UsageGoalType;
 import com.detoxmate.activityrecord.domain.UserUsageGoalTime;
 import com.detoxmate.activityrecord.dto.UsageGoalTypeCode;
@@ -353,7 +354,7 @@ class PokeServiceTest {
     }
 
     private User saveUser(String displayName) {
-        return userRepository.save(User.createNew(displayName));
+        return userRepository.save(UserFixtures.createUser(displayName));
     }
 
     private UserUsageGoalTime saveGoal(User user) {

@@ -1,11 +1,16 @@
 package com.detoxmate.docs.notification.controller;
 
 import com.detoxmate.auth.CurrentUserResolver;
+import com.detoxmate.notification.controller.AppLockNotificationController;
+import com.detoxmate.notification.controller.AppUnlockNotificationController;
 import com.detoxmate.notification.controller.FcmTokenController;
 import com.detoxmate.notification.controller.NotificationHistoryController;
 import com.detoxmate.notification.dto.NotificationHistoryItemResponse;
+import com.detoxmate.notification.dto.AppLockRemovalRecipientsResponse;
 import com.detoxmate.notification.dto.NotificationHistoryListResponse;
 import com.detoxmate.notification.dto.NotificationNavigationResponse;
+import com.detoxmate.notification.service.AppUnlockNotificationService;
+import com.detoxmate.notification.service.AppLockNotificationService;
 import com.detoxmate.notification.service.FcmTokenService;
 import com.detoxmate.notification.service.NotificationHistoryService;
 import com.detoxmate.notification.service.NotificationNavigationService;
@@ -63,6 +68,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class NotificationControllerDocsTest {
 
     private MockMvc mockMvc;
+    private AppUnlockNotificationService appUnlockNotificationService;
+    private AppLockNotificationService appLockNotificationService;
     private FcmTokenService fcmTokenService;
     private NotificationHistoryService notificationHistoryService;
     private NotificationNavigationService notificationNavigationService;
@@ -70,15 +77,19 @@ class NotificationControllerDocsTest {
 
     @BeforeEach
     void setUp(RestDocumentationContextProvider restDocumentation) {
+        appUnlockNotificationService = mock(AppUnlockNotificationService.class);
+        appLockNotificationService = mock(AppLockNotificationService.class);
         fcmTokenService = mock(FcmTokenService.class);
         notificationHistoryService = mock(NotificationHistoryService.class);
         notificationNavigationService = mock(NotificationNavigationService.class);
         userService = mock(UserService.class);
 
         given(userService.getMe("access-token"))
-                .willReturn(new MyProfileResponse(1L, "테스트유저", "https://example.com/profile.png", true));
+                .willReturn(new MyProfileResponse(1L, "테스트유저", "https://example.com/profile.png", "ABCDE", true));
 
         mockMvc = MockMvcBuilders.standaloneSetup(
+                        new AppUnlockNotificationController(appUnlockNotificationService),
+                        new AppLockNotificationController(appLockNotificationService),
                         new FcmTokenController(fcmTokenService),
                         new NotificationHistoryController(notificationHistoryService, notificationNavigationService),
                         new UserController(userService)
@@ -86,6 +97,107 @@ class NotificationControllerDocsTest {
                 .setCustomArgumentResolvers(new CurrentUserResolver(userService))
                 .apply(documentationConfiguration(restDocumentation))
                 .build();
+    }
+
+    @Test
+    void 앱_잠금_해제_알림을_요청한다() throws Exception {
+        HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
+
+        mockMvc.perform(post("/notifications/app-unlock-requests")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+                .andExpect(status().isNoContent())
+                .andDo(result -> verify(appUnlockNotificationService).request(eq(1L)))
+                .andDo(document("notifications/app-unlock-requests-create",
+                        preprocessRequest(prettyPrint()),
+                        preprocessResponse(prettyPrint()),
+                        requestHeaders(requestHeaderDescriptors),
+                        resource(builder()
+                                .tag("Notification")
+                                .summary("앱 잠금 해제 알림 요청")
+                                .description("로그인 사용자에게 APP_UNLOCK_TIMER 푸시를 보낸다. 10초 해제 타이머를 거친 뒤 해제 시간 설정으로 이동한다. 알림 이력은 저장하지 않는다.")
+                                .requestHeaders(requestHeaderDescriptors)
+                                .build()
+                        )));
+    }
+
+    @Test
+    void 제한_초과_후_일시_해제를_알린다() throws Exception {
+        HeaderDescriptor[] headers = authorizationHeaderDescriptors();
+        FieldDescriptor[] fields = {
+                fieldWithPath("unlockMinutes").type(NUMBER).description("일시 해제 분 수. 1 이상 2147483647 이하의 정수"),
+                fieldWithPath("limitExceeded").type(BOOLEAN).description("기기가 판단한 제한 초과 여부. false이면 발송하지 않는다.")
+        };
+        mockMvc.perform(post("/notifications/app-unlocks")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"unlockMinutes\":10,\"limitExceeded\":true}"))
+                .andExpect(status().isNoContent())
+                .andDo(result -> verify(appLockNotificationService).reportUnlock(1L, 10, true))
+                .andDo(document("notifications/app-unlocks-create",
+                        preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint()),
+                        requestHeaders(headers), requestFields(fields),
+                        resource(builder().tag("Notification").summary("제한 초과 후 일시 해제 알림")
+                                .description("제한을 초과한 일시 해제를 보고하면 활성 친구 중 랜덤 최대 3명에게 푸시만 전송한다.")
+                                .requestHeaders(headers).requestSchema(schema("AppUnlockReportRequest"))
+                                .requestFields(fields).build())));
+    }
+
+    @Test
+    void 등록_해제_알림_수신자를_미리보기한다() throws Exception {
+        given(appLockNotificationService.previewRemovalRecipients(1L))
+                .willReturn(new AppLockRemovalRecipientsResponse(List.of(
+                        new AppLockRemovalRecipientsResponse.Recipient(2L, "친구이름"))));
+        HeaderDescriptor[] headers = authorizationHeaderDescriptors();
+        FieldDescriptor[] fields = {
+                fieldWithPath("recipients").type(ARRAY).description("활성 상태의 수락된 친구 중 랜덤 최대 3명. 친구가 없으면 빈 배열"),
+                fieldWithPath("recipients[].userId").type(NUMBER).description("등록 해제 확인 시 그대로 전달할 친구 사용자 ID"),
+                fieldWithPath("recipients[].displayName").type(STRING).description("친구 프로필 이름")
+        };
+        mockMvc.perform(post("/notifications/app-lock-removal-recipients")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+                .andExpect(status().isOk())
+                .andDo(document("notifications/app-lock-removal-recipients-create",
+                        preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint()),
+                        requestHeaders(headers), responseFields(fields),
+                        resource(builder().tag("Notification").summary("등록 해제 알림 수신자 미리보기")
+                                .description("타이머 화면에 진입할 때마다 새로 추첨한다. 이 요청은 알림을 보내지 않는다. 화면에 표시한 ID를 확인 요청까지 보관한다.")
+                                .requestHeaders(headers).responseSchema(schema("AppLockRemovalRecipientsResponse"))
+                                .responseFields(fields).build())));
+    }
+
+    @Test
+    void 표시한_친구에게_등록_해제를_알린다() throws Exception {
+        HeaderDescriptor[] headers = authorizationHeaderDescriptors();
+        FieldDescriptor[] fields = {
+                fieldWithPath("recipientUserIds").type(ARRAY).description("미리보기에서 표시한 친구 ID 목록. 중복 없는 최대 3명, 빈 배열 허용. 형식 오류 400, 활성 친구가 아니면 전체 요청 403")
+        };
+        mockMvc.perform(post("/notifications/app-lock-removals")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"recipientUserIds\":[2]}"))
+                .andExpect(status().isNoContent())
+                .andDo(result -> verify(appLockNotificationService).confirmRemoval(1L, List.of(2L)))
+                .andDo(document("notifications/app-lock-removals-create",
+                        preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint()),
+                        requestHeaders(headers), requestFields(fields),
+                        resource(builder().tag("Notification").summary("앱 잠금 등록 해제 알림")
+                                .description("확인 모달의 해제하기에서 호출한다. 현재 친구인지 모두 검증한 뒤 전달된 ID에만 푸시한다. 재추첨하지 않으며 취소·타이머 종료·사유 선택 시 호출하지 않는다.")
+                                .requestHeaders(headers).requestSchema(schema("AppLockRemovalRequest"))
+                                .requestFields(fields).build())));
+    }
+
+    @Test
+    void 재잠금_임박_알림을_즉시_요청한다() throws Exception {
+        HeaderDescriptor[] headers = authorizationHeaderDescriptors();
+        mockMvc.perform(post("/notifications/app-relock-reminders")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+                .andExpect(status().isNoContent())
+                .andDo(result -> verify(appLockNotificationService).remindRelock(1L))
+                .andDo(document("notifications/app-relock-reminders-create",
+                        preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint()), requestHeaders(headers),
+                        resource(builder().tag("Notification").summary("재잠금 1분 전 알림 요청")
+                                .description("요청 즉시 본인에게 푸시만 보낸다. 프론트가 재잠금 1분 전에 호출하고 앱 재해제·등록 해제 때 이전 호출 예약을 취소한다. 서버는 예약하거나 해제 완료 시 발송하지 않는다.")
+                                .requestHeaders(headers).build())));
     }
 
     @Test
@@ -197,42 +309,42 @@ class NotificationControllerDocsTest {
                         List.of(
                                 new NotificationHistoryItemResponse(
                                         100L,
-                                        "인증 알림",
-                                        "슬빈님이 인증을 업로드했습니다. 반응을 남겨보세요!",
+                                        "Detoxmate",
+                                        "슬빈님이 친구 요청을 보냈어요.",
                                         1L,
                                         "https://cdn.detoxmate.co.kr/profile/1.png",
                                         false,
-                                        "FEED",
-                                        10L,
+                                        "FRIEND_REQUESTS",
+                                        null,
                                         "NONE",
                                         null,
                                         OffsetDateTime.of(2026, 5, 17, 14, 30, 0, 0, ZoneOffset.ofHours(9))
                                 ),
                                 new NotificationHistoryItemResponse(
                                         101L,
-                                        "댓글 알림",
-                                        "의진님이 댓글을 남겼습니다: \"좋아요\"",
+                                        "Detoxmate",
+                                        "의진님과 친구가 되었어요! 함께 스크린타임을 줄여봐요.",
                                         2L,
                                         "https://cdn.detoxmate.co.kr/profile/2.png",
-                                        true,
-                                        "FEED_DETAIL",
-                                        200L,
-                                        "COMMENT",
-                                        300L,
+                                        false,
+                                        "FRIENDS",
+                                        null,
+                                        "NONE",
+                                        null,
                                         OffsetDateTime.of(2026, 5, 17, 13, 0, 0, 0, ZoneOffset.ofHours(9))
                                 ),
                                 new NotificationHistoryItemResponse(
                                         102L,
-                                        "스트릭 알림",
-                                        "1명이 더 인증하지 않으면 우리 그룹 스트릭이 깨져요!",
-                                        null,
+                                        "Detoxmate",
+                                        "민준님이 잠긴 앱을 10분 동안 일시 해제했어요.",
+                                        3L,
                                         null,
                                         false,
-                                        "FEED",
-                                        10L,
                                         "NONE",
                                         null,
-                                        OffsetDateTime.of(2026, 5, 17, 23, 30, 0, 0, ZoneOffset.ofHours(9))
+                                        "NONE",
+                                        null,
+                                        OffsetDateTime.of(2026, 5, 16, 21, 12, 0, 0, ZoneOffset.ofHours(9))
                                 )
                         )
                 ));
@@ -251,7 +363,7 @@ class NotificationControllerDocsTest {
                         resource(builder()
                                 .tag("Notification")
                                 .summary("알림 목록 조회")
-                                .description("로그인 사용자의 활성 알림 히스토리를 최신순으로 조회한다. 날짜 그룹핑은 클라이언트가 createdAt 기준으로 수행한다.")
+                                .description("로그인 사용자의 친구 요청·수락·일시 해제·목표 시간 변경·등록 해제 알림 중 생성 후 168시간 미만인 활성 이력을 최신순으로 조회한다. 날짜 그룹핑은 클라이언트가 createdAt 기준으로 수행한다.")
                                 .requestHeaders(requestHeaderDescriptors)
                                 .responseSchema(schema("NotificationHistoryListResponse"))
                                 .responseFields(responseFieldDescriptors)
@@ -262,7 +374,7 @@ class NotificationControllerDocsTest {
     @Test
     void 알림_클릭_이동_정보를_조회한다() throws Exception {
         given(notificationNavigationService.resolve(eq(1L), eq(100L)))
-                .willReturn(NotificationNavigationResponse.navigable("FEED_DETAIL", 200L));
+                .willReturn(NotificationNavigationResponse.friendPage("FRIEND_REQUESTS", null, "/friend-page?userId=2&displayName=friend&relationshipStatus=PENDING_RECEIVED&requestId=10"));
 
         HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
         ParameterDescriptor[] pathParameterDescriptors = notificationNavigationPathParameters();
@@ -280,7 +392,7 @@ class NotificationControllerDocsTest {
                         resource(builder()
                                 .tag("Notification")
                                 .summary("알림 이동 정보 조회")
-                                .description("알림 목록에서 특정 알림을 클릭했을 때 현재 상태 기준으로 이동 가능한 화면과 target 정보를 조회한다.")
+                                .description("친구 알림은 발신자의 현재 친구 페이지 URL을 반환한다. URL에는 userId, displayName, relationshipStatus 및 필요한 requestId 또는 friendshipId가 포함된다. 푸시의 기존 target 정보는 변경하지 않는다.")
                                 .requestHeaders(requestHeaderDescriptors)
                                 .pathParameters(pathParameterDescriptors)
                                 .responseSchema(schema("NotificationNavigationResponse"))
@@ -324,8 +436,8 @@ class NotificationControllerDocsTest {
                 fieldWithPath("notifications[].senderUserId").type(VARIES).optional().description("알림 발신자 사용자 ID. 시스템 알림이면 null"),
                 fieldWithPath("notifications[].senderProfileImageUrl").type(VARIES).optional().description("알림 발신자 프로필 이미지 URL. 시스템 알림이거나 발신자 프로필 이미지가 없으면 null"),
                 fieldWithPath("notifications[].read").type(BOOLEAN).description("읽음 여부"),
-                fieldWithPath("notifications[].targetType").type(STRING).description("알림 이동 대상 타입 (NONE | GROUP | FEED | FEED_DETAIL | GROUP_CHALLENGE)"),
-                fieldWithPath("notifications[].targetId").type(VARIES).optional().description("알림 이동 대상 ID. FEED이면 groupChallengeId, FEED_DETAIL이면 challengeRecordId, GROUP이면 groupId, NONE이면 null"),
+                fieldWithPath("notifications[].targetType").type(STRING).description("알림 이동 대상 타입 (NONE | GROUP | FEED | FEED_DETAIL | GROUP_CHALLENGE | MY_PAGE | FRIEND_REQUESTS | FRIENDS | APP_UNLOCK_TIMER | APP_UNLOCK_DURATION_SETTING)"),
+                fieldWithPath("notifications[].targetId").type(VARIES).optional().description("알림 이동 대상 ID. FEED이면 groupChallengeId, FEED_DETAIL이면 challengeRecordId, GROUP이면 groupId. FRIEND_REQUESTS와 FRIENDS 등 고정 화면은 null"),
                 fieldWithPath("notifications[].sourceType").type(STRING).description("알림 발생 원인 타입 (NONE | COMMENT | REACTION | POKE | CHALLENGE_RECORD)"),
                 fieldWithPath("notifications[].sourceId").type(VARIES).optional().description("알림 발생 원인 ID. sourceType이 NONE이면 null"),
                 fieldWithPath("notifications[].createdAt").type(STRING).description("알림 생성 시각. ISO-8601 offset 포함 KST 시각. 예: 2026-05-17T14:30:00+09:00")
@@ -345,7 +457,8 @@ class NotificationControllerDocsTest {
                 fieldWithPath("targetId").type(VARIES).optional().description("이동 가능할 때 대상 ID"),
                 fieldWithPath("fallbackTargetType").type(VARIES).optional().description("직접 이동이 불가능할 때 대체 이동 대상 타입"),
                 fieldWithPath("fallbackTargetId").type(VARIES).optional().description("직접 이동이 불가능할 때 대체 이동 대상 ID"),
-                fieldWithPath("reason").type(VARIES).optional().description("직접 이동이 불가능한 사유 코드")
+                fieldWithPath("reason").type(VARIES).optional().description("직접 이동이 불가능한 사유 코드"),
+                fieldWithPath("url").type(STRING).optional().description("친구 알림의 앱 내부 이동 URL. 이동 불가 또는 기존 그룹 알림이면 null")
         };
     }
 }

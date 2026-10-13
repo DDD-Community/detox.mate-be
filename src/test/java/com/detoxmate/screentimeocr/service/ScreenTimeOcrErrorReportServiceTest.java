@@ -1,5 +1,6 @@
 package com.detoxmate.screentimeocr.service;
 
+import com.detoxmate.support.UserFixtures;
 import com.detoxmate.activityrecord.domain.ActivityRecord;
 import com.detoxmate.activityrecord.domain.UsageGoalType;
 import com.detoxmate.activityrecord.domain.UserUsageGoalTime;
@@ -133,7 +134,7 @@ class ScreenTimeOcrErrorReportServiceTest {
     }
 
     private User user(Long id) {
-        User user = User.createNew("tester");
+        User user = UserFixtures.createUser("tester");
         ReflectionTestUtils.setField(user, "id", id);
         return user;
     }

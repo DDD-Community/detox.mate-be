@@ -62,7 +62,7 @@ class GroupMemberControllerTest {
         groupMemberProfileService = mock(GroupMemberProfileService.class);
         userService = mock(UserService.class);
         when(userService.getMe("access-token"))
-                .thenReturn(new MyProfileResponse(1L, "지민", "https://example.com/profile.png", true));
+                .thenReturn(new MyProfileResponse(1L, "지민", "https://example.com/profile.png", "ABCDE", true));
 
         mockMvc = MockMvcBuilders.standaloneSetup(new GroupMemberController(groupMemberProfileService))
                 .setCustomArgumentResolvers(new CurrentUserResolver(userService))

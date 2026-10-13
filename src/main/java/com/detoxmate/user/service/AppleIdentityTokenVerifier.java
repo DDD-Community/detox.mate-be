@@ -48,11 +48,19 @@ public class AppleIdentityTokenVerifier {
     }
 
     public String verify(String identityToken, String rawNonce) {
+        return verifyClaims(identityToken, rawNonce).providerUserId();
+    }
+
+    public String extractEmail(String identityToken, String rawNonce) {
+        return verifyClaims(identityToken, rawNonce).email();
+    }
+
+    private VerifiedClaims verifyClaims(String identityToken, String rawNonce) {
         requireConfiguredClientId();
 
         Jwt jwt = decode(identityToken);
         validateNonce(jwt, rawNonce);
-        return extractProviderUserId(jwt);
+        return new VerifiedClaims(extractProviderUserId(jwt), jwt.getClaimAsString("email"));
     }
 
     private String extractProviderUserId(Jwt jwt) {
@@ -140,5 +148,8 @@ public class AppleIdentityTokenVerifier {
                     null
             ));
         };
+    }
+
+    private record VerifiedClaims(String providerUserId, String email) {
     }
 }

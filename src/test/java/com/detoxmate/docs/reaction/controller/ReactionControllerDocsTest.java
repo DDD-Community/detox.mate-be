@@ -56,7 +56,7 @@ public class ReactionControllerDocsTest {
         UserService userService = mock(UserService.class);
 
         given(userService.getMe("access-token"))
-                .willReturn(new MyProfileResponse(1L, "테스트유저", "https://example.com/profile.png", true));
+                .willReturn(new MyProfileResponse(1L, "테스트유저", "https://example.com/profile.png", "ABCDE", true));
 
         ReactionController controller = new ReactionController(reactionService);
 

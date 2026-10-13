@@ -1,5 +1,6 @@
 package com.detoxmate.activityrecord.service;
 
+import com.detoxmate.support.UserFixtures;
 import com.detoxmate.activityrecord.domain.UsageGoalType;
 import com.detoxmate.activityrecord.domain.UserUsageGoalTime;
 import com.detoxmate.activityrecord.dto.UsageGoalTypeCode;
@@ -32,7 +33,7 @@ class LatestGoalTimesTest {
             Integer goalMinutes,
             LocalDateTime createdAt
     ) {
-        User user = User.createNew("tester");
+        User user = UserFixtures.createUser("tester");
         UsageGoalType usageGoalType = UsageGoalType.create(1L, usageGoalTypeCode);
         UserUsageGoalTime goalTime = UserUsageGoalTime.create(user, usageGoalType, goalMinutes);
         ReflectionTestUtils.setField(goalTime, "createdAt", createdAt);

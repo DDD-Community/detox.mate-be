@@ -1,5 +1,6 @@
 package com.detoxmate.feed.service;
 
+import com.detoxmate.support.UserFixtures;
 import com.detoxmate.activityrecord.domain.ActivityRecord;
 import com.detoxmate.activityrecord.domain.UsageGoalType;
 import com.detoxmate.activityrecord.domain.UserUsageGoalTime;
@@ -104,7 +105,7 @@ class FeedServiceTest {
         Group group = groupRepository.save(Group.createNew("수능방", "ABCDE"));
         GroupChallenge challenge = groupChallengeRepository.save(GroupChallenge.createFirst(group.getId()));
 
-        User currentUser = userRepository.save(User.createNew("나"));
+        User currentUser = userRepository.save(UserFixtures.createUser("나"));
         saveParticipant(group.getId(), challenge.getId(), currentUser);
 
         assertThat(challengeRecordRepository.findAll()).isEmpty();
@@ -136,8 +137,8 @@ class FeedServiceTest {
         challenge.activate(LocalDateTime.of(2026, 4, 11, 0, 0));
         groupChallengeRepository.save(challenge);
 
-        User currentUser = userRepository.save(User.createNew("나"));
-        User targetUser = userRepository.save(User.createNew("민준"));
+        User currentUser = userRepository.save(UserFixtures.createUser("나"));
+        User targetUser = userRepository.save(UserFixtures.createUser("민준"));
 
         LocalDateTime joinedAt = LocalDateTime.of(2026, 4, 10, 10, 0);
         GroupChallengeParticipant currentParticipant =
@@ -168,8 +169,8 @@ class FeedServiceTest {
         Group group = groupRepository.save(Group.createNew("수능방", "ABCDE"));
         GroupChallenge challenge = groupChallengeRepository.save(GroupChallenge.createFirst(group.getId()));
 
-        User currentUser = userRepository.save(User.createNew("나"));
-        User targetUser = userRepository.save(User.createNew("민준"));
+        User currentUser = userRepository.save(UserFixtures.createUser("나"));
+        User targetUser = userRepository.save(UserFixtures.createUser("민준"));
 
         saveParticipant(group.getId(), challenge.getId(), currentUser);
         GroupChallengeParticipant targetParticipant =
@@ -213,11 +214,11 @@ class FeedServiceTest {
         Group group = groupRepository.save(Group.createNew("수능방", "ABCDE"));
         GroupChallenge challenge = groupChallengeRepository.save(GroupChallenge.createFirst(group.getId()));
 
-        User currentUser = userRepository.save(User.createNew("나"));
-        User alice = userRepository.save(User.createNew("Alice"));
-        User bob = userRepository.save(User.createNew("Bob"));
-        User oldVerifiedUser = userRepository.save(User.createNew("OldVerified"));
-        User latestVerifiedUser = userRepository.save(User.createNew("LatestVerified"));
+        User currentUser = userRepository.save(UserFixtures.createUser("나"));
+        User alice = userRepository.save(UserFixtures.createUser("Alice"));
+        User bob = userRepository.save(UserFixtures.createUser("Bob"));
+        User oldVerifiedUser = userRepository.save(UserFixtures.createUser("OldVerified"));
+        User latestVerifiedUser = userRepository.save(UserFixtures.createUser("LatestVerified"));
 
         saveParticipant(group.getId(), challenge.getId(), currentUser);
         saveParticipant(group.getId(), challenge.getId(), alice);
@@ -250,8 +251,8 @@ class FeedServiceTest {
         Group group = groupRepository.save(Group.createNew("수능방", "ABCDE"));
         GroupChallenge challenge = groupChallengeRepository.save(GroupChallenge.createFirst(group.getId()));
 
-        User currentUser = userRepository.save(User.createNew("나"));
-        User targetUser = userRepository.save(User.createNew("민준"));
+        User currentUser = userRepository.save(UserFixtures.createUser("나"));
+        User targetUser = userRepository.save(UserFixtures.createUser("민준"));
 
         saveParticipant(group.getId(), challenge.getId(), currentUser);
         GroupChallengeParticipant targetParticipant =
@@ -289,8 +290,8 @@ class FeedServiceTest {
         Group group = groupRepository.save(Group.createNew("수능방", "ABCDE"));
         GroupChallenge challenge = groupChallengeRepository.save(GroupChallenge.createFirst(group.getId()));
 
-        User currentUser = userRepository.save(User.createNew("나"));
-        User targetUser = userRepository.save(User.createNew("민준"));
+        User currentUser = userRepository.save(UserFixtures.createUser("나"));
+        User targetUser = userRepository.save(UserFixtures.createUser("민준"));
 
         saveParticipant(group.getId(), challenge.getId(), currentUser);
         GroupChallengeParticipant targetParticipant =
@@ -323,8 +324,8 @@ class FeedServiceTest {
         Group group = groupRepository.save(Group.createNew("수능방", "ABCDE"));
         GroupChallenge challenge = groupChallengeRepository.save(GroupChallenge.createFirst(group.getId()));
 
-        User currentUser = userRepository.save(User.createNew("나"));
-        User targetUser = userRepository.save(User.createNew("민준"));
+        User currentUser = userRepository.save(UserFixtures.createUser("나"));
+        User targetUser = userRepository.save(UserFixtures.createUser("민준"));
 
         saveParticipant(group.getId(), challenge.getId(), currentUser);
         GroupChallengeParticipant targetParticipant =

@@ -50,9 +50,13 @@ out/
 
 /logs
 
-/docs
+/docs/*
+!/docs/harness/
+!/docs/harness/**
+
 
 .claude/worktrees
+/_workspace/
 
 ##Firebase ##
 src/main/resources/firebase/detoxmate-dev-firebase-account.json

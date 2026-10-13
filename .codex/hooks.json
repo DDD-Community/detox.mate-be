@@ -1,0 +1,30 @@
+{
+  "description": "Detoxmate TDD workflow enforcement",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "apply_patch|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/enforce-tdd-phase.py\"",
+            "timeout": 10,
+            "statusMessage": "Checking TDD phase"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/enforce-final-green.py\"",
+            "timeout": 10,
+            "statusMessage": "Checking final verification"
+          }
+        ]
+      }
+    ]
+  }
+}

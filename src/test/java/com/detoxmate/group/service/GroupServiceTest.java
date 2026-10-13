@@ -1,5 +1,6 @@
 package com.detoxmate.group.service;
 
+import com.detoxmate.support.UserFixtures;
 import com.detoxmate.group.domain.Group;
 import com.detoxmate.group.domain.GroupChallenge;
 import com.detoxmate.group.domain.GroupChallengeParticipantStatus;
@@ -547,7 +548,7 @@ public class GroupServiceTest {
     }
 
     private User user() {
-        User user = User.createNew("지민");
+        User user = UserFixtures.createUser("지민");
         ReflectionTestUtils.setField(user, "id", OWNER_USER_ID);
         return user;
     }

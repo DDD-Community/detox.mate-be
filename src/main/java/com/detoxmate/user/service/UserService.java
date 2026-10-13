@@ -165,6 +165,7 @@ public class UserService {
                 user.getId(),
                 user.getPublicDisplayName(),
                 imageReadUrlBuilder.build(user.getPublicProfileImageObjectKey()),
+                user.getUserCode(),
                 user.isPushNotificationEnabled()
         );
     }

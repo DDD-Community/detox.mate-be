@@ -1,5 +1,6 @@
 package com.detoxmate.group.repository;
 
+import com.detoxmate.support.UserFixtures;
 import com.detoxmate.group.domain.Group;
 import com.detoxmate.group.domain.GroupChallenge;
 import com.detoxmate.group.domain.GroupChallengeParticipant;
@@ -44,7 +45,7 @@ class GroupChallengeParticipantRepositoryTest {
     @Test
     @DisplayName("참여자가 활성 그룹멤버와 현재 사용자를 가리키면 true를 반환한다")
     void existsActiveByIdAndUserId_returnsTrueForActiveParticipantOfUser() {
-        User user = userRepository.save(User.createNew("지민"));
+        User user = userRepository.save(UserFixtures.createUser("지민"));
         Group group = saveGroup();
         GroupMember groupMember = groupMemberRepository.save(GroupMember.createMember(user.getId(), group.getId()));
         GroupChallenge groupChallenge = saveActiveChallenge(group.getId(), 1);
@@ -60,7 +61,7 @@ class GroupChallengeParticipantRepositoryTest {
     @Test
     @DisplayName("첫 스크린타임 등록은 모집중인 최신 챌린지 참여자도 허용한다")
     void existsFirstScreenTimeRegistrableByIdAndUserId_returnsTrueForRecruitingParticipant() {
-        User user = userRepository.save(User.createNew("지민"));
+        User user = userRepository.save(UserFixtures.createUser("지민"));
         Group group = saveGroup();
         GroupMember groupMember = groupMemberRepository.save(GroupMember.createMember(user.getId(), group.getId()));
         GroupChallenge groupChallenge = saveRecruitingChallenge(group.getId(), 1);
@@ -79,8 +80,8 @@ class GroupChallengeParticipantRepositoryTest {
     @Test
     @DisplayName("참여자가 다른 사용자를 가리키면 false를 반환한다")
     void existsActiveByIdAndUserId_returnsFalseForOtherUsersParticipant() {
-        User owner = userRepository.save(User.createNew("지민"));
-        User other = userRepository.save(User.createNew("민수"));
+        User owner = userRepository.save(UserFixtures.createUser("지민"));
+        User other = userRepository.save(UserFixtures.createUser("민수"));
         Group group = saveGroup();
         GroupMember groupMember = groupMemberRepository.save(GroupMember.createMember(other.getId(), group.getId()));
         GroupChallenge groupChallenge = saveActiveChallenge(group.getId(), 1);
@@ -96,7 +97,7 @@ class GroupChallengeParticipantRepositoryTest {
     @Test
     @DisplayName("참여자나 그룹멤버가 활성 상태가 아니면 false를 반환한다")
     void existsActiveByIdAndUserId_returnsFalseForInactiveParticipantOrMember() {
-        User withdrawnUser = userRepository.save(User.createNew("지민"));
+        User withdrawnUser = userRepository.save(UserFixtures.createUser("지민"));
         Group group = saveGroup();
         GroupMember activeMember = groupMemberRepository.save(GroupMember.createMember(withdrawnUser.getId(), group.getId()));
         GroupChallenge groupChallenge = saveActiveChallenge(group.getId(), 1);
@@ -107,7 +108,7 @@ class GroupChallengeParticipantRepositoryTest {
         withdrawnParticipant.withdraw();
         participantRepository.save(withdrawnParticipant);
 
-        User leftUser = userRepository.save(User.createNew("민수"));
+        User leftUser = userRepository.save(UserFixtures.createUser("민수"));
         GroupMember leftMember = GroupMember.createMember(leftUser.getId(), group.getId());
         leftMember.leave();
         GroupMember savedLeftMember = groupMemberRepository.save(leftMember);
@@ -124,7 +125,7 @@ class GroupChallengeParticipantRepositoryTest {
     @Test
     @DisplayName("최신 챌린지가 ACTIVE가 아니면 인증 가능한 참여자로 보지 않는다")
     void existsActiveByIdAndUserId_returnsFalseWhenChallengeIsNotActive() {
-        User user = userRepository.save(User.createNew("지민"));
+        User user = userRepository.save(UserFixtures.createUser("지민"));
         Group group = saveGroup();
         GroupMember groupMember = groupMemberRepository.save(GroupMember.createMember(user.getId(), group.getId()));
         GroupChallenge canceledChallenge = saveCanceledChallenge(group.getId(), 1);
@@ -140,7 +141,7 @@ class GroupChallengeParticipantRepositoryTest {
     @Test
     @DisplayName("최신 챌린지가 아니면 인증 가능한 참여자로 보지 않는다")
     void existsActiveByIdAndUserId_returnsFalseWhenChallengeIsNotLatest() {
-        User user = userRepository.save(User.createNew("지민"));
+        User user = userRepository.save(UserFixtures.createUser("지민"));
         Group group = saveGroup();
         GroupMember groupMember = groupMemberRepository.save(GroupMember.createMember(user.getId(), group.getId()));
         GroupChallenge oldChallenge = saveActiveChallenge(group.getId(), 1);

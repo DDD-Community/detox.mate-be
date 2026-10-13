@@ -1,5 +1,6 @@
 package com.detoxmate.group.controller;
 
+import com.detoxmate.support.UserFixtures;
 import com.detoxmate.activityrecord.domain.ActivityRecord;
 import com.detoxmate.activityrecord.domain.UsageGoalType;
 import com.detoxmate.activityrecord.domain.UserUsageGoalTime;
@@ -156,9 +157,9 @@ class GroupActivityCalendarHttpApiTest {
         challenge.activate(LocalDateTime.of(2026, 4, 11, 0, 0));
         groupChallengeRepository.save(challenge);
 
-        User certifiedUser = userRepository.save(User.createNew("지수", "profiles/jisu.png"));
-        User currentUser = userRepository.save(User.createNew("나", "profiles/me.png"));
-        User leftUser = userRepository.save(User.createNew("서연", "profiles/seoyeon.png"));
+        User certifiedUser = userRepository.save(UserFixtures.createUser("지수", "profiles/jisu.png"));
+        User currentUser = userRepository.save(UserFixtures.createUser("나", "profiles/me.png"));
+        User leftUser = userRepository.save(UserFixtures.createUser("서연", "profiles/seoyeon.png"));
 
         LocalDateTime joinedAt = LocalDateTime.of(2026, 4, 10, 10, 0);
         GroupChallengeParticipant certifiedParticipant = saveParticipant(group, challenge, certifiedUser, joinedAt);
