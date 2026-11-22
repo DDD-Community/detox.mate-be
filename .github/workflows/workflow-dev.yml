@@ -17,16 +17,27 @@ jobs:
   build:
     name: Build Jar
     runs-on: ubuntu-latest
+    outputs:
+      jre_tag: ${{ steps.java.outputs.jre_tag }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # setup-java's version-file parser drops the fourth Temurin version component.
+      - name: Read project Java version
+        id: java
+        shell: bash
+        run: |
+          version=$(<.java-version)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "jre_tag=${version/+/_}-jre" >> "$GITHUB_OUTPUT"
+
       - name: Set up Java 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6.2.0
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: ${{ steps.java.outputs.version }}
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -95,7 +106,7 @@ jobs:
       - name: Create Dockerfile
         run: |
           cat <<'EOF' > deploy/Dockerfile
-          FROM eclipse-temurin:21-jre
+          FROM eclipse-temurin:${{ needs.build.outputs.jre_tag }}
           WORKDIR /app
           COPY app.jar app.jar
           EXPOSE 8080
@@ -104,7 +115,7 @@ jobs:
 
       - name: Build docker image locally
         run: |
-          docker build -t ${{ env.APP_NAME }}:${{ env.IMAGE_TAG }} ./deploy
+          docker build --pull -t ${{ env.APP_NAME }}:${{ env.IMAGE_TAG }} ./deploy
 
       - name: Stop and remove old container
         run: |

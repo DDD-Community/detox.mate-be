@@ -1,0 +1,8 @@
+api.detoxmate.co.kr {
+	@privateActuator {
+		path /actuator /actuator/*
+		not path /actuator/health /actuator/health/*
+	}
+	respond @privateActuator 404
+	reverse_proxy 127.0.0.1:8081
+}

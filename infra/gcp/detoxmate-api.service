@@ -1,0 +1,25 @@
+[Unit]
+Description=Detoxmate production API
+Wants=network-online.target
+After=network-online.target docker.service
+
+[Service]
+User=detoxmate-api
+Group=detoxmate-api
+WorkingDirectory=/opt/detoxmate/app/current
+Environment=SPRING_PROFILES_ACTIVE=prod SERVER_ADDRESS=127.0.0.1 SERVER_PORT=8081 TZ=Asia/Seoul LOG_PATH=/var/log/detoxmate-api
+EnvironmentFile=/etc/detoxmate/mysql.env
+EnvironmentFile=/opt/detoxmate/app/current/app.env
+ExecStart=/opt/detoxmate/app/current/jdk/bin/java -Xms96m -Xmx512m -Duser.timezone=Asia/Seoul -jar /opt/detoxmate/app/current/app.jar
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=40
+UMask=0027
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+LogsDirectory=detoxmate-api
+
+[Install]
+WantedBy=multi-user.target
