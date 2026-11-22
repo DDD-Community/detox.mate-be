@@ -220,7 +220,7 @@ public class NotificationEventListener {
         String unlockUserName = userReader.findDisplayName(unlockUserId);
 
         for(Long recipientUserId : recipientUserIds){
-            notificationService.send(NotificationCommand.pushOnly(
+            notificationService.send(NotificationCommand.history(
                     recipientUserId,
                     event.unlockUserId(),
                     NotificationTypeCode.FRIEND_UNLOCKED,
@@ -260,7 +260,7 @@ public class NotificationEventListener {
         String name = userReader.findDisplayName(event.userId());
         String duration = formatMinutes(event.totalLockMinutes());
         for (Long recipient : recipients) {
-            notificationService.send(NotificationCommand.pushOnly(
+            notificationService.send(NotificationCommand.history(
                     recipient, event.userId(), NotificationTypeCode.FRIEND_TIME_LIMIT_CHANGED,
                     NotificationContext.of("friendName", name, "duration", duration), NotificationPayload.none()
             ));

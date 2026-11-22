@@ -57,7 +57,7 @@ class NotificationHistoryServiceTest {
         Long senderUserId = 2L;
         LocalDateTime now = LocalDateTime.now(clock.withZone(KST));
         Notification notification = Notification.create(
-                NotificationType.create(NotificationTypeCode.COMMENT_CREATED),
+                NotificationType.create(NotificationTypeCode.FRIEND_REQUEST_RECEIVED),
                 "댓글 알림",
                 "{nickname}님이 댓글을 남겼습니다."
         );
@@ -70,8 +70,7 @@ class NotificationHistoryServiceTest {
                 null
         );
 
-        when(historyRepository.findActiveByUserId(recipientUserId, now)).thenReturn(List.of(history));
-        when(historyRepository.countUnreadActiveByUserId(recipientUserId, now)).thenReturn(1L);
+        when(historyRepository.findActiveByUserId(recipientUserId, now, now.minusHours(168), NotificationTypeCode.FRIEND_HISTORY_TYPES)).thenReturn(List.of(history));
         when(userService.getProfileSummariesByIds(Set.of(senderUserId)))
                 .thenReturn(Map.of(
                         senderUserId,

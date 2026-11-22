@@ -39,7 +39,7 @@ public class AppLockNotificationService {
         }
         String name = userReader.findDisplayName(userId);
         for (Long recipient : recipients) {
-            notificationService.send(NotificationCommand.pushOnly(
+            notificationService.send(NotificationCommand.history(
                     recipient, userId, NotificationTypeCode.FRIEND_APP_UNLOCKED,
                     NotificationContext.of("friendName", name, "minutes", String.valueOf(unlockMinutes)),
                     NotificationPayload.none()

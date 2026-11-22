@@ -309,42 +309,42 @@ class NotificationControllerDocsTest {
                         List.of(
                                 new NotificationHistoryItemResponse(
                                         100L,
-                                        "인증 알림",
-                                        "슬빈님이 인증을 업로드했습니다. 반응을 남겨보세요!",
+                                        "Detoxmate",
+                                        "슬빈님이 친구 요청을 보냈어요.",
                                         1L,
                                         "https://cdn.detoxmate.co.kr/profile/1.png",
                                         false,
-                                        "FEED",
-                                        10L,
+                                        "FRIEND_REQUESTS",
+                                        null,
                                         "NONE",
                                         null,
                                         OffsetDateTime.of(2026, 5, 17, 14, 30, 0, 0, ZoneOffset.ofHours(9))
                                 ),
                                 new NotificationHistoryItemResponse(
                                         101L,
-                                        "댓글 알림",
-                                        "의진님이 댓글을 남겼습니다: \"좋아요\"",
+                                        "Detoxmate",
+                                        "의진님과 친구가 되었어요! 함께 스크린타임을 줄여봐요.",
                                         2L,
                                         "https://cdn.detoxmate.co.kr/profile/2.png",
-                                        true,
-                                        "FEED_DETAIL",
-                                        200L,
-                                        "COMMENT",
-                                        300L,
+                                        false,
+                                        "FRIENDS",
+                                        null,
+                                        "NONE",
+                                        null,
                                         OffsetDateTime.of(2026, 5, 17, 13, 0, 0, 0, ZoneOffset.ofHours(9))
                                 ),
                                 new NotificationHistoryItemResponse(
                                         102L,
-                                        "스트릭 알림",
-                                        "1명이 더 인증하지 않으면 우리 그룹 스트릭이 깨져요!",
-                                        null,
+                                        "Detoxmate",
+                                        "민준님이 잠긴 앱을 10분 동안 일시 해제했어요.",
+                                        3L,
                                         null,
                                         false,
-                                        "FEED",
-                                        10L,
                                         "NONE",
                                         null,
-                                        OffsetDateTime.of(2026, 5, 17, 23, 30, 0, 0, ZoneOffset.ofHours(9))
+                                        "NONE",
+                                        null,
+                                        OffsetDateTime.of(2026, 5, 16, 21, 12, 0, 0, ZoneOffset.ofHours(9))
                                 )
                         )
                 ));
@@ -363,7 +363,7 @@ class NotificationControllerDocsTest {
                         resource(builder()
                                 .tag("Notification")
                                 .summary("알림 목록 조회")
-                                .description("로그인 사용자의 활성 알림 히스토리를 최신순으로 조회한다. 날짜 그룹핑은 클라이언트가 createdAt 기준으로 수행한다.")
+                                .description("로그인 사용자의 친구 요청·수락·일시 해제·목표 시간 변경·등록 해제 알림 중 생성 후 168시간 미만인 활성 이력을 최신순으로 조회한다. 날짜 그룹핑은 클라이언트가 createdAt 기준으로 수행한다.")
                                 .requestHeaders(requestHeaderDescriptors)
                                 .responseSchema(schema("NotificationHistoryListResponse"))
                                 .responseFields(responseFieldDescriptors)
@@ -374,7 +374,7 @@ class NotificationControllerDocsTest {
     @Test
     void 알림_클릭_이동_정보를_조회한다() throws Exception {
         given(notificationNavigationService.resolve(eq(1L), eq(100L)))
-                .willReturn(NotificationNavigationResponse.navigable("FEED_DETAIL", 200L));
+                .willReturn(NotificationNavigationResponse.friendPage("FRIEND_REQUESTS", null, "/friend-page?userId=2&displayName=friend&relationshipStatus=PENDING_RECEIVED&requestId=10"));
 
         HeaderDescriptor[] requestHeaderDescriptors = authorizationHeaderDescriptors();
         ParameterDescriptor[] pathParameterDescriptors = notificationNavigationPathParameters();
@@ -392,7 +392,7 @@ class NotificationControllerDocsTest {
                         resource(builder()
                                 .tag("Notification")
                                 .summary("알림 이동 정보 조회")
-                                .description("알림 목록에서 특정 알림을 클릭했을 때 현재 상태 기준으로 이동 가능한 화면과 target 정보를 조회한다.")
+                                .description("친구 알림은 발신자의 현재 친구 페이지 URL을 반환한다. URL에는 userId, displayName, relationshipStatus 및 필요한 requestId 또는 friendshipId가 포함된다. 푸시의 기존 target 정보는 변경하지 않는다.")
                                 .requestHeaders(requestHeaderDescriptors)
                                 .pathParameters(pathParameterDescriptors)
                                 .responseSchema(schema("NotificationNavigationResponse"))
@@ -457,7 +457,8 @@ class NotificationControllerDocsTest {
                 fieldWithPath("targetId").type(VARIES).optional().description("이동 가능할 때 대상 ID"),
                 fieldWithPath("fallbackTargetType").type(VARIES).optional().description("직접 이동이 불가능할 때 대체 이동 대상 타입"),
                 fieldWithPath("fallbackTargetId").type(VARIES).optional().description("직접 이동이 불가능할 때 대체 이동 대상 ID"),
-                fieldWithPath("reason").type(VARIES).optional().description("직접 이동이 불가능한 사유 코드")
+                fieldWithPath("reason").type(VARIES).optional().description("직접 이동이 불가능한 사유 코드"),
+                fieldWithPath("url").type(STRING).optional().description("친구 알림의 앱 내부 이동 URL. 이동 불가 또는 기존 그룹 알림이면 null")
         };
     }
 }

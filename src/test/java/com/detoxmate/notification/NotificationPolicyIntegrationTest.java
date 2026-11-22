@@ -255,7 +255,11 @@ class NotificationPolicyIntegrationTest {
             assertThat(message.title()).isEqualTo("Detoxmate");
             assertThat(message.body()).isEqualTo("프로필이름님이 잠긴 앱을 10분 동안 일시 해제했어요.");
         });
-        assertThat(historyRepository.count()).isZero();
+        assertThat(historyRepository.count()).isEqualTo(Math.min(3, friendCount));
+        assertThat(historyRepository.findAll()).allSatisfy(history -> {
+            assertThat(history.getSenderUserId()).isEqualTo(actor.getId());
+            assertThat(history.getUserId()).isNotEqualTo(actor.getId());
+        });
     }
 
     @Test
@@ -316,7 +320,11 @@ class NotificationPolicyIntegrationTest {
             assertThat(message.title()).isEqualTo("Detoxmate");
             assertThat(message.body()).isEqualTo("프로필이름님이 목표 제한 시간을 " + label + "으로 변경했어요.");
         });
-        assertThat(historyRepository.count()).isZero();
+        assertThat(historyRepository.count()).isEqualTo(3);
+        assertThat(historyRepository.findAll()).allSatisfy(history -> {
+            assertThat(history.getSenderUserId()).isEqualTo(actor.getId());
+            assertThat(history.getUserId()).isNotEqualTo(actor.getId());
+        });
     }
 
     @Test
@@ -414,7 +422,11 @@ class NotificationPolicyIntegrationTest {
             assertThat(message.title()).isEqualTo("Detoxmate");
             assertThat(message.body()).isEqualTo("프로필이름님이 잠근 앱을 등록 해제했어요.");
         });
-        assertThat(historyRepository.count()).isZero();
+        assertThat(historyRepository.count()).isEqualTo(3);
+        assertThat(historyRepository.findAll()).allSatisfy(history -> {
+            assertThat(history.getSenderUserId()).isEqualTo(actor.getId());
+            assertThat(history.getUserId()).isNotEqualTo(actor.getId());
+        });
     }
 
     @Test
@@ -577,6 +589,68 @@ class NotificationPolicyIntegrationTest {
         assertThat(scheduledTasks.getScheduledTasks()).isEmpty();
     }
 
+    @Test
+    void navigation_encodesDisplayNameAndFollowsCurrentRelationship() throws Exception {
+        actor.changeDisplayName("나&+😀");
+        actor = userRepository.saveAndFlush(actor);
+        User receiver = createUser("받는친구");
+        friendService.sendRequest(actor.getId(), receiver.getId());
+        NotificationHistory history = historyRepository.findAll().getFirst();
+        Friend request = friendRepository.findByUserPair(actor.getId(), receiver.getId()).orElseThrow();
+        String baseUrl = "/friend-page?userId=" + actor.getId()
+                + "&displayName=%EB%82%98%26%2B%F0%9F%98%80";
+
+        authenticated(receiver, get("/notifications/{id}/navigation", history.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.url").value(baseUrl + "&relationshipStatus=PENDING_RECEIVED&requestId=" + request.getId()));
+        friendService.acceptRequest(request.getId(), receiver.getId());
+        authenticated(receiver, get("/notifications/{id}/navigation", history.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.url").value(baseUrl + "&relationshipStatus=FRIEND&friendshipId=" + request.getId()));
+        friendService.unfriend(request.getId(), receiver.getId());
+        authenticated(receiver, get("/notifications/{id}/navigation", history.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.url").value(baseUrl + "&relationshipStatus=NONE"));
+        friendService.sendRequest(receiver.getId(), actor.getId());
+        Friend outgoing = friendRepository.findByUserPair(actor.getId(), receiver.getId()).orElseThrow();
+        authenticated(receiver, get("/notifications/{id}/navigation", history.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.url").value(baseUrl + "&relationshipStatus=PENDING_SENT&requestId=" + outgoing.getId()));
+    }
+
+    @Test
+    void navigation_rejectsAnotherRecipientAndWithdrawnSender() throws Exception {
+        User receiver = createUser("받는친구");
+        friendService.sendRequest(actor.getId(), receiver.getId());
+        NotificationHistory history = historyRepository.findAll().getFirst();
+        authenticated(actor, get("/notifications/{id}/navigation", history.getId()))
+                .andExpect(status().isNotFound());
+        actor.withdraw();
+        userRepository.saveAndFlush(actor);
+        authenticated(receiver, get("/notifications/{id}/navigation", history.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.navigable").value(false))
+                .andExpect(jsonPath("$.reason").value("TARGET_NOT_FOUND"))
+                .andExpect(jsonPath("$.url").isEmpty());
+    }
+
+    @Test
+    void friendActivityHistory_navigatesWithoutChangingPushTarget() throws Exception {
+        User friend = createFriends(1).getFirst();
+        authenticated(actor, jsonPost("/notifications/app-unlocks",
+                "{\"unlockMinutes\":10,\"limitExceeded\":true}"))
+                .andExpect(status().isNoContent());
+        NotificationHistory history = historyRepository.findAll().getFirst();
+        assertThat(history.getTargetType().name()).isEqualTo("NONE");
+        authenticated(friend, get("/notifications/{id}/navigation", history.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.navigable").value(true))
+                .andExpect(jsonPath("$.url").value(org.hamcrest.Matchers.startsWith("/friend-page?userId=" + actor.getId())));
+        authenticated(friend, get("/notifications"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.notifications[0].message").value("프로필이름님이 잠긴 앱을 10분 동안 일시 해제했어요."));
+    }
+
     private void assertFriendHistory(User receiver, User sender, String target) throws Exception {
         NotificationHistory history = historyRepository.findAll().getFirst();
         assertThat(historyRepository.count()).isEqualTo(1);
@@ -589,7 +663,8 @@ class NotificationPolicyIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.navigable").value(true))
                 .andExpect(jsonPath("$.targetType").value(target))
-                .andExpect(jsonPath("$.targetId").isEmpty());
+                .andExpect(jsonPath("$.targetId").isEmpty())
+                .andExpect(jsonPath("$.url").value(org.hamcrest.Matchers.startsWith("/friend-page?userId=" + sender.getId() + "&displayName=")));
     }
 
     private void assertSinglePush(User recipient, String body, String target) {
