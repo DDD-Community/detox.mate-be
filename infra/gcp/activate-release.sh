@@ -8,19 +8,11 @@ sha256sum --check app.jar.sha256
 expected=$(cat java-version)
 [[ "$expected" =~ ^21[.][0-9.]+[+][0-9]+$ ]]
 jdk="/opt/detoxmate/app/jdks/$expected"
-if [[ ! -d "$jdk" ]]; then
-  temp_jdk=$(mktemp -d /opt/detoxmate/app/jdks/install.XXXXXXXX)
-  trap 'rm -rf -- "$temp_jdk"' EXIT
-  sha256sum --check jdk.tar.gz.sha256
-  tar -xzf jdk.tar.gz -C "$temp_jdk" --no-same-owner
-  chmod -R g+rX "$temp_jdk"
-  mv -T "$temp_jdk" "$jdk"
-fi
+bash install-temurin.sh "$expected" /opt/detoxmate/app/jdks
 runtime=$("$jdk/bin/java" -XshowSettings:properties -version 2>&1 | sed -n 's/^ *java.runtime.version = //p')
 [[ "${runtime%-LTS}" == "$expected" ]] || { echo "Unexpected Java runtime: $runtime" >&2; exit 1; }
 printf 'Runtime: %s\n' "$runtime"
 ln -sfn "$jdk" jdk
-rm -f jdk.tar.gz jdk.tar.gz.sha256
 chmod 0750 .
 chmod 0640 app.jar app.env
 cd /opt/detoxmate/app

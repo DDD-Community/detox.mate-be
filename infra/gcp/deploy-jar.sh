@@ -2,7 +2,7 @@
 set -euo pipefail
 umask 077
 : "${GCP_PROJECT:?}" "${GCP_ZONE:?}" "${GCP_VM:?}" "${GCP_SSH_HOST_KEY:?}"
-: "${GITHUB_RUN_ID:?}" "${GITHUB_RUN_ATTEMPT:?}" "${RUNNER_TEMP:?}" "${JAVA_HOME:?}"
+: "${GITHUB_RUN_ID:?}" "${GITHUB_RUN_ATTEMPT:?}" "${RUNNER_TEMP:?}"
 version=$(cat .java-version)
 release="$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
 [[ "$version" =~ ^21[.][0-9.]+[+][0-9]+$ && "$release" =~ ^[0-9]+-[0-9]+$ ]]
@@ -16,7 +16,7 @@ work=$(mktemp -d "$RUNNER_TEMP/detoxmate.XXXXXXXX")
 trap 'rm -rf -- "$work"' EXIT
 install -m 600 "${jars[0]}" "$work/app.jar"
 cp .java-version "$work/java-version"
-cp infra/gcp/activate-release.sh "$work/activate-release.sh"
+cp infra/gcp/{activate-release,install-temurin}.sh "$work/"
 cd "$work"
 sha256sum app.jar > app.jar.sha256
 # systemd EnvironmentFile supports quoted values spanning multiple lines.
@@ -59,11 +59,5 @@ Host detoxmate-prod
 EOF
 remote="/opt/detoxmate/app/releases/$release"
 ssh -F ssh-config detoxmate-prod "umask 027; mkdir -p '$remote'"
-payload=(app.jar app.jar.sha256 app.env java-version activate-release.sh)
-if ! ssh -F ssh-config detoxmate-prod "test -x '/opt/detoxmate/app/jdks/$version/bin/java'"; then
-  tar -czf jdk.tar.gz -C "$JAVA_HOME" .
-  sha256sum jdk.tar.gz > jdk.tar.gz.sha256
-  payload+=(jdk.tar.gz jdk.tar.gz.sha256)
-fi
-scp -F ssh-config "${payload[@]}" "detoxmate-prod:$remote/"
+scp -F ssh-config app.jar app.jar.sha256 app.env java-version activate-release.sh install-temurin.sh "detoxmate-prod:$remote/"
 ssh -F ssh-config detoxmate-prod "bash '$remote/activate-release.sh' '$release'"
