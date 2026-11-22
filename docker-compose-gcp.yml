@@ -1,0 +1,51 @@
+name: detoxmate-prod
+
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3306:3306"
+    environment:
+      MYSQL_DATABASE: detoxmate
+      MYSQL_USER: detoxmate
+      MYSQL_ROOT_HOST: localhost
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql_root_password
+      MYSQL_PASSWORD_FILE: /run/secrets/mysql_app_password
+      TZ: Asia/Seoul
+    secrets:
+      - mysql_root_password
+      - mysql_app_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./db/manual/2026-10-13-prod-fresh-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./db/manual/2026-10-13-prod-fresh-seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+09:00
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          MYSQL_PWD="$$(cat /run/secrets/mysql_app_password)"
+          mysql --protocol=TCP -h 127.0.0.1 -u detoxmate -D detoxmate -Nse
+          'SELECT EXISTS(SELECT 1 FROM usage_goal_type) AND EXISTS(SELECT 1 FROM transfer_phrase)'
+          | grep -qx 1
+      interval: 15s
+      timeout: 5s
+      start_period: 90s
+      retries: 8
+
+networks:
+  default:
+    name: detoxmate-prod
+
+volumes:
+  mysql_data:
+
+secrets:
+  mysql_root_password:
+    file: ${DETOXMATE_MYSQL_SECRET_DIR:-/etc/detoxmate/mysql}/root-password
+  mysql_app_password:
+    file: ${DETOXMATE_MYSQL_SECRET_DIR:-/etc/detoxmate/mysql}/app-password
