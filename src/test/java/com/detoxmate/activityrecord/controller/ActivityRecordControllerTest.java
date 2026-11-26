@@ -369,7 +369,7 @@ class ActivityRecordControllerTest {
         return new FieldDescriptor[] {
                 fieldWithPath("activityImageObjectKey")
                         .type(JsonFieldType.STRING)
-                        .description("S3 에 업로드한 활동 이미지 object key")
+                        .description("현재 사용자가 ACTIVITY_RECORD_IMAGE 용도로 발급받은 object key")
                         .optional(),
                 fieldWithPath("reflectionText")
                         .type(JsonFieldType.STRING)

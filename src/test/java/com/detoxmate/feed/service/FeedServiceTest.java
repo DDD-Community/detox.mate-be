@@ -26,8 +26,13 @@ import com.detoxmate.group.repository.GroupMemberRepository;
 import com.detoxmate.group.repository.GroupRepository;
 import com.detoxmate.poke.domain.Poke;
 import com.detoxmate.poke.repository.PokeRepository;
+import com.detoxmate.upload.config.StorageGcsProperties;
+import com.detoxmate.upload.config.StorageProperties;
+import com.detoxmate.upload.infrastructure.GcsPhotoUrls;
+import com.detoxmate.upload.service.ImageReadUrlBuilder;
 import com.detoxmate.user.domain.User;
 import com.detoxmate.user.repository.UserRepository;
+import com.google.cloud.storage.Storage;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +46,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.net.MalformedURLException;
+import java.net.URI;
 import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.LocalDate;
@@ -49,6 +56,10 @@ import java.time.ZoneId;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -56,6 +67,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Import(FeedServiceTest.FixedClockConfig.class)
 class FeedServiceTest {
 
+    private static final String SIGNED_READ_URL = "https://storage.googleapis.com/test-bucket/walk.png?X-Goog-Signature=test";
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
     private static final LocalDate TODAY = LocalDate.of(2026, 4, 16);
 
@@ -347,16 +359,39 @@ class FeedServiceTest {
         assertThat(targetCard.oneLineReview()).isEqualTo("오늘 인증 완료");
     }
 
+    @Test
+    void certifiedPhotoInHomeAndDetailUsesThePrivateObjectReadUrl() {
+        Group group = groupRepository.save(Group.createNew("수능방", "ABCDE"));
+        GroupChallenge challenge = groupChallengeRepository.save(GroupChallenge.createFirst(group.getId()));
+        User user = userRepository.save(UserFixtures.createUser("민준"));
+        GroupChallengeParticipant participant = saveParticipant(group.getId(), challenge.getId(), user);
+        String key = "activity-records/" + user.getId() + "/2026/04/gcs/8eb5cd72-a314-48c6-b333-9f8f4664a839-walk.png";
+        ChallengeRecord record = saveCertifiedRecord(challenge.getId(), participant, user, key);
+
+        HomeFeedResponse home = feedService.getHomeFeed(challenge.getId(), user.getId());
+        var detail = feedService.getFeedDetail(record.getId(), user.getId());
+
+        assertThat(findCard(home, user.getId()).activityImageUrl()).isEqualTo(SIGNED_READ_URL);
+        assertThat(detail.activityImageUrl()).isEqualTo(SIGNED_READ_URL);
+    }
+
+    private ChallengeRecord saveCertifiedRecord(
+            Long groupChallengeId, GroupChallengeParticipant participant, User user
+    ) {
+        return saveCertifiedRecord(groupChallengeId, participant, user, "activity/image.png");
+    }
+
     private ChallengeRecord saveCertifiedRecord(
             Long groupChallengeId,
             GroupChallengeParticipant participant,
-            User user
+            User user,
+            String imageKey
     ) {
         ActivityRecord activityRecord = activityRecordRepository.save(
                 ActivityRecord.create(
                         user,
                         participant,
-                        "activity/image.png",
+                        imageKey,
                         "오늘 인증 완료"
                 )
         );
@@ -455,6 +490,16 @@ class FeedServiceTest {
     }
     @TestConfiguration
     static class FixedClockConfig {
+
+        @Bean
+        @Primary
+        ImageReadUrlBuilder photoUrls(StorageProperties legacy) throws MalformedURLException {
+            Storage storage = mock(Storage.class);
+            when(storage.signUrl(any(), anyLong(), any(), any(Storage.SignUrlOption[].class)))
+                    .thenReturn(URI.create(SIGNED_READ_URL).toURL());
+            return new GcsPhotoUrls(legacy, storage, new StorageGcsProperties("test-bucket", 600));
+        }
+
 
         @Bean
         @Primary

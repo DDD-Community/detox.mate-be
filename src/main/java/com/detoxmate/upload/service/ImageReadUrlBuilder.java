@@ -12,6 +12,11 @@ public class ImageReadUrlBuilder {
 
     private final StorageProperties storageProperties;
 
+    // Home and detail feeds have historically returned legacy image keys verbatim.
+    public String buildForLegacyFeed(String objectKey) {
+        return objectKey;
+    }
+
     public String build(String objectKey) {
         if (objectKey == null || objectKey.isBlank()) {
             return null;

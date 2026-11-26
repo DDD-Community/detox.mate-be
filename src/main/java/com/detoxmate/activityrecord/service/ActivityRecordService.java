@@ -17,7 +17,9 @@ import com.detoxmate.challengerecord.service.ChallengeRecordService;
 import com.detoxmate.group.domain.GroupChallengeParticipant;
 import com.detoxmate.group.repository.GroupChallengeParticipantRepository;
 import com.detoxmate.notification.event.CertificationCreatedEvent;
+import com.detoxmate.upload.dto.UploadPurpose;
 import com.detoxmate.upload.service.ImageReadUrlBuilder;
+import com.detoxmate.upload.service.UploadObjectKeyValidator;
 import com.detoxmate.user.domain.User;
 import com.detoxmate.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -50,6 +52,7 @@ public class ActivityRecordService {
     private final UserRepository userRepository;
     private final GroupChallengeParticipantRepository groupChallengeParticipantRepository;
     private final ImageReadUrlBuilder imageReadUrlBuilder;
+    private final UploadObjectKeyValidator uploadObjectKeyValidator;
     private final ChallengeRecordService challengeRecordService;
     private final Clock clock;
 
@@ -85,6 +88,7 @@ public class ActivityRecordService {
 
         GroupChallengeParticipant groupChallengeParticipant = findGroupChallengeParticipant(request.groupChallengeParticipantId());
         validateGroupChallengeParticipantAccess(userId, groupChallengeParticipant.getId());
+        validateActivityImage(userId, request.activityImageObjectKey());
         User user = findUser(userId);
 
         ActivityRecord activityRecord = toActivityRecord(
@@ -186,6 +190,13 @@ public class ActivityRecordService {
 
         if (hasUnachievedDetail && (reflectionText == null || reflectionText.isBlank())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, REFLECTION_TEXT_REQUIRED_MESSAGE);
+        }
+    }
+
+    private void validateActivityImage(Long userId, String key) {
+        if (key != null && !key.isBlank()
+                && !uploadObjectKeyValidator.isOwnedBy(userId, UploadPurpose.ACTIVITY_RECORD_IMAGE, key)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "본인이 업로드한 활동 이미지 키를 사용해야 합니다.");
         }
     }
 

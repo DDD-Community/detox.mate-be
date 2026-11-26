@@ -46,9 +46,19 @@ public class GcsPhotoUrls extends ImageReadUrlBuilder implements PhotoUploadSign
 
     @Override
     public String build(String objectKey) {
-        if (objectKey == null || !GCS_PHOTO_KEY.matcher(objectKey).matches()) {
-            return super.build(objectKey);
-        }
+        return isGcsPhoto(objectKey) ? signedReadUrl(objectKey) : super.build(objectKey);
+    }
+
+    @Override
+    public String buildForLegacyFeed(String objectKey) {
+        return isGcsPhoto(objectKey) ? signedReadUrl(objectKey) : super.buildForLegacyFeed(objectKey);
+    }
+
+    private boolean isGcsPhoto(String objectKey) {
+        return objectKey != null && GCS_PHOTO_KEY.matcher(objectKey).matches();
+    }
+
+    private String signedReadUrl(String objectKey) {
         BlobInfo object = BlobInfo.newBuilder(properties.bucketName(), objectKey).build();
         return storage.signUrl(object, 7, TimeUnit.DAYS, Storage.SignUrlOption.withV4Signature(),
                 Storage.SignUrlOption.httpMethod(HttpMethod.GET)).toString();

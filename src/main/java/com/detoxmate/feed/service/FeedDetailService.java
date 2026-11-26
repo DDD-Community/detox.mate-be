@@ -15,6 +15,7 @@ import com.detoxmate.poke.domain.Poke;
 import com.detoxmate.poke.service.PokeService;
 import com.detoxmate.reaction.domain.Reaction;
 import com.detoxmate.reaction.service.ReactionService;
+import com.detoxmate.upload.service.ImageReadUrlBuilder;
 import com.detoxmate.user.dto.UserProfileSummary;
 import com.detoxmate.user.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,7 @@ public class FeedDetailService {
     private final UserService userService;
 
     private final GroupChallengeParticipantService participantService;
+    private final ImageReadUrlBuilder imageReadUrlBuilder;
     private final Clock clock;
 
     @Transactional(readOnly = true)
@@ -122,7 +124,7 @@ public class FeedDetailService {
                 challengeRecord.getRecordDate(),
                 toAuthor(participant),
                 activityRecord.getCreatedAt(),
-                activityRecord.getActivityImageObjectKey(),
+                imageReadUrlBuilder.buildForLegacyFeed(activityRecord.getActivityImageObjectKey()),
                 activityRecord.getReflectionText(),
                 goalStatus(challengeRecord),
                 snapshotGoalMinutes(activityRecord),
