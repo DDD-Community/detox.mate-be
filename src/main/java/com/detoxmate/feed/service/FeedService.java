@@ -20,6 +20,7 @@ import com.detoxmate.group.service.GroupActivityCalendarService;
 import com.detoxmate.group.service.GroupChallengeParticipantService;
 import com.detoxmate.poke.domain.Poke;
 import com.detoxmate.poke.service.PokeService;
+import com.detoxmate.upload.service.ImageReadUrlBuilder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +45,7 @@ public class FeedService {
     private final GroupActivityCalendarService groupActivityCalendarService;
     private final FeedDetailService feedDetailService;
     private final GroupChallengeRecordFeedService groupChallengeRecordFeedService;
+    private final ImageReadUrlBuilder imageReadUrlBuilder;
     private final Clock clock;
 
     @Transactional(readOnly = true)
@@ -162,7 +164,8 @@ public class FeedService {
                 participant.profileImageUrl(),
                 challengeRecord.getId(),
                 challengeRecord.getStatus().name(),
-                activityRecord == null ? null : activityRecord.getActivityImageObjectKey(),
+                activityRecord == null ? null
+                        : imageReadUrlBuilder.buildForLegacyFeed(activityRecord.getActivityImageObjectKey()),
                 activityRecord == null ? null : activityRecord.getReflectionText(),
                 activityRecord == null ? null : totalUsedMinutes(activityRecord),
                 null,

@@ -20,10 +20,15 @@ import com.detoxmate.group.domain.GroupChallengeParticipant;
 import com.detoxmate.group.repository.GroupChallengeParticipantRepository;
 import com.detoxmate.notification.event.CertificationCreatedEvent;
 import com.detoxmate.upload.config.StorageProperties;
+import com.detoxmate.upload.service.ActivityRecordImageUploadPurposePolicy;
 import com.detoxmate.upload.service.ImageReadUrlBuilder;
+import com.detoxmate.upload.service.UploadObjectKeyValidator;
 import com.detoxmate.user.domain.User;
 import com.detoxmate.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.context.ApplicationEventPublisher;
 import org.mockito.ArgumentCaptor;
 import org.springframework.http.HttpStatus;
@@ -70,6 +75,7 @@ class ActivityRecordServiceTest {
                     userRepository,
                     groupChallengeParticipantRepository,
                     imageReadUrlBuilder,
+                    new UploadObjectKeyValidator(List.of(new ActivityRecordImageUploadPurposePolicy(clock))),
                     challengeRecordService,
                     clock,
                     eventPublisher
@@ -142,7 +148,7 @@ class ActivityRecordServiceTest {
     @Test
     void 미달성인_경우_reflectionText가_없으면_400_에러를_반환한다() {
         ActivityRecordCreateRequest request = new ActivityRecordCreateRequest(
-                "activity-records/sample.png",
+                "activity-records/1/2026/04/sample.png",
                 null,
                 10L,
                 List.of(detailRequest(UsageGoalTypeCode.TOTAL_USAGE, 80))
@@ -185,7 +191,7 @@ class ActivityRecordServiceTest {
     @Test
     void 당일_생성된_목표만_있으면_활동기록을_저장하지_않고_400_에러를_반환한다() {
         ActivityRecordCreateRequest request = new ActivityRecordCreateRequest(
-                "activity-records/sample.png",
+                "activity-records/1/2026/04/sample.png",
                 null,
                 10L,
                 List.of(detailRequest(UsageGoalTypeCode.TOTAL_USAGE, 50))
@@ -207,7 +213,7 @@ class ActivityRecordServiceTest {
     @Test
     void 최종_저장시_detail별_달성여부를_다시_계산한다() {
         ActivityRecordCreateRequest request = new ActivityRecordCreateRequest(
-                "activity-records/sample.png",
+                "activity-records/1/2026/04/sample.png",
                 "오늘은 산책했다",
                 10L,
                 List.of(
@@ -236,7 +242,7 @@ class ActivityRecordServiceTest {
         verify(activityRecordRepository).save(captor.capture());
 
         ActivityRecord savedActivityRecord = captor.getValue();
-        assertThat(savedActivityRecord.getActivityImageObjectKey()).isEqualTo("activity-records/sample.png");
+        assertThat(savedActivityRecord.getActivityImageObjectKey()).isEqualTo("activity-records/1/2026/04/sample.png");
         assertThat(savedActivityRecord.getReflectionText()).isEqualTo("오늘은 산책했다");
         assertThat(savedActivityRecord.getDetails())
                 .extracting(ActivityRecordDetail::getUseMinutes, ActivityRecordDetail::isAchieved)
@@ -249,7 +255,7 @@ class ActivityRecordServiceTest {
     @Test
     void 최종_저장시_달성과_미달성이_섞여있으면_allAchieved는_false다() {
         ActivityRecordCreateRequest request = new ActivityRecordCreateRequest(
-                "activity-records/sample.png",
+                "activity-records/1/2026/04/sample.png",
                 "오늘은 산책했다",
                 10L,
                 List.of(
@@ -275,14 +281,16 @@ class ActivityRecordServiceTest {
         ActivityRecordCreateResponse response = activityRecordService.create(1L, request);
 
         assertThat(response.activityImageUrl())
-                .isEqualTo(TEST_IMAGE_BASE_URL + "/activity-records/sample.png");
+                .isEqualTo(TEST_IMAGE_BASE_URL + "/activity-records/1/2026/04/sample.png");
         assertThat(response.allAchieved()).isFalse();
     }
 
-    @Test
-    void 최종_저장시_활동기록을_오늘_챌린지_기록에_성공_인증으로_연결한다() {
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {" ", "activity-records/1/2026/04/gcs/6cc88d46-3141-49bb-afd1-fe7426dce88b-photo.png"})
+    void 최종_저장시_활동기록을_오늘_챌린지_기록에_성공_인증으로_연결한다(String key) {
         ActivityRecordCreateRequest request = new ActivityRecordCreateRequest(
-                "activity-records/sample.png",
+                key,
                 null,
                 10L,
                 List.of(detailRequest(UsageGoalTypeCode.TOTAL_USAGE, 30))
@@ -313,7 +321,7 @@ class ActivityRecordServiceTest {
     @Test
     void 최종_저장시_미달성_detail이_있으면_오늘_챌린지_기록에_실패_인증으로_연결한다() {
         ActivityRecordCreateRequest request = new ActivityRecordCreateRequest(
-                "activity-records/sample.png",
+                "activity-records/1/2026/04/sample.png",
                 "오늘은 목표를 넘겼다",
                 10L,
                 List.of(detailRequest(UsageGoalTypeCode.TOTAL_USAGE, 80))
@@ -343,7 +351,7 @@ class ActivityRecordServiceTest {
     @Test
     void 최종_저장은_인증일_전날까지_생성된_목표를_저장_상세와_성공판정에_사용한다() {
         ActivityRecordCreateRequest request = new ActivityRecordCreateRequest(
-                "activity-records/sample.png",
+                "activity-records/1/2026/04/sample.png",
                 null,
                 10L,
                 List.of(detailRequest(UsageGoalTypeCode.TOTAL_USAGE, 80))
@@ -380,7 +388,7 @@ class ActivityRecordServiceTest {
     @Test
     void 최종_저장시_요청한_participant가_현재_사용자의_참여가_아니면_403_에러를_반환한다() {
         ActivityRecordCreateRequest request = new ActivityRecordCreateRequest(
-                "activity-records/sample.png",
+                "activity-records/1/2026/04/sample.png",
                 "오늘은 산책했다",
                 10L,
                 List.of(detailRequest(UsageGoalTypeCode.TOTAL_USAGE, 30))
@@ -404,6 +412,27 @@ class ActivityRecordServiceTest {
 
         verify(activityRecordRepository, never()).save(any());
         verifyNoInteractions(challengeRecordService);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "activity-records/2/2026/04/gcs/6cc88d46-3141-49bb-afd1-fe7426dce88b-photo.png",
+            "screen-time-ocr-reports/1/2026/04/gcs/6cc88d46-3141-49bb-afd1-fe7426dce88b-photo.png"
+    })
+    void 다른_사용자나_다른_용도의_사진은_활동_기록에_첨부할_수_없다(String key) {
+        var request = new ActivityRecordCreateRequest(key, null, 10L,
+                List.of(detailRequest(UsageGoalTypeCode.TOTAL_USAGE, 30)));
+        givenEffectiveGoalTimes(1L, List.of(UsageGoalTypeCode.TOTAL_USAGE),
+                List.of(userUsageGoalTime(UsageGoalTypeCode.TOTAL_USAGE, 60, TODAY_START.minusDays(1))));
+        givenParticipantOwnedByUser(10L, 1L);
+        givenUser(1L);
+        givenSavedActivityRecord(123L, TODAY_START);
+        givenTodayChallengeRecord(456L);
+
+        assertThatThrownBy(() -> activityRecordService.create(1L, request))
+                .isInstanceOfSatisfying(ResponseStatusException.class,
+                        error -> assertThat(error.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+        verifyNoInteractions(activityRecordRepository, challengeRecordService, eventPublisher);
     }
 
     private ActivityRecordAchievementCheckRequest achievementCheckRequest(ActivityRecordDetailRequest... details) {

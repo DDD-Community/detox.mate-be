@@ -39,6 +39,7 @@ class AppleClientSecretGeneratorTest {
 
         // then
         Jws<Claims> parsed = Jwts.parser()
+                .clock(() -> Date.from(now))
                 .verifyWith(keyPair.getPublic())
                 .build()
                 .parseSignedClaims(clientSecret);

@@ -137,14 +137,14 @@ class ActivityCalendarEndToEndHttpApiTest {
                 meBearer,
                 """
                         {
-                          "activityImageObjectKey": "activity-records/e2e/me-today.png",
+                          "activityImageObjectKey": "activity-records/%d/2026/04/me-today.png",
                           "reflectionText": "오늘은 목표 안에서 마무리했어요",
                           "groupChallengeParticipantId": %d,
                           "details": [
                             { "usageGoalType": "TOTAL_USAGE", "usedMinutes": 70 }
                           ]
                         }
-                        """.formatted(meParticipantId)
+                        """.formatted(fixture.at("/users/0/userId").asLong(), meParticipantId)
         );
         assertThat(createdActivity.get("groupChallengeParticipantId").asLong()).isEqualTo(meParticipantId);
         assertThat(createdActivity.get("allAchieved").asBoolean()).isTrue();
@@ -154,14 +154,14 @@ class ActivityCalendarEndToEndHttpApiTest {
                 memberBearer,
                 """
                         {
-                          "activityImageObjectKey": "activity-records/e2e/member-today.png",
+                          "activityImageObjectKey": "activity-records/%d/2026/04/member-today.png",
                           "reflectionText": "같이 인증했어요",
                           "groupChallengeParticipantId": %d,
                           "details": [
                             { "usageGoalType": "TOTAL_USAGE", "usedMinutes": 80 }
                           ]
                         }
-                        """.formatted(memberParticipantId)
+                        """.formatted(fixture.at("/users/1/userId").asLong(), memberParticipantId)
         );
         assertThat(createdMemberActivity.get("groupChallengeParticipantId").asLong()).isEqualTo(memberParticipantId);
         assertThat(createdMemberActivity.get("allAchieved").asBoolean()).isTrue();
