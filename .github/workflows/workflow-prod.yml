@@ -89,6 +89,6 @@ jobs:
           PROVIDER_TOKEN_ENCRYPTION_KEY: ${{ secrets.PROVIDER_TOKEN_ENCRYPTION_KEY }}
           APP_PUBLIC_BASE_URL: ${{ vars.APP_PUBLIC_BASE_URL }}
           STORAGE_IMAGE_READ_BASE_URL: ${{ vars.STORAGE_IMAGE_READ_BASE_URL }}
-          GCS_BUCKET_NAME: ${{ vars.GCS_BUCKET_NAME }}
+          GCS_BUCKET_NAME: ${{ vars.GCS_BUCKET_NAME || 'detoxmate-prod-photos-1099126665271' }}
           GCS_PRESIGNED_URL_EXPIRES_IN: ${{ vars.GCS_PRESIGNED_URL_EXPIRES_IN }}
         run: bash infra/gcp/deploy-jar.sh
