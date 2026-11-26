@@ -2,8 +2,10 @@ package com.detoxmate.upload.service;
 
 import com.detoxmate.upload.config.StorageProperties;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+@Profile("!prod")
 @Component
 @RequiredArgsConstructor
 public class ImageReadUrlBuilder {

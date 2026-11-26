@@ -209,7 +209,7 @@ class UploadControllerTest {
                         .description("업로드할 원본 파일명"),
                 fieldWithPath("contentType")
                         .type(JsonFieldType.STRING)
-                        .description("업로드 파일 content type. S3 PUT 요청에도 같은 canonical 값을 사용해야 한다."),
+                        .description("업로드 파일 content type. 파일 PUT 요청에도 같은 canonical 값을 사용해야 한다."),
                 fieldWithPath("fileSize")
                         .type(JsonFieldType.NUMBER)
                         .description("업로드 파일 크기(byte)"),
@@ -223,7 +223,7 @@ class UploadControllerTest {
         return new FieldDescriptor[] {
                 fieldWithPath("uploadUrl")
                         .type(JsonFieldType.STRING)
-                        .description("S3에 직접 PUT 요청할 presigned URL"),
+                        .description("이미지 파일을 직접 PUT할 서명 URL"),
                 fieldWithPath("objectKey")
                         .type(JsonFieldType.STRING)
                         .description("최종 저장 API에 다시 전달할 object key"),

@@ -3,12 +3,12 @@ package com.detoxmate.upload.config;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
-import java.time.Clock;
-
 @Configuration
+@Profile("!prod")
 @EnableConfigurationProperties({StorageProperties.class, StorageS3Properties.class})
 public class AwsS3Config {
 

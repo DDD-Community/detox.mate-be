@@ -4,6 +4,7 @@ import com.detoxmate.upload.config.StorageS3Properties;
 import com.detoxmate.upload.dto.PresignedUrlRequest;
 import com.detoxmate.upload.dto.PresignedUrlResponse;
 import com.detoxmate.upload.dto.UploadPurpose;
+import com.detoxmate.upload.infrastructure.S3PhotoUploadSigner;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -45,7 +46,7 @@ class S3UploadServiceCharacterizationTest {
             new StorageS3Properties("ap-northeast-2", "test-bucket", 600);
 
     private S3Presigner s3Presigner;
-    private S3UploadService uploadService;
+    private PhotoUploadService uploadService;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -54,9 +55,8 @@ class S3UploadServiceCharacterizationTest {
         when(presignedRequest.url()).thenReturn(URI.create(PRESIGNED_URL).toURL());
         when(s3Presigner.presignPutObject(any(PutObjectPresignRequest.class))).thenReturn(presignedRequest);
 
-        uploadService = new S3UploadService(
-                s3Presigner,
-                storageS3Properties,
+        uploadService = new PhotoUploadService(
+                new S3PhotoUploadSigner(s3Presigner, storageS3Properties),
                 new UploadContentTypePolicy(),
                 uploadPurposePolicies()
         );

@@ -54,3 +54,9 @@ auth:
     access-token-expires-in: ${JWT_ACCESS_TOKEN_EXPIRES_IN:3600}
   refresh-token:
     expires-in: ${REFRESH_TOKEN_EXPIRES_IN:15552000}
+
+app:
+  storage:
+    gcs:
+      bucket-name: ${GCS_BUCKET_NAME}
+      presigned-url-expires-in: ${GCS_PRESIGNED_URL_EXPIRES_IN:600}

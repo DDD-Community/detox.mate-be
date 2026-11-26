@@ -18,7 +18,11 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Upload tests
         run: ./gradlew test --tests 'com.detoxmate.upload.*'
-      - name: All tests and clean build
-        run: |
-          ./gradlew test
-          ./gradlew clean build
+      - name: All tests
+        run: ./gradlew test
+      - name: Clean build
+        if: ${{ !cancelled() }}
+        run: ./gradlew clean build
+      - name: Production JAR
+        if: failure()
+        run: ./gradlew clean bootJar
